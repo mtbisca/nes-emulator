@@ -35,6 +35,11 @@ PAD_DOWN   = %00000100
 PAD_LEFT   = %00000010
 PAD_RIGHT  = %00000001
 
+RIGHTWALL      = $F4  ; when player reaches one of these, do something
+TOPWALL        = $20
+BOTTOMWALL     = $E0
+LEFTWALL       = $04
+
 
   .org $C000
 RESET:
@@ -181,6 +186,8 @@ ReadUp:
   ;SBC #$01        ; A = A - 1
   ;STA $0200    ; save sprite Y position
   LDA playery
+  CMP #TOPWALL
+  BEQ ReadUpDone
   SEC
   SBC #$01        ;;bally position = bally - ballspeedy
   STA playery
@@ -190,11 +197,9 @@ ReadDown:
   LDA buttons
   AND #%00000100
   BEQ ReadDownDone
-  ;LDA $0200         ; load sprite Y position
-  ;CLC               ; make sure the carry flag is clear
-  ;ADC #$01          ; A = A + 1
-  ;STA $0200         ; save sprite Y position
   LDA playery
+  CMP #BOTTOMWALL
+  BEQ ReadDownDone
   CLC
   ADC #$01        ;;bally position = bally - ballspeedy
   STA playery
@@ -206,11 +211,9 @@ ReadLeft:
   AND #%00000010
   BEQ ReadLeftDone  ; branch to ReadLeftDone if button is NOT pressed (0)
                     ; add instructions here to do something when button IS pressed (1)
-  ;LDA $0203  ; load sprite X position
-  ;SEC           ; make sure the carry flag is clear
-  ;SBC #$01      ; A = A - 1
-  ;STA $0203  ; save sprite X position
   LDA playerx
+  CMP #LEFTWALL
+  BEQ ReadLeftDone
   SEC
   SBC #$01
   STA playerx
@@ -227,6 +230,8 @@ ReadRight:
   ;ADC #$01          ; A = A + 1
   ;STA $0203         ; save sprite X position
   LDA playerx
+  CMP #RIGHTWALL
+  BEQ ReadRightDone
   CLC
   ADC #$01
   STA playerx
@@ -271,6 +276,7 @@ CheckCollision:
   STA $202
   RTI
 CheckCollisionDone:
+
 
 
 UpdateSprites:
