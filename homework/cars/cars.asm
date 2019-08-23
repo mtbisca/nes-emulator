@@ -5,9 +5,12 @@
 
 
 ;;;;;;;;;;;;;;;
+
+   SPRITES_BASE_ADDR EQU $0200
    .enum $0000
    carUpdateCounter         .dw 1
-   frameCounter        .dw 1
+   frameCounter             .dw 1
+   firstCarSpriteOffset       .dw 1
    .ende
 
 
@@ -91,6 +94,129 @@ LoadSpritesLoop:
 Forever:
   JMP Forever     ;jump back to Forever, infinite loop
 
+;;;;;;
+;;;;;;   CAR MOVING FUNCTIONS
+;;;;;;   Params:
+;;;;;;     firstCarSpriteOffset -> offset address of car's first sprite byte
+;;;;;;
+
+moveCarLeft:
+  LDA firstCarSpriteOffset
+  CLC
+  ADC #$03                        ; offset for getting sprite X position
+  TAX
+  LDY #$00
+moveCarLeftLoop:
+  LDA SPRITES_BASE_ADDR, x       ; load sprite X position
+  SEC
+  SBC #$01           ; A = A - 1
+  STA SPRITES_BASE_ADDR, x       ; save sprite X position
+  INX
+  INX
+  INX
+  INX
+  INY
+  CPY #$08                        ; 8 sprites processed: full car
+  BNE moveCarLeftLoop
+  RTS
+
+moveCarRight:
+  LDA firstCarSpriteOffset
+  CLC
+  ADC #$03                        ; offset for getting sprite X position
+  TAX
+  LDY #$00                       ; Y will keep track of sprites count
+moveCarRightLoop:
+  LDA SPRITES_BASE_ADDR, x       ; load sprite X position
+  CLC
+  ADC #$01           ; A = A - 1
+  STA SPRITES_BASE_ADDR, x       ; save sprite X position
+  INX
+  INX
+  INX
+  INX
+  INY
+  CPY #$08                        ; 8 sprites processed: full car
+  BNE moveCarRightLoop
+  RTS
+
+
+;;;;;;
+;;;;;;   CAR ANIMATION FUNCTIONS
+;;;;;;   Params:
+;;;;;;     firstCarSpriteOffset -> offset address of car's first sprite byte
+;;;;;;
+
+updateCarFrames:
+  LDX firstCarSpriteOffset
+  INX                          ; add 1 to get sprite tile address
+  LDY #$00                     ; init loop counter
+  LDA carUpdateCounter
+  AND #$01
+  BEQ animateCarReset      ; if update counter is even, add 1 to all tiles, else subtract 1
+
+animateCarAdd:
+  LDA SPRITES_BASE_ADDR, x        ; load sprite tile
+  CLC
+  ADC #$01
+  STA SPRITES_BASE_ADDR, x        ; store new sprite tile
+  TXA
+  CLC
+  ADC #$04
+  TAX
+  INY
+  CPY #$06             ; 6 processed sprites
+  BNE animateCarAdd
+  JMP animateTires
+
+animateCarReset:
+  LDA SPRITES_BASE_ADDR, x        ; load sprite tile
+  SEC
+  SBC #$01            ; add 1
+  STA SPRITES_BASE_ADDR, x        ; store new sprite tile
+  TXA
+  CLC
+  ADC #$04            ; add 4
+  TAX
+  INY
+  CPY #$06             ; $18 = 24 = 6 processed sprites
+  BNE animateCarReset
+
+animateTires:
+  LDY carUpdateCounter
+  TYA
+  AND #$03      ; if zero, its a multiple of 4
+  BEQ animateTiresReset
+  LDA SPRITES_BASE_ADDR, x
+  CLC
+  ADC #$01
+  STA SPRITES_BASE_ADDR, x
+  TXA
+  CLC
+  ADC #$04
+  TAX
+  LDA SPRITES_BASE_ADDR, x
+  CLC
+  ADC #$01
+  STA SPRITES_BASE_ADDR, x
+  JMP carUpdateEnd
+
+animateTiresReset:
+  LDA SPRITES_BASE_ADDR, x
+  SEC
+  SBC #$03
+  STA SPRITES_BASE_ADDR, x
+  TXA
+  CLC
+  ADC #$04
+  TAX
+  LDA SPRITES_BASE_ADDR, x
+  SEC
+  SBC #$03
+  STA SPRITES_BASE_ADDR, x
+
+carUpdateEnd:
+  RTS
 
 
 NMI:
@@ -99,91 +225,41 @@ NMI:
   LDA #$02
   STA $4014       ; set the high byte (02) of the RAM address, start the transfer
 
-  LDX #$00
+  LDA #$20
+  STA firstCarSpriteOffset
+  JSR moveCarRight
 
-moveCar:
-  LDA $0203, x       ; load sprite X position
-  SEC
-  SBC #$01        ; A = A + 1
-  STA $0203, x       ; save sprite X position
-  INX
-  INX
-  INX
-  INX
-  CPX #$20
-  BNE moveCar
+  LDA #$00
+  STA firstCarSpriteOffset
+  JSR moveCarLeft
 
   LDY frameCounter
-  CPY #$0D
-  BEQ switchFrames
+  CPY #$1D
+  BNE noUpdateCarFrames
+
+  ; update fist car
+  LDA #$00
+  STA firstCarSpriteOffset
+  JSR updateCarFrames
+
+  ; update second car
+  LDA #$20
+  STA firstCarSpriteOffset
+  JSR updateCarFrames
+
+  LDY carUpdateCounter          ; increment car update
   INY
+  STY carUpdateCounter
+
+  LDY #$00                      ; reset frame counter
   STY frameCounter
   RTI
 
-switchFrames:
-  LDX #$00
-  LDY carUpdateCounter
-  TYA
-  AND #$01
-  BEQ animateCarReset      ; if frame counter is even, add 1 to all tiles, else subtract 1
-
-animateCarAdd:
-  LDA $0201, x        ; load sprite tile
-  CLC
-  ADC #$01            ; add 1
-  STA $0201, x        ; store new sprite tile
-  TXA
-  CLC
-  ADC #$04            ; add 4
-  TAX
-  CPX #$18             ; $18 = 24 = 6 processed sprites
-  BNE animateCarAdd
-  JMP animateTires
-
-animateCarReset:
-  LDA $0201, x        ; load sprite tile
-  SEC
-  SBC #$01            ; add 1
-  STA $0201, x        ; store new sprite tile
-  TXA
-  CLC
-  ADC #$04            ; add 4
-  TAX
-  CPX #$18             ; $18 = 24 = 6 processed sprites
-  BNE animateCarReset
-
-animateTires:
-  LDX #$00
-  TYA
-  AND #$03      ; if zero, its a multiple of 4
-  BEQ animateTiresReset
-  LDA $0219
-  CLC
-  ADC #$01
-  STA $0219
-  LDA $021D
-  CLC
-  ADC #$01
-  STA $021D
-  JMP carUpdateEnd
-
-animateTiresReset:
-  LDA $0219
-  SEC
-  SBC #$03
-  STA $0219
-  LDA $021D
-  SEC
-  SBC #$03
-  STA $021D
-
-carUpdateEnd:
-
+noUpdateCarFrames:
+  LDY frameCounter              ; increment frame counter
   INY
-  STY carUpdateCounter
-  LDY #$00
   STY frameCounter
-  RTI             ; return from interrupt
+  RTI
 
 ;;;;;;;;;;;;;;
 
@@ -197,16 +273,16 @@ palette:
 sprites:
   ; vert tile attr horiz
   ; car top
-  .db $80, $00, $02, $80   ;sprite 0
-  .db $80, $02, $02, $88   ;sprite 1
-  .db $80, $04, $02, $90   ;sprite 2
-  .db $80, $06, $02, $98   ;sprite 3
+  .db $80, $00, $01, $80   ;sprite 0
+  .db $80, $02, $01, $88   ;sprite 1
+  .db $80, $04, $01, $90   ;sprite 2
+  .db $80, $06, $01, $98   ;sprite 3
   ; car bottom
-  .db $88, $08, $02, $80   ;sprite 4
-  .db $88, $0E, $02, $90   ;sprite 5
+  .db $88, $08, $01, $80   ;sprite 4
+  .db $88, $0E, $01, $90   ;sprite 5
   ; car tires
-  .db $88, $0A, $02, $88   ;sprite 6
-  .db $88, $10, $02, $98   ;sprite 7
+  .db $88, $0A, $01, $88   ;sprite 6
+  .db $88, $10, $01, $98   ;sprite 7
 
   ; car top
   .db $C0, $06, #%01000000, $80   ;sprite 8
