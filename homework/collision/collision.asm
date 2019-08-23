@@ -15,8 +15,6 @@ playerleft    .dsw 1
 playerright   .dsw 1
 playertop     .dsw 1
 playerbottom  .dsw 1
-carx          .dsw 1
-cary          .dsw 1
 carleft       .dsw 1
 carright      .dsw 1
 cartop        .dsw 1
@@ -35,10 +33,13 @@ PAD_DOWN   = %00000100
 PAD_LEFT   = %00000010
 PAD_RIGHT  = %00000001
 
-RIGHTWALL      = $F4  ; when player reaches one of these, do something
-TOPWALL        = $20
-BOTTOMWALL     = $E0
-LEFTWALL       = $04
+RIGHTWALL      = $F1  ; when player reaches one of these, do something
+TOPWALL        = $0A
+BOTTOMWALL     = $DC
+LEFTWALL       = $08
+
+PLAYERSPRITE0Y  = $0200
+PLAYERSPRITE0X  = $0203
 
 
   .org $C000
@@ -104,43 +105,37 @@ LoadSpritesLoop:
   LDA sprites, x        ; load data from address (sprites +  x)
   STA $0200, x          ; store into RAM address ($0200 + x)
   INX                   ; X = X + 1
-  CPX #$20              ; Compare X to hex $20, decimal 32
+  CPX #$40              ; Compare X to hex $20, decimal 32
   BNE LoadSpritesLoop   ; Branch to LoadSpritesLoop if compare was Not Equal to zero
                       ; if compare was equal to 32, keep going down
 
 
 ;;Set initial stats
-  LDA #$80
+  LDA #$84
   STA playerx
 
-  LDA #$84
+  LDA #$8C
   STA playerright
 
   LDA #$7C
   STA playerleft
 
-  LDA #$80
+  LDA #$84
   STA playery
 
-  LDA #$84
+  LDA #$8C
   STA playerbottom
 
   LDA #$7C
   STA playertop
 
-  LDA #$92
-  STA carx
-
-  LDA #$96
+  LDA #$6C
   STA carright
 
-  LDA #$8E
+  LDA #$4C
   STA carleft
 
-  LDA #$50
-  STA cary
-
-  LDA #$54
+  LDA #$5C
   STA carbottom
 
   LDA #$4C
@@ -181,28 +176,40 @@ ReadUp:
   LDA buttons
   AND #%00001000
   BEQ ReadUpDone
-  ;LDA $0200    ; load sprite Y position
-  ;SEC             ;make sure the carry flag is clear
-  ;SBC #$01        ; A = A - 1
-  ;STA $0200    ; save sprite Y position
-  LDA playery
+  LDX #$00
+MoveUpLoop:
+  LDA PLAYERSPRITE0Y, x
   CMP #TOPWALL
   BEQ ReadUpDone
   SEC
   SBC #$01        ;;bally position = bally - ballspeedy
-  STA playery
+  STA PLAYERSPRITE0Y, x
+  TXA           ; transfer value of register x to a
+  CLC           ; make sure the carry flag is clear
+  ADC #$04      ; add 04 to register x
+  TAX           ; transfer value of register a to x
+  CPX #$10      ; check if x = 10, i.e, 4 sprites have been moved
+  BNE MoveUpLoop
 ReadUpDone:
 
 ReadDown:
   LDA buttons
   AND #%00000100
   BEQ ReadDownDone
-  LDA playery
+  LDX #$00
+MoveDownLoop:
+  LDA PLAYERSPRITE0Y, x
   CMP #BOTTOMWALL
   BEQ ReadDownDone
   CLC
   ADC #$01        ;;bally position = bally - ballspeedy
-  STA playery
+  STA PLAYERSPRITE0Y, x
+  TXA           ; transfer value of register x to a
+  CLC           ; make sure the carry flag is clear
+  ADC #$04      ; add 04 to register x
+  TAX           ; transfer value of register a to x
+  CPX #$10      ; check if x = 10, i.e, 4 sprites have been moved
+  BNE MoveDownLoop
 ReadDownDone:
 
 
@@ -211,12 +218,20 @@ ReadLeft:
   AND #%00000010
   BEQ ReadLeftDone  ; branch to ReadLeftDone if button is NOT pressed (0)
                     ; add instructions here to do something when button IS pressed (1)
-  LDA playerx
+  LDX #$00
+MoveLeftLoop:
+  LDA PLAYERSPRITE0X, x
   CMP #LEFTWALL
   BEQ ReadLeftDone
   SEC
   SBC #$01
-  STA playerx
+  STA PLAYERSPRITE0X, x
+  TXA           ; transfer value of register x to a
+  CLC           ; make sure the carry flag is clear
+  ADC #$04      ; add 04 to register x
+  TAX           ; transfer value of register a to x
+  CPX #$10      ; check if x = 10, i.e, 4 sprites have been moved
+  BNE MoveLeftLoop
 ReadLeftDone:   ; handling this button is done
 
 
@@ -225,71 +240,80 @@ ReadRight:
   AND #%00000001
   BEQ ReadRightDone  ; branch to ReadRightDone if button is NOT pressed (0)
                     ; add instructions here to do something when button IS pressed (1)
-  ;LDA $0203         ; load sprite X position
-  ;CLC               ; make sure the carry flag is clear
-  ;ADC #$01          ; A = A + 1
-  ;STA $0203         ; save sprite X position
-  LDA playerx
+  LDX #$00
+MoveRightLoop:
+  LDA PLAYERSPRITE0X, x
   CMP #RIGHTWALL
   BEQ ReadRightDone
-  CLC
+  CLC               ; make sure the carry flag is clear
   ADC #$01
-  STA playerx
+  STA PLAYERSPRITE0X, x
+  TXA           ; transfer value of register x to a
+  CLC           ; make sure the carry flag is clear
+  ADC #$04      ; add 04 to register x
+  TAX           ; transfer value of register a to x
+  CPX #$10      ; check if x = 10, i.e, 4 sprites have been moved
+  BNE MoveRightLoop
 ReadRightDone:       ; handling this button is done
 
-  JSR UpdateSprites
+  JSR UpdatePlayerPositionAndLimits
 
 CheckCollision:
-  LDA playerx
-  CLC
-  ADC #$04
-  STA playerright
+  LDA playerright
   LDA carleft
   CMP playerright
   BCS GameEngineDone
 
-  LDA playerx
-  SEC
-  SBC #$04
-  STA playerleft
+  LDA playerleft
   LDA carright
   CMP playerleft
   BCC GameEngineDone
 
-  LDA playery
-  CLC
-  ADC #$04
-  STA playerbottom
+  LDA playerbottom
   LDA cartop
   CMP playerbottom
   BCS GameEngineDone
 
-  LDA playery
-  SEC
-  SBC #$04
-  STA playertop
+  LDA playertop
   LDA carbottom
   CMP playertop
   BCC GameEngineDone
 
   LDA #$F5
-  STA $202
+  STA $0202
   RTI
 CheckCollisionDone:
 
 
 
-UpdateSprites:
-  LDA playery
-  STA $0200
+UpdatePlayerPositionAndLimits:
+  LDA PLAYERSPRITE0Y
+  ADC #$04
+  STA playery
 
-  LDA playerx
-  STA $0203
+  SEC
+  SBC #$08
+  STA playertop
+
+  CLC
+  ADC #$08
+  STA playerbottom
+
+  LDA PLAYERSPRITE0X
+  ADC #$04
+  STA playerx
+
+  CLC
+  ADC #$08
+  STA playerright
+
+  SEC
+  SBC #$08
+  STA playerleft
 
   RTS
 
 GameEngineDone:
-  ;JSR UpdateSprites
   RTI
 
 ;;;;;;;;;;;;;;
@@ -303,8 +327,21 @@ palette:
 
 sprites:
    ;vert tile attr horiz
-  .db $80, $32, $00, $80   ;sprite player
-  .db $50, $33, $01, $92   ;sprite car
+  .db $80, $32, $00, $80   ;sprite 0 player
+  .db $80, $33, $00, $88   ;sprite 1 player
+  .db $88, $34, $00, $80   ;sprite 2 player
+  .db $88, $35, $00, $88   ;sprite 3 player
+  ; car top
+  .db $50, $00, $02, $50   ;sprite 0
+  .db $50, $02, $02, $58   ;sprite 1
+  .db $50, $04, $02, $60   ;sprite 2
+  .db $50, $06, $02, $68   ;sprite 3
+  ; car bottom
+  .db $58, $08, $02, $50   ;sprite 4
+  .db $58, $0E, $02, $60   ;sprite 5
+  ; car tires
+  .db $58, $0A, $02, $58   ;sprite 6
+  .db $58, $10, $02, $68   ;sprite 7
 
   .org $FFFA     ;first of the three vectors starts here
   .dw NMI        ;when an NMI happens (once per frame if enabled) the
