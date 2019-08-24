@@ -205,14 +205,63 @@ LoadSpritesLoop:
   BNE LoadSpritesLoop   ; Branch to LoadSpritesLoop if compare was Not Equal to zero
                         ; if compare was equal to 32, keep going down
 
+LoadBackground:
+  LDA $2002             ; read PPU status to reset the high/low latch
+  LDA #$20
+  STA $2006             ; write the high byte of $2000 address
+  LDA #$00
+  STA $2006             ; write the low byte of $2000 address
+  LDX #$00              ; start out at 0
+LoadBackgroundFirst:
+  LDA backgroundFirst, x     ; load data from address (background + the value in x)
+  STA $2007             ; write to PPU
+  INX                   ; X = X + 1
+  CPX #$00              ; Compare X to hex $80, decimal 128 - copying 128 bytes
+  BNE LoadBackgroundFirst ; Branch to LoadBackgroundLoop if compare was Not Equal to zero
+                        ; if compare was equal to 128, keep going down
+LoadBackgroundSecond:
+  LDA backgroundSecond, x     ; load data from address (background + the value in x)
+  STA $2007             ; write to PPU
+  INX                   ; X = X + 1
+  CPX #$00             ; Compare X to hex $80, decimal 128 - copying 128 bytes
+  BNE LoadBackgroundSecond ; Branch to LoadBackgroundLoop if compare was Not Equal to zero
+                        ; if compare was equal to 128, keep going down
+LoadBackgroundThird:
+  LDA backgroundThird, x     ; load data from address (background + the value in x)
+  STA $2007             ; write to PPU
+  INX                   ; X = X + 1
+  CPX #$00             ; Compare X to hex $80, decimal 128 - copying 128 bytes
+  BNE LoadBackgroundThird  ; Branch to LoadBackgroundLoop if compare was Not Equal to zero
+                        ; if compare was equal to 128, keep going down
+LoadBackgroundFourth:
+  LDA backgroundFourth, x     ; load data from address (background + the value in x)
+  STA $2007             ; write to PPU
+  INX                   ; X = X + 1
+  CPX #$C0              ; Compare X to hex $80, decimal 128 - copying 128 bytes
+  BNE LoadBackgroundFourth
+
+LoadAttribute:
+  LDA $2002             ; read PPU status to reset the high/low latch
+  LDA #$23
+  STA $2006             ; write the high byte of $23C0 address
+  LDA #$C0
+  STA $2006             ; write the low byte of $23C0 address
+  LDX #$00              ; start out at 0
+  LDA #$00
+LoadAttributeLoop:
+  STA $2007             ; write to PPU
+  INX                   ; X = X + 1
+  CPX #$20              ; Compare X to hex $08, decimal 8 - copying 8 bytes
+  BNE LoadAttributeLoop  ; Branch to LoadAttributeLoop if compare was Not Equal to zero
+
   LDY #$01              ; init carUpdateCounter
   STY carUpdateCounter
   STY frameCounter
 
-  LDA #%10000000   ; enable NMI, sprites from Pattern Table 0
+  LDA #%10010000   ; enable NMI, sprites from Pattern Table 0
   STA $2000
 
-  LDA #%00010000   ; enable sprites
+  LDA #%00011110   ; enable sprites
   STA $2001
 
   LDA #$03
@@ -961,19 +1010,19 @@ NoCarCollision:
 CheckMortarboardCollision:
   LDA #MORTARBOARD_LEFT
   CMP dinoRight
-  BCS NoMortarboardCollision
+  BCS ppuCleanUp
 
   LDA #MORTARBOARD_RIGHT
   CMP dinoLeft
-  BCC NoMortarboardCollision
+  BCC ppuCleanUp
 
   LDA #MORTARBOARD_TOP
   CMP dinoBottom
-  BCS NoMortarboardCollision
+  BCS ppuCleanUp
 
   LDA #MORTARBOARD_BOTTOM
   CMP dinoTop
-  BCC NoMortarboardCollision
+  BCC ppuCleanUp
 
   ; Collision
   LDA #$02
@@ -984,10 +1033,15 @@ CheckMortarboardCollision:
 NoMortarboardCollision:
   RTI
 
-;;;;;;;;;;;;;;
-
-  RTI        ; return from interrupt
-
+ppuCleanUp:
+  LDA #%10010000   ; enable NMI, sprites from Pattern Table 0, background from Pattern Table 1
+  STA $2000
+  LDA #%00011110   ; enable sprites, enable background, no clipping on left side
+  STA $2001
+  LDA #$00        ;;tell the ppu there is no background scrolling
+  STA $2005
+  STA $2005
+  RTI
 
 
 IRQ:
@@ -1064,8 +1118,8 @@ song_data:  ;this data has two quarter rests in it.
     .byte half, C2, quarter, rest, eighth, D4, C4, quarter, B3, rest
 
 palette:
-.db $0F,$31,$32,$33,$0F,$35,$36,$37,$0F,$39,$3A,$3B,$0F,$3D,$3E,$0F
-.db $00,$02,$12,$0F,$00,$04,$14,$0F,$00,$17,$27,$0F,$15,$0B,$30,$0A
+  .db $2A,$0B,$2D,$30,$2A,$2A,$2A,$2A,$2A,$2A,$2A,$2A,$2A,$2A,$2A,$2A
+  .db $2A,$02,$12,$0F,$00,$04,$14,$0F,$00,$17,$27,$0F,$15,$0B,$30,$0A
 
 sprites:
      ;vert tile attr horiz
@@ -1106,6 +1160,84 @@ sprites:
   .db $18, $2B, $00, $80
   .db $18, $2C, $00, $88
 
+backgroundFirst:
+.byte 00,01,00,01,00,01,00,01,00,01,00,01,00,01,00,01
+.byte 00,01,00,01,00,01,00,01,00,01,00,01,00,01,00,01
+.byte 02,03,02,03,02,03,02,03,02,03,02,03,02,03,02,03
+.byte 02,03,02,03,02,03,02,03,02,03,02,03,02,03,02,03
+
+.byte 00,01,00,01,00,01,00,01,00,01,00,01,00,01,00,01
+.byte 00,01,00,01,00,01,00,01,00,01,00,01,00,01,00,01
+.byte 02,03,02,03,02,03,02,03,02,03,02,03,02,03,02,03
+.byte 02,03,02,03,02,03,02,03,02,03,02,03,02,03,02,03
+
+.byte 04,04,04,04,04,04,04,04,04,04,04,04,04,04,04,04
+.byte 04,04,04,04,04,04,04,04,04,04,04,04,04,04,04,04
+.byte 05,06,05,06,05,06,05,06,05,06,05,06,05,06,05,06
+.byte 05,06,05,06,05,06,05,06,05,06,05,06,05,06,05,06
+
+.byte 04,04,04,04,04,04,04,04,04,04,04,04,04,04,04,04
+.byte 04,04,04,04,04,04,04,04,04,04,04,04,04,04,04,04
+.byte 05,06,05,06,05,06,05,06,05,06,05,06,05,06,05,06
+.byte 05,06,05,06,05,06,05,06,05,06,05,06,05,06,05,06
+
+backgroundSecond:
+.byte 04,04,04,04,04,04,04,04,04,04,04,04,04,04,04,04
+.byte 04,04,04,04,04,04,04,04,04,04,04,04,04,04,04,04
+.byte 07,07,07,07,07,07,07,07,07,07,07,07,07,07,07,07
+.byte 07,07,07,07,07,07,07,07,07,07,07,07,07,07,07,07
+
+.byte 00,01,00,01,00,01,00,01,00,01,00,01,00,01,00,01
+.byte 00,01,00,01,00,01,00,01,00,01,00,01,00,01,00,01
+.byte 02,03,02,03,02,03,02,03,02,03,02,03,02,03,02,03
+.byte 02,03,02,03,02,03,02,03,02,03,02,03,02,03,02,03
+
+.byte 04,04,04,04,04,04,04,04,04,04,04,04,04,04,04,04
+.byte 04,04,04,04,04,04,04,04,04,04,04,04,04,04,04,04
+.byte 05,06,05,06,05,06,05,06,05,06,05,06,05,06,05,06
+.byte 05,06,05,06,05,06,05,06,05,06,05,06,05,06,05,06
+
+.byte 04,04,04,04,04,04,04,04,04,04,04,04,04,04,04,04
+.byte 04,04,04,04,04,04,04,04,04,04,04,04,04,04,04,04
+.byte 07,07,07,07,07,07,07,07,07,07,07,07,07,07,07,07
+.byte 07,07,07,07,07,07,07,07,07,07,07,07,07,07,07,07
+
+backgroundThird:
+.byte 00,01,00,01,00,01,00,01,00,01,00,01,00,01,00,01
+.byte 00,01,00,01,00,01,00,01,00,01,00,01,00,01,00,01
+.byte 02,03,02,03,02,03,02,03,02,03,02,03,02,03,02,03
+.byte 02,03,02,03,02,03,02,03,02,03,02,03,02,03,02,03
+
+.byte 04,04,04,04,04,04,04,04,04,04,04,04,04,04,04,04
+.byte 04,04,04,04,04,04,04,04,04,04,04,04,04,04,04,04
+.byte 05,06,05,06,05,06,05,06,05,06,05,06,05,06,05,06
+.byte 05,06,05,06,05,06,05,06,05,06,05,06,05,06,05,06
+
+.byte 04,04,04,04,04,04,04,04,04,04,04,04,04,04,04,04
+.byte 04,04,04,04,04,04,04,04,04,04,04,04,04,04,04,04
+.byte 07,07,07,07,07,07,07,07,07,07,07,07,07,07,07,07
+.byte 07,07,07,07,07,07,07,07,07,07,07,07,07,07,07,07
+
+.byte 00,01,00,01,00,01,00,01,00,01,00,01,00,01,00,01
+.byte 00,01,00,01,00,01,00,01,00,01,00,01,00,01,00,01
+.byte 02,03,02,03,02,03,02,03,02,03,02,03,02,03,02,03
+.byte 02,03,02,03,02,03,02,03,02,03,02,03,02,03,02,03
+
+backgroundFourth:
+.byte 04,04,04,04,04,04,04,04,04,04,04,04,04,04,04,04
+.byte 04,04,04,04,04,04,04,04,04,04,04,04,04,04,04,04
+.byte 05,06,05,06,05,06,05,06,05,06,05,06,05,06,05,06
+.byte 05,06,05,06,05,06,05,06,05,06,05,06,05,06,05,06
+
+.byte 04,04,04,04,04,04,04,04,04,04,04,04,04,04,04,04
+.byte 04,04,04,04,04,04,04,04,04,04,04,04,04,04,04,04
+.byte 07,07,07,07,07,07,07,07,07,07,07,07,07,07,07,07
+.byte 07,07,07,07,07,07,07,07,07,07,07,07,07,07,07,07
+
+.byte 00,01,00,01,00,01,00,01,00,01,00,01,00,01,00,01
+.byte 00,01,00,01,00,01,00,01,00,01,00,01,00,01,00,01
+.byte 02,03,02,03,02,03,02,03,02,03,02,03,02,03,02,03
+.byte 02,03,02,03,02,03,02,03,02,03,02,03,02,03,02,03
 
    .org $fffa
 
@@ -1117,7 +1249,10 @@ sprites:
 ; CHR-ROM bank
 ;----------------------------------------------------------------
 
+.base $0000
 .incbin "dino.chr"
 .incbin "cars.chr"
 .incbin "mortarboard.chr"
-.dsb $6000, $FF
+.pad $1000, #$00
+.incbin "bg.chr"
+.pad $6000, $FF
