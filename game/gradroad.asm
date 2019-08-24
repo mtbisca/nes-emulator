@@ -996,6 +996,8 @@ CheckCarCollision:
   ; Collision
   LDA #$00
   STA $0202
+  LDA #$08
+  JSR sound_load
   RTS
 CheckCarCollisionDone:
 
@@ -1024,9 +1026,11 @@ CheckMortarboardCollision:
   CMP dinoTop
   BCC ppuCleanUp
 
+  
   ; Collision
   LDA #$02
   STA $0202
+
 
   RTI
 
