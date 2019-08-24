@@ -31,10 +31,10 @@ TOPWALL        = $0A
 BOTTOMWALL     = $DC
 LEFTWALL       = $08
 
-MORTARBOARD_LEFT         EQU $7C
-MORTARBOARD_RIGHT        EQU $8C
-MORTARBOARD_TOP          EQU $0C
-MORTARBOARD_BOTTOM       EQU $1C
+MORTARBOARD_LEFT         EQU $74
+MORTARBOARD_RIGHT        EQU $84
+MORTARBOARD_TOP          EQU $08
+MORTARBOARD_BOTTOM       EQU $18
 
 DINO_FIRST_SPRITE_Y   EQU $0200
 DINO_FIRST_SPRITE_X   EQU $0203
@@ -1056,12 +1056,12 @@ CheckMortarboardCollision:
   LDA #MORTARBOARD_BOTTOM
   CMP dinoTop
   BCC ppuCleanUp
-  
+
   LDA #$00
   CMP end_game_sound_flag
   BEQ endgame
   JMP ppuCleanUp
-  
+
 endgame:
   LDA #$01
   STA end_game_sound_flag
@@ -1076,7 +1076,7 @@ ppuCleanUp:
   LDA #$00        ;;tell the ppu there is no background scrolling
   STA $2005
   STA $2005
-  
+
   RTI
 
 
