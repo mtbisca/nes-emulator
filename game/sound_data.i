@@ -129,7 +129,7 @@ song2_header:
     .byte $01           ;status byte (stream enabled)
     .byte SQUARE_2      ;which channel
     .byte $70           ;duty (01)
-    .byte ve_battlekid_1b  ;volume envelope
+    .byte ve_battlekid_1b   ;volume envelope
     .word song2_square2 ;pointer to stream
     .byte $80           ;tempo
 
@@ -202,7 +202,7 @@ song4_header:
     .byte $01           ;status byte (stream enabled)
     .byte SQUARE_1      ;which channel
     .byte $B0           ;initial duty (10)
-    .byte ve_battlekid_1b  ;volume envelope
+    .byte ve_battlekid_2b  ;volume envelope
     .word song4_square1 ;pointer to stream
     .byte $60           ;tempo
     
@@ -218,7 +218,7 @@ song4_header:
     .byte $01           ;status byte (stream enabled)
     .byte TRIANGLE      ;which channel
     .byte $81           ;initial volume (on)
-    .byte ve_battlekid_1b  ;volume envelope
+    .byte ve_battlekid_2b  ;volume envelope
     .word song4_tri     ;pointer to stream
     .byte $60           ;tempo
     
@@ -418,7 +418,7 @@ song7_square2:
 song8_header:
     .byte $06           ;6 streams
     
-    .byte MUSIC_SQ1     ;which stream
+    .byte SFX_1     ;which stream
     .byte $00           ;status byte (stream disabled)
     
     .byte MUSIC_SQ2     ;which stream
@@ -430,7 +430,7 @@ song8_header:
     .byte MUSIC_NOI     ;which stream
     .byte $00           ;disabled.
 
-    .byte SFX_1         ;which stream
+    .byte MUSIC_SQ1         ;which stream
     .byte $01           ;status byte (stream enabled)
     .byte SQUARE_1      ;which channel
     .byte $B0           ;initial duty (10)

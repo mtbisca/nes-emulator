@@ -27,12 +27,12 @@ DINO_Y = $0200
 
    ;MyVariable0 .dsb 1
    ;MyVariable1 .dsb 3
-       sleeping .dsb 1          ;main program sets this and waits for the NMI to clear it.  
+    sleeping .dsb 1          ;main program sets this and waits for the NMI to clear it.  
     sound_disable_flag .dsb 1   ;a flag variable that keeps track of whether the sound engine is disabled or not. 
     sound_ptr .dsb 2  ;a 2-byte pointer variable.
     sound_ptr2		.dsb	2
-     ptr1 .dsb 2              ;a pointer             
-     jmp_ptr		.dsb	2  
+    ptr1 .dsb 2              ;a pointer             
+    jmp_ptr		.dsb	2  
                    
     sound_temp2 .dsb 6
     sound_temp1 .dsb 6
@@ -251,13 +251,17 @@ ReadDown:
 DownContinue:
   LDA DINO_Y   ; load sprite position
   CMP #$D7    ; end of down side
-  BEQ ReadDownDone ; branch to ReadADone if position is end of down side
+  BEQ endlabelD ; branch to ReadADone if position is end of down side
   LDX #$00
   LDA #$10
   STA $0302
   JSR MoveRestPlus
   JSR animationRoutineF
   JMP endController
+
+endlabelD:
+  lda #$08
+  jsr sound_load
 ReadDownDone:
 
 ReadLeft:
@@ -438,14 +442,21 @@ animationRoutineS:
   JMP doneifS
 addifS:
   JSR add
+
+  LDA #$05
+  JSR sound_load
   JMP doneifS
 subifS:
+
+  LDA #$05
+  JSR sound_load
   JSR sub
 doneifS:
   LDA $0300
   ADC #$01
   AND #%00011111
   STA $0300
+  
   RTS
 
 animationRoutineB:
@@ -521,6 +532,7 @@ subif4F:
   DEY
   STY DINO4_TILE
 doneifF:
+  
   LDA $0300
   CMP #28
 BNE paceF
@@ -584,6 +596,8 @@ doneBit:
   STA DINO3_ATR
   STA DINO4_ATR
   
+  LDA #$05
+  JSR sound_load
 RTS
 
 IRQ:
