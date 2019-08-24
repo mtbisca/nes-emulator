@@ -27,6 +27,37 @@ DINO_Y = $0200
 
    ;MyVariable0 .dsb 1
    ;MyVariable1 .dsb 3
+       sleeping .dsb 1          ;main program sets this and waits for the NMI to clear it.  
+    sound_disable_flag .dsb 1   ;a flag variable that keeps track of whether the sound engine is disabled or not. 
+    sound_ptr .dsb 2  ;a 2-byte pointer variable.
+    sound_ptr2		.dsb	2
+     ptr1 .dsb 2              ;a pointer             
+     jmp_ptr		.dsb	2  
+                   
+    sound_temp2 .dsb 6
+    sound_temp1 .dsb 6
+    sound_sq1_old		.dsb	1 ; The last value written to $4003
+    sound_sq2_old		.dsb	1 ; The last value written to $4007
+    soft_apu_ports		.dsb	16
+
+    stream_curr_sound .dsb 6     ;reserve 6 bytes, one for each stream
+    stream_status .dsb 6
+    stream_channel .dsb 6
+    stream_vol_duty .dsb 6
+    stream_ptr_lo .dsb 6        ;The first byte will hold the LO byte of an address
+    stream_ptr_hi .dsb 6         ;The second byte will hold the HI byte of an address      ;high 3 bits of the note period
+    sound_frame_counter .dsb 1   ;a primitive counter used to time notes in this demo
+    stream_note_lo .dsb 6    ;low 8 bits of period
+    stream_note_hi .dsb 6    ;high 3 bits of period
+    stream_tempo		.dsb	6 ; The value to add to our ticker each frame
+    stream_ticker_total	.dsb	6 ; Our running ticker totoal
+    stream_note_length_counter .dsb 6
+    stream_note_length	.dsb	6
+    current_song		.dsb 	1
+    stream_ve		.dsb	6 ; Current volume envelope
+    stream_ve_index	.dsb	6 ; Current position within volume envelope
+    stream_loop1		.dsb	6 ; Loop counter
+    stream_note_offset	.dsb	6 ; For key changes
 
    .ende
 
@@ -125,15 +156,50 @@ LoadSpritesLoop:
   LDA #$03
   STA $301
 
+
+  JSR sound_init ; sound initialization
+  pha     ;save registers
+  txa
+  pha
+  tya
+  pha
+  lda #$04
+  jsr sound_load
+    
+  pla     ;restore registers
+  tay
+  pla
+  tax
+  pla
 Forever: 
+ inc sleeping ;go to sleep (wait for NMI).
+@loop:  
+    lda sleeping
+    bne @loop ;wait for NMI to clear the sleeping flag and wake us up
+  
    JMP Forever     ;jump back to Forever, infinite loop
 
 NMI:
+pha     ;save registers
+  txa
+  pha
+  tya
+  pha
 
-  LDA #$00
-  STA $2003  ; set the low byte (00) of the RAM address
-  LDA #$02
-  STA $4014  ; set the high byte (02) of the RAM address, start the transfer
+  lda #$00
+  sta $2003  ; set the low byte (00) of the RAM address
+  lda #$02
+  sta $4014  ; set the high byte (02) of the RAM address, start the transfer
+  jsr sound_play_frame
+  lda #$00
+  sta sleeping            ;wake up the main program
+
+  
+  pla     ;restore registers
+  tay
+  pla
+  tax
+  pla
 
 LatchController:
   LDA #$01
@@ -159,13 +225,17 @@ ReadUP:
 UPContinue:
   LDA $0200   ; load sprite position
   CMP #$07    ; end of up side
-  BEQ ReadUPDone ; branch to ReadUPDone if position is end of up side
+  BEQ endlabel ; branch to ReadUPDone if position is end of up side
   LDX #$00
   LDA #$10
   STA $0302
   JSR MoveRestLow
   JSR animationRoutineB
   JMP endController
+
+endlabel:
+  lda #$09
+  jsr sound_load
 ReadUPDone:
 
 ReadDown:
@@ -246,6 +316,11 @@ ReadRigthDone:
 
 endController:
   
+  jsr	sound_play_frame
+
+	lda	#$00
+	sta	sleeping	; Wake up the main program
+
   RTI        ; return from interrupt
 
 resetLeft:
@@ -514,7 +589,20 @@ RTS
 IRQ:
 
    ;NOTE: IRQ code goes here
+  RTI
 
+;----------------------------------------------------------------
+;   Sound engine
+;----------------------------------------------------------------
+.org $D000
+
+
+.include "sound.asm" 
+.include "constants_sound.asm"
+.include "sound_data.i"
+
+.include "sound_opcodes.asm"
+.include "volume_envelopes.asm"
 ;----------------------------------------------------------------
 ; interrupt vectors
 ;----------------------------------------------------------------
@@ -523,6 +611,53 @@ IRQ:
 ; palette:
 ;   .db $0F,$31,$32,$33,$0F,$35,$36,$37,$0F,$39,$3A,$3B,$0F,$3D,$3E,$0F
 ;   .db $0F,$1C,$15,$14,$0F,$02,$38,$3C,$0F,$1C,$15,$14,$0F,$02,$38,$3C
+note_table:
+    .word                                                                $07F1, $0780, $0713 ; A1-B1 ($00-$02)
+    .word $06AD, $064D, $05F3, $059D, $054D, $0500, $04B8, $0475, $0435, $03F8, $03BF, $0389 ; C2-B2 ($03-$0E)
+    .word $0356, $0326, $02F9, $02CE, $02A6, $027F, $025C, $023A, $021A, $01FB, $01DF, $01C4 ; C3-B3 ($0F-$1A)
+    .word $01AB, $0193, $017C, $0167, $0151, $013F, $012D, $011C, $010C, $00FD, $00EF, $00E2 ; C4-B4 ($1B-$26)
+    .word $00D2, $00C9, $00BD, $00B3, $00A9, $009F, $0096, $008E, $0086, $007E, $0077, $0070 ; C5-B5 ($27-$32)
+    .word $006A, $0064, $005E, $0059, $0054, $004F, $004B, $0046, $0042, $003F, $003B, $0038 ; C6-B6 ($33-$3E)
+    .word $0034, $0031, $002F, $002C, $0029, $0027, $0025, $0023, $0021, $001F, $001D, $001B ; C7-B7 ($3F-$4A)
+    .word $001A, $0018, $0017, $0015, $0014, $0013, $0012, $0011, $0010, $000F, $000E, $000D ; C8-B8 ($4B-$56)
+    .word $000C, $000C, $000B, $000A, $000A, $0009, $0008 
+
+.word $0000			; Rest
+song_headers:
+	.word	song0_header	; This is a silence song.
+	.word	song1_header	; Evil, demented notes
+	.word	song2_header	; A sound effect. Try playing it over other songs
+	.word	song3_header	; A little chord progression    
+  .word song4_header  
+  .word song5_header      
+  .word song6_header      
+  .word song7_header  
+  .word song8_header  
+  .word song9_header  
+
+note_length_table:
+	.byte	$01		; 32nd note
+	.byte	$02		; 16th note
+	.byte	$04		; 8th note
+	.byte	$08		; Quarter note
+	.byte	$10		; Half note
+	.byte	$20		; Whole note
+
+	;; Dotted notes
+	.byte	$03		; Dotted 16th note
+	.byte	$06		; Dotted 8th note
+	.byte	$0c		; Dotted quarter note
+	.byte	$18		; Dotted half note
+	.byte	$30		; Dotted whole note?
+
+	;; Other
+	;; Modified quarter to fit after d_sixtength triplets
+	.byte	$07 
+  .byte	$14		; 2 quarters plus an 8th
+	.byte	$0a
+                  ; C9-F#9 ($57-$5D)
+song_data:  ;this data has two quarter rests in it.
+    .byte half, C2, quarter, rest, eighth, D4, C4, quarter, B3, rest
 
 palette: 
 .db $0F,$31,$32,$33,$0F,$35,$36,$37,$0F,$39,$3A,$3B,$0F,$3D,$3E,$0F

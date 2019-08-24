@@ -4,28 +4,45 @@
 .inesmir 1   ; background mirroring
 
 
-;;;;;;;;;;;;;;;
 
-;; VARIABLES
+;----------------------------------------------------------------
+; VARIABLES
+;----------------------------------------------------------------
 .enum $0000 ;start variables at ram location 0
 
-playerX         .dsw 1
-playerY         .dsw 1
-playerLeft      .dsw 1
-playerRight     .dsw 1
-playerTop       .dsw 1
-playerBottom    .dsw 1
-carLeft         .dsw 1
-carRight        .dsw 1
-carTop          .dsw 1
-carBottom       .dsw 1
-carFirstSpriteX .dsw 1
-carFirstSpriteY .dsw 1
-buttons         .dsw 1
+; Player center positions
+playerX                 .dsw 1
+playerY                 .dsw 1
+
+; Player limits
+playerLeft              .dsw 1
+playerRight             .dsw 1
+playerTop               .dsw 1
+playerBottom            .dsw 1
+
+; Car Limits
+carLeft                 .dsw 1
+carRight                .dsw 1
+carTop                  .dsw 1
+carBottom               .dsw 1
+
+; Positions of the car first sprite's center
+carFirstSpriteY         .dsw 1
+carFirstSpriteX         .dsw 1
+
+firstCarSpriteOffset    .dsw 1
+carSpeed                .dsw 1
+carUpdateCounter        .dsw 1
+
+buttons                 .dsw 1    ; each pad constant represents when each
+                                  ; button is pressed
 
 .ende
 
 
+;----------------------------------------------------------------
+; CONSTANTS
+;----------------------------------------------------------------
 PAD_A      = %10000000
 PAD_B      = %01000000
 PAD_SELECT = %00100000
@@ -40,15 +57,19 @@ TOPWALL        = $0A
 BOTTOMWALL     = $DC
 LEFTWALL       = $08
 
-PLAYER_FIRST_SPRITE_Y  EQU $0200
-PLAYER_FIRST_SPRITE_X  EQU $0203
+PLAYER_FIRST_SPRITE_Y   EQU $0200
+PLAYER_FIRST_SPRITE_X   EQU $0203
 
-CAR_SPRITES_BASE_ADDR EQU $0210
+CAR_FIRST_SPRITE_Y_BASE_ADDR   EQU $0210
+CAR_FIRST_SPRITE_X_BASE_ADDR   EQU $0213
 
-CAR_LEFT_OFFSET EQU     $04
-CAR_RIGHT_OFFSET EQU    $1C
-CAR_TOP_OFFSET EQU      $04
-CAR_BOTTOM_OFFSET EQU   $0C
+CAR_SPRITES_BASE_ADDR         EQU $0210
+CAR_SPRITES_LAST_OFFSET_ADDR  EQU $40
+
+CAR_LEFT_OFFSET         EQU $04
+CAR_RIGHT_OFFSET        EQU $1C
+CAR_TOP_OFFSET          EQU $04
+CAR_BOTTOM_OFFSET       EQU $0C
 
 
   .org $C000
@@ -114,47 +135,9 @@ LoadSpritesLoop:
   LDA sprites, x        ; load data from address (sprites +  x)
   STA $0200, x          ; store into RAM address ($0200 + x)
   INX                   ; X = X + 1
-  CPX #$40              ; Compare X to hex $20, decimal 32
+  CPX #$60              ; Compare X to hex $20, decimal 32
   BNE LoadSpritesLoop   ; Branch to LoadSpritesLoop if compare was Not Equal to zero
                       ; if compare was equal to 32, keep going down
-
-
-;;Set initial stats
-  LDA #$84
-  STA playerX
-
-  LDA #$8C
-  STA playerRight
-
-  LDA #$7C
-  STA playerLeft
-
-  LDA #$84
-  STA playerY
-
-  LDA #$8C
-  STA playerBottom
-
-  LDA #$7C
-  STA playerTop
-
-  LDA #$50
-  STA carFirstSpriteX
-
-  LDA #$6C
-  STA carRight
-
-  LDA #$4C
-  STA carLeft
-
-  LDA #$50
-  STA carFirstSpriteY
-
-  LDA #$5C
-  STA carBottom
-
-  LDA #$4C
-  STA carTop
 
 
   LDA #%10000000   ; enable NMI, sprites from Pattern Table 1
@@ -166,141 +149,140 @@ LoadSpritesLoop:
 Forever:
   JMP Forever     ;jump back to Forever, infinite loop
 
-
-
-NMI:
-  LDA #$00
-  STA $2003       ; set the low byte (00) of the RAM address
-  LDA #$02
-  STA $4014       ; set the high byte (02) of the RAM address, start the transfer
-
-ReadController:
-  LDA #$01
-  STA $4016
-  LDA #$00
-  STA $4016       ; tell both the controllers to latch buttons
-  LDX #$08
-ReadControllerLoop:
-  LDA $4016
-  LSR A            ; bit0 -> Carry
-  ROL buttons     ; bit0 <- Carry
-  DEX
-  BNE ReadControllerLoop
-
-ReadUp:
-  LDA buttons
-  AND #%00001000
-  BEQ ReadUpDone
-  LDX #$00
-MoveUpLoop:
-  LDA PLAYER_FIRST_SPRITE_Y, x
-  CMP #TOPWALL
-  BEQ ReadUpDone
-  SEC
-  SBC #$01        ;;bally position = bally - ballspeedy
-  STA PLAYER_FIRST_SPRITE_Y, x
+;;;;;;
+;;;;;;   UTILS
+AddFourToRegisterX:
   TXA           ; transfer value of register x to a
   CLC           ; make sure the carry flag is clear
   ADC #$04      ; add 04 to register x
   TAX           ; transfer value of register a to x
-  CPX #$10      ; check if x = 10, i.e, 4 sprites have been moved
-  BNE MoveUpLoop
-ReadUpDone:
+  RTS
 
-ReadDown:
-  LDA buttons
-  AND #%00000100
-  BEQ ReadDownDone
-  LDX #$00
-MoveDownLoop:
-  LDA PLAYER_FIRST_SPRITE_Y, x
-  CMP #BOTTOMWALL
-  BEQ ReadDownDone
+
+;;;;;;
+;;;;;;   CAR MOVING FUNCTIONS
+;;;;;;   Params:
+;;;;;;     firstCarSpriteOffset -> offset address of car's first sprite byte
+;;;;;;     carSpeed -> number of pixels to add/subtract to car's x coord
+;;;;;;
+
+moveCarLeft:
+  LDA firstCarSpriteOffset
   CLC
-  ADC #$01        ;;bally position = bally - ballspeedy
-  STA PLAYER_FIRST_SPRITE_Y, x
-  TXA           ; transfer value of register x to a
-  CLC           ; make sure the carry flag is clear
-  ADC #$04      ; add 04 to register x
-  TAX           ; transfer value of register a to x
-  CPX #$10      ; check if x = 10, i.e, 4 sprites have been moved
-  BNE MoveDownLoop
-ReadDownDone:
-
-
-ReadLeft:
-  LDA buttons
-  AND #%00000010
-  BEQ ReadLeftDone  ; branch to ReadLeftDone if button is NOT pressed (0)
-                    ; add instructions here to do something when button IS pressed (1)
-  LDX #$00
-MoveLeftLoop:
-  LDA PLAYER_FIRST_SPRITE_X, x
-  CMP #LEFTWALL
-  BEQ ReadLeftDone
+  ADC #$03                        ; offset for getting sprite X position
+  TAX
+  LDY #$00
+moveCarLeftLoop:
+  LDA CAR_SPRITES_BASE_ADDR, x       ; load sprite X position
   SEC
-  SBC #$01
-  STA PLAYER_FIRST_SPRITE_X, x
-  TXA           ; transfer value of register x to a
-  CLC           ; make sure the carry flag is clear
-  ADC #$04      ; add 04 to register x
-  TAX           ; transfer value of register a to x
-  CPX #$10      ; check if x = 10, i.e, 4 sprites have been moved
-  BNE MoveLeftLoop
-ReadLeftDone:   ; handling this button is done
+  SBC carSpeed
+  STA CAR_SPRITES_BASE_ADDR, x       ; save sprite X position
+  STA carFirstSpriteX
+  CPY #$00
+  BNE ContinueMoveCarLeftLoop
+  JSR UpdateCarFirstSpriteX
+ContinueMoveCarLeftLoop:
+  JSR AddFourToRegisterX
+  INY
+  CPY #$08                        ; 8 sprites processed: full car
+  BNE moveCarLeftLoop
+  RTS
+
+moveCarRight:
+  LDA firstCarSpriteOffset
+  CLC
+  ADC #$03                        ; offset for getting sprite X position
+  TAX
+  LDY #$00                       ; Y will keep track of sprites count
+moveCarRightLoop:
+  LDA CAR_SPRITES_BASE_ADDR, x       ; load sprite X position
+  CLC
+  ADC carSpeed
+  STA CAR_SPRITES_BASE_ADDR, x       ; save sprite X position
+  CPY #$00
+  BNE ContinueMoveCarRightLoop
+  JSR UpdateCarFirstSpriteX
+ContinueMoveCarRightLoop:
+  JSR AddFourToRegisterX
+  INY
+  CPY #$08                        ; 8 sprites processed: full car
+  BNE moveCarRightLoop
+  RTS
+
+UpdateCarFirstSpriteX:
+  STA carFirstSpriteX
+  RTS
+
+;;;;;;
+;;;;;;   CAR ANIMATION FUNCTIONS
+;;;;;;   Params:
+;;;;;;     firstCarSpriteOffset -> offset address of car's first sprite byte
+;;;;;;
+
+updateCarFrames:
+  LDX firstCarSpriteOffset
+  INX                          ; add 1 to get sprite tile address
+  LDY #$00                     ; init loop counter
+  LDA carUpdateCounter
+  AND #$01
+  BEQ animateCarReset      ; if update counter is even, add 1 to all tiles, else subtract 1
 
 
-ReadRight:
-  LDA buttons
-  AND #%00000001
-  BEQ ReadRightDone  ; branch to ReadRightDone if button is NOT pressed (0)
-                    ; add instructions here to do something when button IS pressed (1)
-  LDX #$00
-MoveRightLoop:
-  LDA PLAYER_FIRST_SPRITE_X, x
-  CMP #RIGHTWALL
-  BEQ ReadRightDone
-  CLC               ; make sure the carry flag is clear
+animateCarAdd:
+  LDA CAR_SPRITES_BASE_ADDR, x        ; load sprite tile
+  CLC
   ADC #$01
-  STA PLAYER_FIRST_SPRITE_X, x
-  TXA           ; transfer value of register x to a
-  CLC           ; make sure the carry flag is clear
-  ADC #$04      ; add 04 to register x
-  TAX           ; transfer value of register a to x
-  CPX #$10      ; check if x = 10, i.e, 4 sprites have been moved
-  BNE MoveRightLoop
-ReadRightDone:       ; handling this button is done
+  STA CAR_SPRITES_BASE_ADDR, x        ; store new sprite tile
+  JSR AddFourToRegisterX
+  INY
+  CPY #$06             ; 6 processed sprites
+  BNE animateCarAdd
+  JMP animateTires
 
-  JSR UpdatePlayerPositionAndLimits
-  JSR UpdateCarLimits
+animateCarReset:
+  LDA CAR_SPRITES_BASE_ADDR, x        ; load sprite tile
+  SEC
+  SBC #$01            ; add 1
+  STA CAR_SPRITES_BASE_ADDR, x        ; store new sprite tile
+  JSR AddFourToRegisterX
+  INY
+  CPY #$06             ; $18 = 24 = 6 processed sprites
+  BNE animateCarReset
 
-CheckCollision:
-  LDA playerRight
-  LDA carLeft
-  CMP playerRight
-  BCS GameEngineDone
+animateTires:
+  LDY carUpdateCounter
+  TYA
+  AND #$03      ; if zero, its a multiple of 4
+  BEQ animateTiresReset
+  LDA CAR_SPRITES_BASE_ADDR, x
+  CLC
+  ADC #$01
+  STA CAR_SPRITES_BASE_ADDR, x
+  JSR AddFourToRegisterX
+  LDA CAR_SPRITES_BASE_ADDR, x
+  CLC
+  ADC #$01
+  STA CAR_SPRITES_BASE_ADDR, x
+  JMP carUpdateEnd
 
-  LDA playerLeft
-  LDA carRight
-  CMP playerLeft
-  BCC GameEngineDone
+animateTiresReset:
+  LDA CAR_SPRITES_BASE_ADDR, x
+  SEC
+  SBC #$03
+  STA CAR_SPRITES_BASE_ADDR, x
+  JSR AddFourToRegisterX
+  LDA CAR_SPRITES_BASE_ADDR, x
+  SEC
+  SBC #$03
+  STA CAR_SPRITES_BASE_ADDR, x
 
-  LDA playerBottom
-  LDA carTop
-  CMP playerBottom
-  BCS GameEngineDone
-
-  LDA playerTop
-  LDA carBottom
-  CMP playerTop
-  BCC GameEngineDone
-
-  LDA #$F5
-  STA $0202
-  RTI
-CheckCollisionDone:
+carUpdateEnd:
+  RTS
 
 
+;;;;;;
+;;;;;;   UPDATE POSITIONS FUNCTIONS
+;;;;;;
 
 UpdatePlayerPositionAndLimits:
   LDA PLAYER_FIRST_SPRITE_Y
@@ -353,6 +335,184 @@ UpdateCarLimits:
   RTS
 
 
+
+NMI:
+  LDA #$00
+  STA $2003       ; set the low byte (00) of the RAM address
+  LDA #$02
+  STA $4014       ; set the high byte (02) of the RAM address, start the transfer
+
+  LDA #$00
+  STA firstCarSpriteOffset
+  LDA #$02
+  STA carSpeed
+  JSR moveCarRight
+
+  ; update car
+  LDA #$00
+  STA firstCarSpriteOffset
+  JSR updateCarFrames
+
+  LDA #$20
+  STA firstCarSpriteOffset
+  LDA #$02
+  STA carSpeed
+  JSR moveCarRight
+
+  ; update car
+  LDA #$20
+  STA firstCarSpriteOffset
+  JSR updateCarFrames
+
+;;;;;;
+;;;;;;   CONTROLLER FUNCTIONS
+;;;;;;   Store at variable buttons if each button was pressed
+;;;;;;
+
+ReadController:
+  LDA #$01
+  STA $4016
+  LDA #$00
+  STA $4016        ; tell both the controllers to latch buttons
+  LDX #$08
+ReadControllerLoop:
+  LDA $4016
+  LSR A            ; bit0 -> Carry
+  ROL buttons      ; bit0 <- Carry
+  DEX
+  BNE ReadControllerLoop
+
+
+;;;;;;
+;;;;;;   PLAYER MOVING FUNCTIONS
+;;;;;;
+
+ReadUp:
+  LDA buttons
+  AND #%00001000
+  BEQ ReadUpDone
+  LDX #$00
+MovePlayerUpLoop:
+  LDA PLAYER_FIRST_SPRITE_Y, x
+  CMP #TOPWALL
+  BEQ ReadUpDone
+  SEC
+  SBC #$01        ; player y position = player y - player y speed
+  STA PLAYER_FIRST_SPRITE_Y, x
+  JSR AddFourToRegisterX
+  CPX #$10        ; check if x = 10, i.e, 4 sprites have been moved
+  BNE MovePlayerUpLoop
+ReadUpDone:
+
+ReadDown:
+  LDA buttons
+  AND #%00000100
+  BEQ ReadDownDone
+  LDX #$00
+MovePlayerDownLoop:
+  LDA PLAYER_FIRST_SPRITE_Y, x
+  CMP #BOTTOMWALL
+  BEQ ReadDownDone
+  CLC
+  ADC #$01        ; player y position = player y + player y speed
+  STA PLAYER_FIRST_SPRITE_Y, x
+  JSR AddFourToRegisterX
+  CPX #$10        ; check if x = 10, i.e, 4 sprites have been moved
+  BNE MovePlayerDownLoop
+ReadDownDone:
+
+ReadLeft:
+  LDA buttons
+  AND #%00000010
+  BEQ ReadLeftDone  ; branch to ReadLeftDone if button is NOT pressed (0)
+  LDX #$00
+MovePlayerLeftLoop:
+  LDA PLAYER_FIRST_SPRITE_X, x
+  CMP #LEFTWALL
+  BEQ ReadLeftDone
+  SEC
+  SBC #$01
+  STA PLAYER_FIRST_SPRITE_X, x
+  JSR AddFourToRegisterX
+  CPX #$10      ; check if x = 10, i.e, 4 sprites have been moved
+  BNE MovePlayerLeftLoop
+ReadLeftDone:
+
+ReadRight:
+  LDA buttons
+  AND #%00000001
+  BEQ ReadRightDone  ; branch to ReadRightDone if button is NOT pressed (0)
+  LDX #$00
+MovePlayerRightLoop:
+  LDA PLAYER_FIRST_SPRITE_X, x
+  CMP #RIGHTWALL
+  BEQ ReadRightDone
+  CLC
+  ADC #$01
+  STA PLAYER_FIRST_SPRITE_X, x
+  JSR AddFourToRegisterX
+  CPX #$10            ; check if x = 10, i.e, 4 sprites have been moved
+  BNE MovePlayerRightLoop
+ReadRightDone:
+
+
+;;;;;;
+;;;;;;   CHECK CAR COLLISION WITH PLAYER PIPELINE
+;;;;;;   Checks car collision for each car moving
+;;;;;;
+
+  JSR UpdatePlayerPositionAndLimits
+
+  LDX #$00
+CheckCarCollisionLoop:
+  LDA CAR_FIRST_SPRITE_Y_BASE_ADDR, x
+  STA carFirstSpriteY
+
+  LDA CAR_FIRST_SPRITE_X_BASE_ADDR, x
+  STA carFirstSpriteX
+
+  JSR UpdateCarLimits
+  JSR CheckCarCollision
+
+  TXA
+  CLC
+  ADC #$20
+  TAX           ; add 20 (offset to another car) to register X
+  CPX #CAR_SPRITES_LAST_OFFSET_ADDR
+  BEQ GameEngineDone
+  BNE CheckCarCollisionLoop
+
+CheckCarCollision:
+  LDA playerRight
+  LDA carLeft
+  CMP playerRight
+  BCS NoCarCollision
+
+  LDA playerLeft
+  LDA carRight
+  CMP playerLeft
+  BCC NoCarCollision
+
+  LDA playerBottom
+  LDA carTop
+  CMP playerBottom
+  BCS NoCarCollision
+
+  LDA playerTop
+  LDA carBottom
+  CMP playerTop
+  BCC NoCarCollision
+
+  ; Collision
+  LDA #$F5
+  STA $0202
+  RTS
+CheckCarCollisionDone:
+
+NoCarCollision:
+  RTS
+
+
 GameEngineDone:
   RTI
 
@@ -366,22 +526,38 @@ palette:
   .db $0F,$1C,$15,$14,$31,$02,$38,$3C,$0F,$1C,$15,$14,$31,$02,$38,$3C
 
 sprites:
-   ;vert tile attr horiz
-  .db $80, $32, $00, $80   ;sprite 0 player
-  .db $80, $33, $00, $88   ;sprite 1 player
-  .db $88, $34, $00, $80   ;sprite 2 player
-  .db $88, $35, $00, $88   ;sprite 3 player
+  ;; Player
+  .db $80, $32, $00, $80   ;sprite 0
+  .db $80, $33, $00, $88   ;sprite 1
+  .db $88, $34, $00, $80   ;sprite 2
+  .db $88, $35, $00, $88   ;sprite 3
+
+  ;; Car 0
   ; car top
-  .db $50, $00, $02, $50   ;sprite 0
-  .db $50, $02, $02, $58   ;sprite 1
-  .db $50, $04, $02, $60   ;sprite 2
-  .db $50, $06, $02, $68   ;sprite 3
+  .db $40, $00, $02, $80   ;sprite 0
+  .db $40, $02, $02, $88   ;sprite 1
+  .db $40, $04, $02, $90   ;sprite 2
+  .db $40, $06, $02, $98   ;sprite 3
   ; car bottom
-  .db $58, $08, $02, $50   ;sprite 4
-  .db $58, $0E, $02, $60   ;sprite 5
+  .db $48, $08, $02, $88   ;sprite 4
+  .db $48, $0E, $02, $98   ;sprite 5
   ; car tires
-  .db $58, $0A, $02, $58   ;sprite 6
-  .db $58, $10, $02, $68   ;sprite 7
+  .db $48, $0A, $02, $80   ;sprite 6
+  .db $48, $10, $02, $90   ;sprite 7
+
+  ;; Car 1
+  ; car top
+  .db $B0, $06, $02, $80   ;sprite 8
+  .db $B0, $04, $02, $88   ;sprite 9
+  .db $B0, $02, $02, $90   ;sprite 10
+  .db $B0, $00, $02, $98   ;sprite 11
+  ; car bottom
+  .db $B8, $0E, $02, $88   ;sprite 12
+  .db $B8, $08, $02, $98   ;sprite 13
+  ; car tires
+  .db $B8, $10, $02, $80   ;sprite 14
+  .db $B8, $0A, $02, $90   ;sprite 15
+
 
   .org $FFFA     ;first of the three vectors starts here
   .dw NMI        ;when an NMI happens (once per frame if enabled) the
