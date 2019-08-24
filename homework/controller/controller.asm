@@ -546,4 +546,5 @@ sprites:
 ; CHR-ROM bank
 ;----------------------------------------------------------------
 
-.incbin "dino8_2.chr"
+.incbin "dino.chr"
+.dsb $6000, $FF
