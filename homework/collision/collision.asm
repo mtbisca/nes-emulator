@@ -57,6 +57,11 @@ TOPWALL        = $0A
 BOTTOMWALL     = $DC
 LEFTWALL       = $08
 
+MOTARBOARD_LEFT         EQU $7C
+MOTARBOARD_RIGHT        EQU $8C
+MOTARBOARD_TOP          EQU $0C
+MOTARBOARD_BOTTOM       EQU $1C
+
 PLAYER_FIRST_SPRITE_Y   EQU $0200
 PLAYER_FIRST_SPRITE_X   EQU $0203
 
@@ -455,13 +460,12 @@ MovePlayerRightLoop:
   BNE MovePlayerRightLoop
 ReadRightDone:
 
+  JSR UpdatePlayerPositionAndLimits
 
 ;;;;;;
 ;;;;;;   CHECK CAR COLLISION WITH PLAYER PIPELINE
 ;;;;;;   Checks car collision for each car moving
 ;;;;;;
-
-  JSR UpdatePlayerPositionAndLimits
 
   LDX #$00
 CheckCarCollisionLoop:
@@ -479,26 +483,22 @@ CheckCarCollisionLoop:
   ADC #$20
   TAX           ; add 20 (offset to another car) to register X
   CPX #CAR_SPRITES_LAST_OFFSET_ADDR
-  BEQ GameEngineDone
+  BEQ CheckMotarboardCollision
   BNE CheckCarCollisionLoop
 
 CheckCarCollision:
-  LDA playerRight
   LDA carLeft
   CMP playerRight
   BCS NoCarCollision
 
-  LDA playerLeft
   LDA carRight
   CMP playerLeft
   BCC NoCarCollision
 
-  LDA playerBottom
   LDA carTop
   CMP playerBottom
   BCS NoCarCollision
 
-  LDA playerTop
   LDA carBottom
   CMP playerTop
   BCC NoCarCollision
@@ -513,7 +513,34 @@ NoCarCollision:
   RTS
 
 
-GameEngineDone:
+;;;;;;
+;;;;;;   CHECK MOTARBOARD COLLISION WITH PLAYER
+;;;;;;
+
+CheckMotarboardCollision:
+  LDA #MOTARBOARD_LEFT
+  CMP playerRight
+  BCS NoMotarboardCollision
+
+  LDA #MOTARBOARD_RIGHT
+  CMP playerLeft
+  BCC NoMotarboardCollision
+
+  LDA #MOTARBOARD_TOP
+  CMP playerBottom
+  BCS NoMotarboardCollision
+
+  LDA #MOTARBOARD_BOTTOM
+  CMP playerTop
+  BCC NoMotarboardCollision
+
+  ; Collision
+  LDA #$F5
+  STA $0202
+
+  RTI
+
+NoMotarboardCollision:
   RTI
 
 ;;;;;;;;;;;;;;
@@ -558,6 +585,12 @@ sprites:
   .db $B8, $10, $02, $80   ;sprite 14
   .db $B8, $0A, $02, $90   ;sprite 15
 
+  ;; Motarboard
+  .db $10, $06, $02, $80
+  .db $10, $04, $02, $88
+  .db $18, $02, $02, $80
+  .db $18, $00, $02, $88
+
 
   .org $FFFA     ;first of the three vectors starts here
   .dw NMI        ;when an NMI happens (once per frame if enabled) the
@@ -569,4 +602,5 @@ sprites:
 
 ;;;;;;;;;;;;;;
 
-;.incbin "mario.chr"
+.incbin "cars.chr"
+.dsb $6000, $FF
