@@ -4,31 +4,45 @@
 .inesmir 1   ; background mirroring
 
 
-;;;;;;;;;;;;;;;
 
-;; VARIABLES
+;----------------------------------------------------------------
+; VARIABLES
+;----------------------------------------------------------------
 .enum $0000 ;start variables at ram location 0
 
+; Player center positions
 playerX                 .dsw 1
 playerY                 .dsw 1
+
+; Player limits
 playerLeft              .dsw 1
 playerRight             .dsw 1
 playerTop               .dsw 1
 playerBottom            .dsw 1
+
+; Car Limits
 carLeft                 .dsw 1
 carRight                .dsw 1
 carTop                  .dsw 1
 carBottom               .dsw 1
+
+; Positions of the car first sprite's center
 carFirstSpriteY         .dsw 1
 carFirstSpriteX         .dsw 1
+
 firstCarSpriteOffset    .dsw 1
 carSpeed                .dsw 1
 carUpdateCounter        .dsw 1
-buttons                 .dsw 1
+
+buttons                 .dsw 1    ; each pad constant represents when each
+                                  ; button is pressed
 
 .ende
 
 
+;----------------------------------------------------------------
+; CONSTANTS
+;----------------------------------------------------------------
 PAD_A      = %10000000
 PAD_B      = %01000000
 PAD_SELECT = %00100000
@@ -49,7 +63,8 @@ PLAYER_FIRST_SPRITE_X   EQU $0203
 CAR_FIRST_SPRITE_Y_BASE_ADDR   EQU $0210
 CAR_FIRST_SPRITE_X_BASE_ADDR   EQU $0213
 
-CAR_SPRITES_BASE_ADDR   EQU $0210
+CAR_SPRITES_BASE_ADDR         EQU $0210
+CAR_SPRITES_LAST_OFFSET_ADDR  EQU $40
 
 CAR_LEFT_OFFSET         EQU $04
 CAR_RIGHT_OFFSET        EQU $1C
@@ -123,14 +138,6 @@ LoadSpritesLoop:
   CPX #$60              ; Compare X to hex $20, decimal 32
   BNE LoadSpritesLoop   ; Branch to LoadSpritesLoop if compare was Not Equal to zero
                       ; if compare was equal to 32, keep going down
-
-
-;;Set initial stats
-  LDA #$80
-  STA carFirstSpriteX
-
-  LDA #$40
-  STA carFirstSpriteY
 
 
   LDA #%10000000   ; enable NMI, sprites from Pattern Table 1
@@ -273,168 +280,9 @@ carUpdateEnd:
   RTS
 
 
-NMI:
-  LDA #$00
-  STA $2003       ; set the low byte (00) of the RAM address
-  LDA #$02
-  STA $4014       ; set the high byte (02) of the RAM address, start the transfer
-
-  LDA #$00
-  STA firstCarSpriteOffset
-  LDA #$02
-  STA carSpeed
-  JSR moveCarRight
-
-  ; update car
-  LDA #$00
-  STA firstCarSpriteOffset
-  JSR updateCarFrames
-
-  LDA #$20
-  STA firstCarSpriteOffset
-  LDA #$02
-  STA carSpeed
-  JSR moveCarRight
-
-  ; update car
-  LDA #$20
-  STA firstCarSpriteOffset
-  JSR updateCarFrames
-
-ReadController:
-  LDA #$01
-  STA $4016
-  LDA #$00
-  STA $4016       ; tell both the controllers to latch buttons
-  LDX #$08
-ReadControllerLoop:
-  LDA $4016
-  LSR A            ; bit0 -> Carry
-  ROL buttons     ; bit0 <- Carry
-  DEX
-  BNE ReadControllerLoop
-
-ReadUp:
-  LDA buttons
-  AND #%00001000
-  BEQ ReadUpDone
-  LDX #$00
-MoveUpLoop:
-  LDA PLAYER_FIRST_SPRITE_Y, x
-  CMP #TOPWALL
-  BEQ ReadUpDone
-  SEC
-  SBC #$01        ;;bally position = bally - ballspeedy
-  STA PLAYER_FIRST_SPRITE_Y, x
-  JSR AddFourToRegisterX
-  CPX #$10      ; check if x = 10, i.e, 4 sprites have been moved
-  BNE MoveUpLoop
-ReadUpDone:
-
-ReadDown:
-  LDA buttons
-  AND #%00000100
-  BEQ ReadDownDone
-  LDX #$00
-MoveDownLoop:
-  LDA PLAYER_FIRST_SPRITE_Y, x
-  CMP #BOTTOMWALL
-  BEQ ReadDownDone
-  CLC
-  ADC #$01        ;;bally position = bally - ballspeedy
-  STA PLAYER_FIRST_SPRITE_Y, x
-  JSR AddFourToRegisterX
-  CPX #$10      ; check if x = 10, i.e, 4 sprites have been moved
-  BNE MoveDownLoop
-ReadDownDone:
-
-
-ReadLeft:
-  LDA buttons
-  AND #%00000010
-  BEQ ReadLeftDone  ; branch to ReadLeftDone if button is NOT pressed (0)
-                    ; add instructions here to do something when button IS pressed (1)
-  LDX #$00
-MoveLeftLoop:
-  LDA PLAYER_FIRST_SPRITE_X, x
-  CMP #LEFTWALL
-  BEQ ReadLeftDone
-  SEC
-  SBC #$01
-  STA PLAYER_FIRST_SPRITE_X, x
-  JSR AddFourToRegisterX
-  CPX #$10      ; check if x = 10, i.e, 4 sprites have been moved
-  BNE MoveLeftLoop
-ReadLeftDone:   ; handling this button is done
-
-
-ReadRight:
-  LDA buttons
-  AND #%00000001
-  BEQ ReadRightDone  ; branch to ReadRightDone if button is NOT pressed (0)
-                    ; add instructions here to do something when button IS pressed (1)
-  LDX #$00
-MoveRightLoop:
-  LDA PLAYER_FIRST_SPRITE_X, x
-  CMP #RIGHTWALL
-  BEQ ReadRightDone
-  CLC               ; make sure the carry flag is clear
-  ADC #$01
-  STA PLAYER_FIRST_SPRITE_X, x
-  JSR AddFourToRegisterX
-  CPX #$10      ; check if x = 10, i.e, 4 sprites have been moved
-  BNE MoveRightLoop
-ReadRightDone:       ; handling this button is done
-
-  JSR UpdatePlayerPositionAndLimits
-
-  LDX #$00
-CheckCarCollisionLoop:
-  LDA CAR_FIRST_SPRITE_Y_BASE_ADDR, x
-  STA carFirstSpriteY
-
-  LDA CAR_FIRST_SPRITE_X_BASE_ADDR, x
-  STA carFirstSpriteX
-
-  JSR UpdateCarLimits
-  JSR CheckCarCollision
-
-  TXA           ; transfer value of register x to a
-  CLC           ; make sure the carry flag is clear
-  ADC #$20      ; add 20 to register x
-  TAX           ; transfer value of register a to x
-  CPX #$40
-  BEQ GameEngineDone
-  BNE CheckCarCollisionLoop
-
-CheckCarCollision:
-  LDA playerRight
-  LDA carLeft
-  CMP playerRight
-  BCS NoCarCollision
-
-  LDA playerLeft
-  LDA carRight
-  CMP playerLeft
-  BCC NoCarCollision
-
-  LDA playerBottom
-  LDA carTop
-  CMP playerBottom
-  BCS NoCarCollision
-
-  LDA playerTop
-  LDA carBottom
-  CMP playerTop
-  BCC NoCarCollision
-
-  LDA #$F5
-  STA $0202
-  RTS
-CheckCarCollisionDone:
-
-NoCarCollision:
-  RTS
+;;;;;;
+;;;;;;   UPDATE POSITIONS FUNCTIONS
+;;;;;;
 
 UpdatePlayerPositionAndLimits:
   LDA PLAYER_FIRST_SPRITE_Y
@@ -484,6 +332,184 @@ UpdateCarLimits:
   SBC #CAR_LEFT_OFFSET
   STA carLeft
 
+  RTS
+
+
+
+NMI:
+  LDA #$00
+  STA $2003       ; set the low byte (00) of the RAM address
+  LDA #$02
+  STA $4014       ; set the high byte (02) of the RAM address, start the transfer
+
+  LDA #$00
+  STA firstCarSpriteOffset
+  LDA #$02
+  STA carSpeed
+  JSR moveCarRight
+
+  ; update car
+  LDA #$00
+  STA firstCarSpriteOffset
+  JSR updateCarFrames
+
+  LDA #$20
+  STA firstCarSpriteOffset
+  LDA #$02
+  STA carSpeed
+  JSR moveCarRight
+
+  ; update car
+  LDA #$20
+  STA firstCarSpriteOffset
+  JSR updateCarFrames
+
+;;;;;;
+;;;;;;   CONTROLLER FUNCTIONS
+;;;;;;   Store at variable buttons if each button was pressed
+;;;;;;
+
+ReadController:
+  LDA #$01
+  STA $4016
+  LDA #$00
+  STA $4016        ; tell both the controllers to latch buttons
+  LDX #$08
+ReadControllerLoop:
+  LDA $4016
+  LSR A            ; bit0 -> Carry
+  ROL buttons      ; bit0 <- Carry
+  DEX
+  BNE ReadControllerLoop
+
+
+;;;;;;
+;;;;;;   PLAYER MOVING FUNCTIONS
+;;;;;;
+
+ReadUp:
+  LDA buttons
+  AND #%00001000
+  BEQ ReadUpDone
+  LDX #$00
+MovePlayerUpLoop:
+  LDA PLAYER_FIRST_SPRITE_Y, x
+  CMP #TOPWALL
+  BEQ ReadUpDone
+  SEC
+  SBC #$01        ; player y position = player y - player y speed
+  STA PLAYER_FIRST_SPRITE_Y, x
+  JSR AddFourToRegisterX
+  CPX #$10        ; check if x = 10, i.e, 4 sprites have been moved
+  BNE MovePlayerUpLoop
+ReadUpDone:
+
+ReadDown:
+  LDA buttons
+  AND #%00000100
+  BEQ ReadDownDone
+  LDX #$00
+MovePlayerDownLoop:
+  LDA PLAYER_FIRST_SPRITE_Y, x
+  CMP #BOTTOMWALL
+  BEQ ReadDownDone
+  CLC
+  ADC #$01        ; player y position = player y + player y speed
+  STA PLAYER_FIRST_SPRITE_Y, x
+  JSR AddFourToRegisterX
+  CPX #$10        ; check if x = 10, i.e, 4 sprites have been moved
+  BNE MovePlayerDownLoop
+ReadDownDone:
+
+ReadLeft:
+  LDA buttons
+  AND #%00000010
+  BEQ ReadLeftDone  ; branch to ReadLeftDone if button is NOT pressed (0)
+  LDX #$00
+MovePlayerLeftLoop:
+  LDA PLAYER_FIRST_SPRITE_X, x
+  CMP #LEFTWALL
+  BEQ ReadLeftDone
+  SEC
+  SBC #$01
+  STA PLAYER_FIRST_SPRITE_X, x
+  JSR AddFourToRegisterX
+  CPX #$10      ; check if x = 10, i.e, 4 sprites have been moved
+  BNE MovePlayerLeftLoop
+ReadLeftDone:
+
+ReadRight:
+  LDA buttons
+  AND #%00000001
+  BEQ ReadRightDone  ; branch to ReadRightDone if button is NOT pressed (0)
+  LDX #$00
+MovePlayerRightLoop:
+  LDA PLAYER_FIRST_SPRITE_X, x
+  CMP #RIGHTWALL
+  BEQ ReadRightDone
+  CLC
+  ADC #$01
+  STA PLAYER_FIRST_SPRITE_X, x
+  JSR AddFourToRegisterX
+  CPX #$10            ; check if x = 10, i.e, 4 sprites have been moved
+  BNE MovePlayerRightLoop
+ReadRightDone:
+
+
+;;;;;;
+;;;;;;   CHECK CAR COLLISION WITH PLAYER PIPELINE
+;;;;;;   Checks car collision for each car moving
+;;;;;;
+
+  JSR UpdatePlayerPositionAndLimits
+
+  LDX #$00
+CheckCarCollisionLoop:
+  LDA CAR_FIRST_SPRITE_Y_BASE_ADDR, x
+  STA carFirstSpriteY
+
+  LDA CAR_FIRST_SPRITE_X_BASE_ADDR, x
+  STA carFirstSpriteX
+
+  JSR UpdateCarLimits
+  JSR CheckCarCollision
+
+  TXA
+  CLC
+  ADC #$20
+  TAX           ; add 20 (offset to another car) to register X
+  CPX #CAR_SPRITES_LAST_OFFSET_ADDR
+  BEQ GameEngineDone
+  BNE CheckCarCollisionLoop
+
+CheckCarCollision:
+  LDA playerRight
+  LDA carLeft
+  CMP playerRight
+  BCS NoCarCollision
+
+  LDA playerLeft
+  LDA carRight
+  CMP playerLeft
+  BCC NoCarCollision
+
+  LDA playerBottom
+  LDA carTop
+  CMP playerBottom
+  BCS NoCarCollision
+
+  LDA playerTop
+  LDA carBottom
+  CMP playerTop
+  BCC NoCarCollision
+
+  ; Collision
+  LDA #$F5
+  STA $0202
+  RTS
+CheckCarCollisionDone:
+
+NoCarCollision:
   RTS
 
 
