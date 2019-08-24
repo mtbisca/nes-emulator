@@ -223,7 +223,7 @@ ReadUP:
   LDA #$00
   STA $0301
 UPContinue:
-  LDA $0200   ; load sprite position
+  LDA DINO_Y   ; load sprite position
   CMP #$07    ; end of up side
   BEQ endlabel ; branch to ReadUPDone if position is end of up side
   LDX #$00
@@ -249,7 +249,7 @@ ReadDown:
   LDA #$02
   STA $0301
 DownContinue:
-  LDA $0200   ; load sprite position
+  LDA DINO_Y   ; load sprite position
   CMP #$D7    ; end of down side
   BEQ ReadDownDone ; branch to ReadADone if position is end of down side
   LDX #$00
@@ -276,7 +276,7 @@ FlipLeft:
   LDA #$03
   STA $0301
 LeftContiue:
-  LDA $0203
+  LDA DINO_X
   CMP #$07    ; end of left side
   BEQ ReadLeftDone ; branch to ReadADone if position is end of left side
   LDX #$03
@@ -303,7 +303,7 @@ FlipRigth:
   LDA #$01
   STA $0301
 RigthContiue:
-  LDA $0203   ; load sprite position
+  LDA DINO_X   ; load sprite position
   CMP #$F1    ; end of rigth side
   BEQ ReadRigthDone ; branch to ReadADone if position is end of rigth side
   LDX #$03
@@ -404,10 +404,10 @@ RTS
 
 
 MoveRestPlus:
-  LDA $0200, X
+  LDA DINO_Y, X
   CLC
   ADC #$01     ; A = A + 1
-  STA $0200, X
+  STA DINO_Y, X
   TXA 
   CLC
   ADC #$04
@@ -417,10 +417,10 @@ MoveRestPlus:
 RTS
 
 MoveRestLow:
-  LDA $0200, X
+  LDA DINO_Y, X
   SEC
   SBC #$01     ; A = A - 1
-  STA $0200, X
+  STA DINO_Y, X
   TXA 
   CLC
   ADC #$04
