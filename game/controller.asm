@@ -1101,10 +1101,10 @@ sprites:
   .db $B8, $1F, $40, $90   ;sprite 15
 
   ;; Mortarboard
-  .db $10, $06, $02, $80
-  .db $10, $04, $02, $88
-  .db $18, $02, $02, $80
-  .db $18, $00, $02, $88
+  .db $10, $29, $00, $80
+  .db $10, $2A, $00, $88
+  .db $18, $2B, $00, $80
+  .db $18, $2C, $00, $88
 
 
    .org $fffa
@@ -1119,4 +1119,5 @@ sprites:
 
 .incbin "dino.chr"
 .incbin "cars.chr"
+.incbin "mortarboard.chr"
 .dsb $6000, $FF
