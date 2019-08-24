@@ -139,6 +139,15 @@ LoadSpritesLoop:
 Forever:
   JMP Forever     ;jump back to Forever, infinite loop
 
+;;;;;;
+;;;;;;   UTILS
+AddFourToRegisterX:
+  TXA           ; transfer value of register x to a
+  CLC           ; make sure the carry flag is clear
+  ADC #$04      ; add 04 to register x
+  TAX           ; transfer value of register a to x
+  RTS
+
 
 ;;;;;;
 ;;;;;;   CAR MOVING FUNCTIONS
@@ -163,10 +172,7 @@ moveCarLeftLoop:
   BNE ContinueMoveCarLeftLoop
   JSR UpdateCarFirstSpriteX
 ContinueMoveCarLeftLoop:
-  INX
-  INX
-  INX
-  INX
+  JSR AddFourToRegisterX
   INY
   CPY #$08                        ; 8 sprites processed: full car
   BNE moveCarLeftLoop
@@ -187,10 +193,7 @@ moveCarRightLoop:
   BNE ContinueMoveCarRightLoop
   JSR UpdateCarFirstSpriteX
 ContinueMoveCarRightLoop:
-  INX
-  INX
-  INX
-  INX
+  JSR AddFourToRegisterX
   INY
   CPY #$08                        ; 8 sprites processed: full car
   BNE moveCarRightLoop
@@ -220,10 +223,7 @@ updateCarFrames:
     CLC
     ADC #$01
     STA CAR_SPRITES_BASE_ADDR, x        ; store new sprite tile
-    TXA
-    CLC
-    ADC #$04
-    TAX
+    JSR AddFourToRegisterX
     INY
     CPY #$06             ; 6 processed sprites
     BNE animateCarAdd
@@ -234,10 +234,7 @@ updateCarFrames:
     SEC
     SBC #$01            ; add 1
     STA CAR_SPRITES_BASE_ADDR, x        ; store new sprite tile
-    TXA
-    CLC
-    ADC #$04            ; add 4
-    TAX
+    JSR AddFourToRegisterX
     INY
     CPY #$06             ; $18 = 24 = 6 processed sprites
     BNE animateCarReset
@@ -251,10 +248,7 @@ updateCarFrames:
     CLC
     ADC #$01
     STA CAR_SPRITES_BASE_ADDR, x
-    TXA
-    CLC
-    ADC #$04
-    TAX
+    JSR AddFourToRegisterX
     LDA CAR_SPRITES_BASE_ADDR, x
     CLC
     ADC #$01
@@ -266,10 +260,7 @@ updateCarFrames:
     SEC
     SBC #$03
     STA CAR_SPRITES_BASE_ADDR, x
-    TXA
-    CLC
-    ADC #$04
-    TAX
+    JSR AddFourToRegisterX
     LDA CAR_SPRITES_BASE_ADDR, x
     SEC
     SBC #$03
@@ -321,10 +312,7 @@ MoveUpLoop:
   SEC
   SBC #$01        ;;bally position = bally - ballspeedy
   STA PLAYER_FIRST_SPRITE_Y, x
-  TXA           ; transfer value of register x to a
-  CLC           ; make sure the carry flag is clear
-  ADC #$04      ; add 04 to register x
-  TAX           ; transfer value of register a to x
+  JSR AddFourToRegisterX
   CPX #$10      ; check if x = 10, i.e, 4 sprites have been moved
   BNE MoveUpLoop
 ReadUpDone:
@@ -341,10 +329,7 @@ MoveDownLoop:
   CLC
   ADC #$01        ;;bally position = bally - ballspeedy
   STA PLAYER_FIRST_SPRITE_Y, x
-  TXA           ; transfer value of register x to a
-  CLC           ; make sure the carry flag is clear
-  ADC #$04      ; add 04 to register x
-  TAX           ; transfer value of register a to x
+  JSR AddFourToRegisterX
   CPX #$10      ; check if x = 10, i.e, 4 sprites have been moved
   BNE MoveDownLoop
 ReadDownDone:
@@ -363,10 +348,7 @@ MoveLeftLoop:
   SEC
   SBC #$01
   STA PLAYER_FIRST_SPRITE_X, x
-  TXA           ; transfer value of register x to a
-  CLC           ; make sure the carry flag is clear
-  ADC #$04      ; add 04 to register x
-  TAX           ; transfer value of register a to x
+  JSR AddFourToRegisterX
   CPX #$10      ; check if x = 10, i.e, 4 sprites have been moved
   BNE MoveLeftLoop
 ReadLeftDone:   ; handling this button is done
@@ -385,10 +367,7 @@ MoveRightLoop:
   CLC               ; make sure the carry flag is clear
   ADC #$01
   STA PLAYER_FIRST_SPRITE_X, x
-  TXA           ; transfer value of register x to a
-  CLC           ; make sure the carry flag is clear
-  ADC #$04      ; add 04 to register x
-  TAX           ; transfer value of register a to x
+  JSR AddFourToRegisterX
   CPX #$10      ; check if x = 10, i.e, 4 sprites have been moved
   BNE MoveRightLoop
 ReadRightDone:       ; handling this button is done
