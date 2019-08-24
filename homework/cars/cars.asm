@@ -11,9 +11,10 @@
    carUpdateCounter         .dw 1
    frameCounter             .dw 1
    firstCarSpriteOffset       .dw 1
+   carSpeed                 .dw 1
    .ende
 
-
+  .base $10000-($4000)
   .org $C000
 RESET:
   SEI          ; disable IRQs
@@ -77,7 +78,7 @@ LoadSpritesLoop:
   LDA sprites, x        ; load data from address (sprites +  x)
   STA $0200, x          ; store into RAM address ($0200 + x)
   INX                   ; X = X + 1
-  CPX #$40
+  CPX #$60
   BNE LoadSpritesLoop   ; Branch to LoadSpritesLoop if compare was Not Equal to zero
                         ; if compare was equal to 64, keep going down
 
@@ -98,6 +99,7 @@ Forever:
 ;;;;;;   CAR MOVING FUNCTIONS
 ;;;;;;   Params:
 ;;;;;;     firstCarSpriteOffset -> offset address of car's first sprite byte
+;;;;;;     carSpeed -> number of pixels to add/subtract to car's x coord
 ;;;;;;
 
 moveCarLeft:
@@ -109,7 +111,7 @@ moveCarLeft:
 moveCarLeftLoop:
   LDA SPRITES_BASE_ADDR, x       ; load sprite X position
   SEC
-  SBC #$01           ; A = A - 1
+  SBC carSpeed
   STA SPRITES_BASE_ADDR, x       ; save sprite X position
   INX
   INX
@@ -129,7 +131,7 @@ moveCarRight:
 moveCarRightLoop:
   LDA SPRITES_BASE_ADDR, x       ; load sprite X position
   CLC
-  ADC #$01           ; A = A - 1
+  ADC carSpeed
   STA SPRITES_BASE_ADDR, x       ; save sprite X position
   INX
   INX
@@ -227,14 +229,24 @@ NMI:
 
   LDA #$20
   STA firstCarSpriteOffset
+  LDA #$01
+  STA carSpeed
+  JSR moveCarRight
+
+  LDA #$40
+  STA firstCarSpriteOffset
+  LDA #$02
+  STA carSpeed
   JSR moveCarRight
 
   LDA #$00
   STA firstCarSpriteOffset
+  LDA #$03
+  STA carSpeed
   JSR moveCarLeft
 
   LDY frameCounter
-  CPY #$1D
+  CPY #$0D
   BNE noUpdateCarFrames
 
   ; update fist car
@@ -244,6 +256,11 @@ NMI:
 
   ; update second car
   LDA #$20
+  STA firstCarSpriteOffset
+  JSR updateCarFrames
+
+  ; update third car
+  LDA #$40
   STA firstCarSpriteOffset
   JSR updateCarFrames
 
@@ -296,6 +313,18 @@ sprites:
   .db $C8, $10, #%01000000, $80   ;sprite 14
   .db $C8, $0A, #%01000000, $90   ;sprite 15
 
+  ; car top
+  .db $40, $06, #%01000010, $80   ;sprite 16
+  .db $40, $04, #%01000010, $88   ;sprite 17
+  .db $40, $02, #%01000010, $90   ;sprite 18
+  .db $40, $00, #%01000010, $98   ;sprite 19
+  ; car bottom
+  .db $48, $0E, #%01000010, $88   ;sprite 20
+  .db $48, $08, #%01000010, $98   ;sprite 21
+  ; car tires
+  .db $48, $10, #%01000010, $80   ;sprite 22
+  .db $48, $0A, #%01000010, $90   ;sprite 23
+
   .org $FFFA     ;first of the three vectors starts here
   .dw NMI        ;when an NMI happens (once per frame if enabled) the
                    ;processor will jump to the label NMI:
@@ -307,4 +336,5 @@ sprites:
 ;;;;;;;;;;;;;;
 
 
-  .incbin "cars8.chr"   ;includes 8KB graphics file from SMB1
+  .incbin "cars.chr"   ;includes 8KB graphics file from SMB1
+  .dsb $6000, $FF

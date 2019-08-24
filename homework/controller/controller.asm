@@ -5,7 +5,17 @@
 PRG_COUNT = 1 ;1 = 16KB, 2 = 32KB
 MIRRORING = %0001 ;%0000 = horizontal, %0001 = vertical, %1000 = four-screen
 
+DINO1_TILE = $0201
+DINO2_TILE = $0205
+DINO3_TILE = $0209
+DINO4_TILE = $020D
+DINO1_ATR = $0202
+DINO2_ATR = $0206
+DINO3_ATR = $020A
+DINO4_ATR = $020E
 
+DINO_X = $0203
+DINO_Y = $0200
 
 ;----------------------------------------------------------------
 ; variables
@@ -140,6 +150,13 @@ ReadUP:
   LDA $4016     ; player 1 - UP
   AND #%00000001  ; erase everything but bit 0
   BEQ ReadUPDone   ; branch to ReadUPDone if button is NOT pressed (0)
+  LDA $0301
+  CMP #$00
+  BEQ UPContinue
+  JSR resetUP
+  LDA #$00
+  STA $0301
+UPContinue:
   LDA $0200   ; load sprite position
   CMP #$07    ; end of up side
   BEQ ReadUPDone ; branch to ReadUPDone if position is end of up side
@@ -147,6 +164,8 @@ ReadUP:
   LDA #$10
   STA $0302
   JSR MoveRestLow
+  JSR animationRoutineB
+  JMP endController
 ReadUPDone:
 
 ReadDown:
@@ -160,7 +179,7 @@ ReadDown:
   LDA #$10
   STA $0302
   JSR MoveRestPlus
-  
+  JMP endController
 ReadDownDone:
 
 ReadLeft:
@@ -170,22 +189,12 @@ ReadLeft:
   LDA $0301
   CMP #$03
   BEQ LeftContiue
-  LDA #03
-  STA $0201 ; reset tile 1
-  LDA #%00000000
-  STA $0202
-  LDA #08
-  STA $0205 ; reset tile 2
-  LDA #%00000000
-  STA $0206
-  LDA #14
-  STA $0209 ; reset tile 3
-  LDA #%00000000
-  STA $020A
-  LDA #19
-  STA $020D ; reset tile 4
-  LDA #%00000000
-  STA $020E
+  CMP #$01
+  BEQ FlipLeft
+  JSR resetLeft
+  JMP LeftContiue
+FlipLeft:
+  JSR flipDino
   LDA #$03
   STA $0301
 LeftContiue:
@@ -196,7 +205,8 @@ LeftContiue:
   LDA #$13
   STA $0302
   JSR MoveRestLow
-  JSR animationRoutineL
+  JSR animationRoutineS
+  JMP endController
 ReadLeftDone:
 
 ReadRigth:
@@ -206,22 +216,12 @@ ReadRigth:
   LDA $0301
   CMP #$01
   BEQ RigthContiue
-  LDA #08
-  STA $0201 ; reset tile 1
-  LDA #%01000000
-  STA $0202
-  LDA #03
-  STA $0205 ; reset tile 2
-  LDA #%01000000
-  STA $0206
-  LDA #19
-  STA $0209 ; reset tile 3
-  LDA #%01000000
-  STA $020A
-  LDA #14
-  STA $020D ; reset tile 4
-  LDA #%01000000
-  STA $020E
+  CMP #$03
+  BEQ FlipRigth
+  JSR resetRigth
+  JMP RigthContiue
+FlipRigth:
+  JSR flipDino
   LDA #$01
   STA $0301
 RigthContiue:
@@ -232,12 +232,74 @@ RigthContiue:
   LDA #$13
   STA $0302
   JSR MoveRestPlus
-  JSR animationRoutineR
+  JSR animationRoutineS
+  JMP endController
 ReadRigthDone:
 
-
+endController:
   
   RTI        ; return from interrupt
+
+resetLeft:
+  LDY #03
+  STY DINO1_TILE
+  LDY #08
+  STY DINO2_TILE
+  LDY #14
+  STY DINO3_TILE
+  LDY #19
+  STY DINO4_TILE
+  LDA #%00000000
+  STA DINO1_ATR
+  STA DINO2_ATR
+  STA DINO3_ATR
+  STA DINO4_ATR
+  LDA #$03
+  STA $0301
+  LDA #$00
+  STA $0300
+RTS
+
+resetRigth:
+  LDY #08
+  STY DINO1_TILE
+  LDY #03
+  STY DINO2_TILE
+  LDY #19
+  STY DINO3_TILE
+  LDY #14
+  STY DINO4_TILE
+  LDA #%01000000
+  STA DINO1_ATR
+  STA DINO2_ATR
+  STA DINO3_ATR
+  STA DINO4_ATR
+  LDA #$01
+  STA $0301
+  LDA #$00
+  STA $0300
+RTS
+
+
+resetUP:
+  LDY #00
+  STY DINO1_TILE
+  LDY #05
+  STY DINO2_TILE
+  LDY #10
+  STY DINO3_TILE
+  LDY #16
+  STY DINO4_TILE
+  LDA #%00000000
+  STA DINO1_ATR
+  STA DINO2_ATR
+  STA DINO3_ATR
+  STA DINO4_ATR
+  LDA #$00
+  STA $0301
+  STA $0300
+RTS
+
 
 MoveRestPlus:
   LDA $0200, X
@@ -265,131 +327,115 @@ MoveRestLow:
   BNE MoveRestLow
 RTS
 
-animationRoutineR:
+animationRoutineS:
   LDA $0300
   CMP #$0F
-  BEQ addifR
+  BEQ addifS
   CMP #$1F
-  BEQ subifR
-  JMP doneifR
-addifR:
-  JSR addR
-  JMP doneifR
-subifR:
-  JSR subR
-  JMP doneifR
-doneifR:
+  BEQ subifS
+  JMP doneifS
+addifS:
+  JSR add
+  JMP doneifS
+subifS:
+  JSR sub
+  JMP doneifS
+doneifS:
   LDA $0300
   ADC #$01
   AND #%00011111
   STA $0300
   RTS
 
-addR:
-  LDA #08
-  STA $201
-  LDA #03
-  STA $0205
-  LDA #19
-  STA $0209
-  LDA #14
-  STA $020D
-  RTS
-
-subR:
-  LDA #09
-  STA $201
-  LDA #04
-  STA $0205
-  LDA #20
-  STA $0209
-  LDA #15
-  STA $020D
-  RTS
-
-animationRoutineL:
+animationRoutineB:
   LDA $0300
-  CMP #$0F
-  BEQ addifL
-  CMP #$1F
-  BEQ subifL
-  JMP doneifL
-addifL:
-  JSR addL
-  JMP doneifL
-subifL:
-  JSR subL
-  JMP doneifL
-doneifL:
+  CMP #04
+  BEQ addifB
+  CMP #08
+  BEQ flipifB
+  CMP #16
+  BEQ subifB
+  CMP #20
+  BEQ addifB
+  CMP #24
+  BEQ flipifB
+  CMP #28
+  BEQ subifB
+  JMP doneifB
+addifB:
+  JSR add
+  JMP doneifB
+subifB:
+  JSR sub
+  JMP doneifB
+flipifB:
+  JSR flipDino
+  JMP doneifB
+doneifB:
   LDA $0300
-  ADC #$01
-  AND #%00011111
+  CMP #28
+BNE paceB
+  LDA #00
   STA $0300
-  RTS
-addL:
-  LDA #03
-  STA $0201
-  LDA #08
-  STA $0205
-  LDA #14
-  STA $0209
-  LDA #19
-  STA $020D
-  RTS
-subL:
-  LDA #04
-  STA $201
-  LDA #09
-  STA $0205
-  LDA #15
-  STA $0209
-  LDA #20
-  STA $020D
-  RTS
-
-animationRoutine2M:
-  LDA #$01
-  STA $0005
-  LDA #$02
-  STA $0006
-  LDY #$00
-  LDA $0300
-  AND #%00010000
-  BEQ continue2M
-  LDX #$03
-  JSR animationPace
-  JMP animationEnd
-continue2M:
-  LDX #$04
-  JSR animationPace
-animationEnd:
-  LDA $0300
-  ADC #$01
-  AND #%00011111
+RTS
+paceB:
+  ADC #01
   STA $0300
 RTS
 
-animationPace:
-  TXA
-  STA ($05), Y
-  ADC #$05
-  TAX 
-  TYA
-  ADC #04
-  TAY
-  CMP #20
-  BNE animationPace
+add:
+  LDY DINO1_TILE
+  INY
+  STY DINO1_TILE
+  LDY DINO2_TILE
+  INY
+  STY DINO2_TILE
+  LDY DINO3_TILE
+  INY
+  STY DINO3_TILE
+  LDY DINO4_TILE
+  INY
+  STY DINO4_TILE
+RTS
+
+sub:
+  LDY DINO1_TILE
+  DEY
+  STY DINO1_TILE
+  LDY DINO2_TILE
+  DEY
+  STY DINO2_TILE
+  LDY DINO3_TILE
+  DEY
+  STY DINO3_TILE
+  LDY DINO4_TILE
+  DEY
+  STY DINO4_TILE
 RTS
 
 flipDino:
-  LDX $0201
-  LDY $0205
-  STY $0201
-  STX $0205
-  LDX $0201
-  LDY $0202
-  STY $0201
-  STX $0202
+  LDX DINO1_TILE
+  LDY DINO2_TILE
+  STY DINO1_TILE
+  STX DINO2_TILE
+  LDX DINO3_TILE
+  LDY DINO4_TILE
+  STY DINO3_TILE
+  STX DINO4_TILE
+  LDA DINO1_ATR
+  CMP #%01000000
+  BEQ secondBit
+  LDA #%01000000
+  JMP doneBit
+secondBit:
+  LDA #%00000000
+doneBit:
+  STA DINO1_ATR
+  STA DINO2_ATR
+  STA DINO3_ATR
+  STA DINO4_ATR
+  
+RTS
 
 IRQ:
 
