@@ -122,6 +122,8 @@ CAR_BOTTOM_OFFSET       EQU $0C
   dinoDirection            .dw 1
   dinoMoveVar              .dw 1
 
+  endGameFrameCounter      .dw 1
+
   buttons                 .dsw 1    ; each pad constant represents when each
                                     ; button is pressed
 
@@ -768,7 +770,7 @@ NMI:
   LDA #$02
   STA $4014  ; set the high byte (02) of the RAM address, start the transfer
   JSR sound_play_frame
-  LDA #$00
+  LDA #$00 
   STA sleeping            ;wake up the main program
 
 
@@ -778,6 +780,13 @@ NMI:
   TAX
   PLA
 
+  LDA end_game_sound_flag
+  CMP #01
+  BNE moveAll
+  RTI
+  ; JMP ppuCleanUp
+
+moveAll:
 ;; MOVE CARS PIPELINE
   LDA #$00
   STA firstCarSpriteOffset
@@ -967,10 +976,9 @@ ReadRigthDone:
 
 endController:
 
-  jsr	sound_play_frame
 
-	lda	#$00
-	sta	sleeping	; Wake up the main program
+	; lda	#$00
+	; sta	sleeping	; Wake up the main program
 
   JSR UpdateDinoPositionAndLimits
 
@@ -1016,10 +1024,11 @@ CheckCarCollision:
   BCC NoCarCollision
 
   ; Collision
-  LDA #$08
+  LDA #$09
   JSR sound_load
-  ; JSR loseReset
-  RTS
+  JMP endgame
+  
+  ; RTS
 CheckCarCollisionDone:
 
 NoCarCollision:
@@ -1049,14 +1058,14 @@ CheckMortarboardCollision:
 
   LDA #$00
   CMP end_game_sound_flag
-  BEQ endgame
-  JMP ppuCleanUp
-
-endgame:
-  LDA #$01
-  STA end_game_sound_flag
   LDA #$09
   JSR sound_load
+  JMP endgame
+
+endgame:
+  LDX #$01
+  STX end_game_sound_flag
+  ; JSR sound_load
 
 ppuCleanUp:
   LDA #%10010000   ; enable NMI, sprites from Pattern Table 0, background from Pattern Table 1
@@ -1066,6 +1075,9 @@ ppuCleanUp:
   LDA #$00        ;;tell the ppu there is no background scrolling
   STA $2005
   STA $2005
+  ; JSR	sound_play_frame
+  lda	#$00
+	sta	sleeping	; Wake up the main program
 
   RTI
 
