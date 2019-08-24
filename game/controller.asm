@@ -31,10 +31,10 @@ TOPWALL        = $0A
 BOTTOMWALL     = $DC
 LEFTWALL       = $08
 
-MOTARBOARD_LEFT         EQU $7C
-MOTARBOARD_RIGHT        EQU $8C
-MOTARBOARD_TOP          EQU $0C
-MOTARBOARD_BOTTOM       EQU $1C
+MORTARBOARD_LEFT         EQU $7C
+MORTARBOARD_RIGHT        EQU $8C
+MORTARBOARD_TOP          EQU $0C
+MORTARBOARD_BOTTOM       EQU $1C
 
 PLAYER_FIRST_SPRITE_Y   EQU $0200
 PLAYER_FIRST_SPRITE_X   EQU $0203
@@ -60,13 +60,13 @@ CAR_BOTTOM_OFFSET       EQU $0C
 
   ;MyVariable0 .dsb 1
   ;MyVariable1 .dsb 3
-  sleeping .dsb 1          ;main program sets this and waits for the NMI to clear it.  
-  sound_disable_flag .dsb 1   ;a flag variable that keeps track of whether the sound engine is disabled or not. 
+  sleeping .dsb 1          ;main program sets this and waits for the NMI to clear it.
+  sound_disable_flag .dsb 1   ;a flag variable that keeps track of whether the sound engine is disabled or not.
   sound_ptr .dsb 2  ;a 2-byte pointer variable.
   sound_ptr2		.dsb	2
-  ptr1 .dsb 2              ;a pointer             
-  jmp_ptr		.dsb	2  
-                  
+  ptr1 .dsb 2              ;a pointer
+  jmp_ptr		.dsb	2
+
   sound_temp2 .dsb 6
   sound_temp1 .dsb 6
   sound_sq1_old		.dsb	1 ; The last value written to $4003
@@ -143,7 +143,7 @@ CAR_BOTTOM_OFFSET       EQU $0C
 
    .base $10000-(PRG_COUNT*$4000)
 
-.org $C000 
+.org $C000
 RESET:
   SEI          ; disable IRQs
   CLD          ; disable decimal mode
@@ -173,7 +173,7 @@ clrmem:
   STA $0200, x    ;move all sprites off screen
   INX
   BNE clrmem
-   
+
 vblankwait2:      ; Second wait for vblank, PPU is ready after this
   BIT $2002
   BPL vblankwait2
@@ -190,7 +190,7 @@ LoadPalettesLoop:
   LDA palette, x        ;load palette byte
   STA $2007             ;write to PPU
   INX                   ;set index to next byte
-  CPX #$20            
+  CPX #$20
   BNE LoadPalettesLoop  ;if x = $20, 32 bytes copied, all done
 
 
@@ -227,18 +227,18 @@ LoadSpritesLoop:
   pha
   lda #$04
   jsr sound_load
-    
+
   pla     ;restore registers
   tay
   pla
   tax
   pla
-Forever: 
+Forever:
  inc sleeping ;go to sleep (wait for NMI).
-@loop:  
+@loop:
     lda sleeping
     bne @loop ;wait for NMI to clear the sleeping flag and wake us up
-  
+
    JMP Forever     ;jump back to Forever, infinite loop
 
 
@@ -514,7 +514,7 @@ MoveRestPlus:
   CLC
   ADC #$01     ; A = A + 1
   STA DINO_Y, X
-  TXA 
+  TXA
   CLC
   ADC #$04
   TAX
@@ -527,7 +527,7 @@ MoveRestLow:
   SEC
   SBC #$01     ; A = A - 1
   STA DINO_Y, X
-  TXA 
+  TXA
   CLC
   ADC #$04
   TAX
@@ -558,7 +558,7 @@ doneifS:
   ADC #$01
   AND #%00011111
   STA dinoPace
-  
+
   RTS
 
 animationRoutineB:
@@ -634,7 +634,7 @@ subif4F:
   DEY
   STY DINO4_TILE
 doneifF:
-  
+
   LDA dinoPace
   CMP #28
 BNE paceF
@@ -697,7 +697,7 @@ doneBit:
   STA DINO2_ATR
   STA DINO3_ATR
   STA DINO4_ATR
-  
+
   LDA #$05
   JSR sound_load
 RTS
@@ -718,7 +718,7 @@ pha     ;save registers
   lda #$00
   sta sleeping            ;wake up the main program
 
-  
+
   pla     ;restore registers
   tay
   pla
@@ -884,7 +884,7 @@ RigthContiue:
 ReadRigthDone:
 
 endController:
-  
+
   jsr	sound_play_frame
 
 	lda	#$00
@@ -913,7 +913,7 @@ CheckCarCollisionLoop:
   ADC #$20
   TAX           ; add 20 (offset to another car) to register X
   CPX #CAR_SPRITES_LAST_OFFSET_ADDR
-  BEQ CheckMotarboardCollision
+  BEQ CheckMortarboardCollision
   BNE CheckCarCollisionLoop
 
 CheckCarCollision:
@@ -944,25 +944,25 @@ NoCarCollision:
 
 
 ;;;;;;
-;;;;;;   CHECK MOTARBOARD COLLISION WITH PLAYER
+;;;;;;   CHECK MORTARBOARD COLLISION WITH PLAYER
 ;;;;;;
 
-CheckMotarboardCollision:
-  LDA #MOTARBOARD_LEFT
+CheckMortarboardCollision:
+  LDA #MORTARBOARD_LEFT
   CMP playerRight
-  BCS NoMotarboardCollision
+  BCS NoMortarboardCollision
 
-  LDA #MOTARBOARD_RIGHT
+  LDA #MORTARBOARD_RIGHT
   CMP playerLeft
-  BCC NoMotarboardCollision
+  BCC NoMortarboardCollision
 
-  LDA #MOTARBOARD_TOP
+  LDA #MORTARBOARD_TOP
   CMP playerBottom
-  BCS NoMotarboardCollision
+  BCS NoMortarboardCollision
 
-  LDA #MOTARBOARD_BOTTOM
+  LDA #MORTARBOARD_BOTTOM
   CMP playerTop
-  BCC NoMotarboardCollision
+  BCC NoMortarboardCollision
 
   ; Collision
   LDA #$02
@@ -970,7 +970,7 @@ CheckMotarboardCollision:
 
   RTI
 
-NoMotarboardCollision:
+NoMortarboardCollision:
   RTI
 
 ;;;;;;;;;;;;;;
@@ -990,7 +990,7 @@ IRQ:
 .org $D000
 
 
-.include "sound.asm" 
+.include "sound.asm"
 .include "constants_sound.asm"
 .include "sound_data.i"
 
@@ -1013,20 +1013,20 @@ note_table:
     .word $006A, $0064, $005E, $0059, $0054, $004F, $004B, $0046, $0042, $003F, $003B, $0038 ; C6-B6 ($33-$3E)
     .word $0034, $0031, $002F, $002C, $0029, $0027, $0025, $0023, $0021, $001F, $001D, $001B ; C7-B7 ($3F-$4A)
     .word $001A, $0018, $0017, $0015, $0014, $0013, $0012, $0011, $0010, $000F, $000E, $000D ; C8-B8 ($4B-$56)
-    .word $000C, $000C, $000B, $000A, $000A, $0009, $0008 
+    .word $000C, $000C, $000B, $000A, $000A, $0009, $0008
 
 .word $0000			; Rest
 song_headers:
 	.word	song0_header	; This is a silence song.
 	.word	song1_header	; Evil, demented notes
 	.word	song2_header	; A sound effect. Try playing it over other songs
-	.word	song3_header	; A little chord progression    
-  .word song4_header  
-  .word song5_header      
-  .word song6_header      
-  .word song7_header  
-  .word song8_header  
-  .word song9_header  
+	.word	song3_header	; A little chord progression
+  .word song4_header
+  .word song5_header
+  .word song6_header
+  .word song7_header
+  .word song8_header
+  .word song9_header
 
 note_length_table:
 	.byte	$01		; 32nd note
@@ -1045,14 +1045,14 @@ note_length_table:
 
 	;; Other
 	;; Modified quarter to fit after d_sixtength triplets
-	.byte	$07 
+	.byte	$07
   .byte	$14		; 2 quarters plus an 8th
 	.byte	$0a
                   ; C9-F#9 ($57-$5D)
 song_data:  ;this data has two quarter rests in it.
     .byte half, C2, quarter, rest, eighth, D4, C4, quarter, B3, rest
 
-palette: 
+palette:
 .db $0F,$31,$32,$33,$0F,$35,$36,$37,$0F,$39,$3A,$3B,$0F,$3D,$3E,$0F
 .db $00,$02,$12,$0F,$00,$04,$14,$0F,$00,$17,$27,$0F,$15,$0B,$30,$0A
 
@@ -1089,7 +1089,7 @@ sprites:
   .db $B8, $25, $40, $80   ;sprite 14
   .db $B8, $1F, $40, $90   ;sprite 15
 
-  ;; Motarboard
+  ;; Mortarboard
   .db $10, $06, $02, $80
   .db $10, $04, $02, $88
   .db $18, $02, $02, $80
