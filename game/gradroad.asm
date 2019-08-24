@@ -1018,7 +1018,7 @@ CheckCarCollision:
   ; Collision
   LDA #$08
   JSR sound_load
-  JSR loseReset
+  ; JSR loseReset
   RTS
 CheckCarCollisionDone:
 
