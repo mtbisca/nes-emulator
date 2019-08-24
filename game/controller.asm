@@ -17,57 +17,115 @@ DINO4_ATR = $020E
 DINO_X = $0203
 DINO_Y = $0200
 
+PAD_A      = %10000000
+PAD_B      = %01000000
+PAD_SELECT = %00100000
+PAD_START  = %00010000
+PAD_UP     = %00001000
+PAD_DOWN   = %00000100
+PAD_LEFT   = %00000010
+PAD_RIGHT  = %00000001
+
+RIGHTWALL      = $F1  ; when player reaches one of these, do something
+TOPWALL        = $0A
+BOTTOMWALL     = $DC
+LEFTWALL       = $08
+
+MORTARBOARD_LEFT         EQU $7C
+MORTARBOARD_RIGHT        EQU $8C
+MORTARBOARD_TOP          EQU $0C
+MORTARBOARD_BOTTOM       EQU $1C
+
+PLAYER_FIRST_SPRITE_Y   EQU $0200
+PLAYER_FIRST_SPRITE_X   EQU $0203
+
+CAR_FIRST_SPRITE_Y_BASE_ADDR   EQU $0210
+CAR_FIRST_SPRITE_X_BASE_ADDR   EQU $0213
+
+CAR_SPRITES_BASE_ADDR         EQU $0210
+CAR_SPRITES_LAST_OFFSET_ADDR  EQU $40
+
+CAR_LEFT_OFFSET         EQU $04
+CAR_RIGHT_OFFSET        EQU $1C
+CAR_TOP_OFFSET          EQU $04
+CAR_BOTTOM_OFFSET       EQU $0C
+
 ;----------------------------------------------------------------
 ; variables
 ;----------------------------------------------------------------
 
-   .enum $0000
+  .enum $0000
 
-   ;NOTE: declare variables using the DSB and DSW directives, like this:
+  ;NOTE: declare variables using the DSB and DSW directives, like this:
 
-   ;MyVariable0 .dsb 1
-   ;MyVariable1 .dsb 3
-    sleeping .dsb 1          ;main program sets this and waits for the NMI to clear it.  
-    sound_disable_flag .dsb 1   ;a flag variable that keeps track of whether the sound engine is disabled or not. 
-    sound_ptr .dsb 2  ;a 2-byte pointer variable.
-    sound_ptr2		.dsb	2
-    ptr1 .dsb 2              ;a pointer             
-    jmp_ptr		.dsb	2  
-                   
-    sound_temp2 .dsb 6
-    sound_temp1 .dsb 6
-    sound_sq1_old		.dsb	1 ; The last value written to $4003
-    sound_sq2_old		.dsb	1 ; The last value written to $4007
-    soft_apu_ports		.dsb	16
+  ;MyVariable0 .dsb 1
+  ;MyVariable1 .dsb 3
+  sleeping .dsb 1          ;main program sets this and waits for the NMI to clear it.
+  sound_disable_flag .dsb 1   ;a flag variable that keeps track of whether the sound engine is disabled or not.
+  sound_ptr .dsb 2  ;a 2-byte pointer variable.
+  sound_ptr2		.dsb	2
+  ptr1 .dsb 2              ;a pointer
+  jmp_ptr		.dsb	2
 
-    stream_curr_sound .dsb 6     ;reserve 6 bytes, one for each stream
-    stream_status .dsb 6
-    stream_channel .dsb 6
-    stream_vol_duty .dsb 6
-    stream_ptr_lo .dsb 6        ;The first byte will hold the LO byte of an address
-    stream_ptr_hi .dsb 6         ;The second byte will hold the HI byte of an address      ;high 3 bits of the note period
-    sound_frame_counter .dsb 1   ;a primitive counter used to time notes in this demo
-    stream_note_lo .dsb 6    ;low 8 bits of period
-    stream_note_hi .dsb 6    ;high 3 bits of period
-    stream_tempo		.dsb	6 ; The value to add to our ticker each frame
-    stream_ticker_total	.dsb	6 ; Our running ticker totoal
-    stream_note_length_counter .dsb 6
-    stream_note_length	.dsb	6
-    current_song		.dsb 	1
-    stream_ve		.dsb	6 ; Current volume envelope
-    stream_ve_index	.dsb	6 ; Current position within volume envelope
-    stream_loop1		.dsb	6 ; Loop counter
-    stream_note_offset	.dsb	6 ; For key changes
+  sound_temp2 .dsb 6
+  sound_temp1 .dsb 6
+  sound_sq1_old		.dsb	1 ; The last value written to $4003
+  sound_sq2_old		.dsb	1 ; The last value written to $4007
+  soft_apu_ports		.dsb	16
+
+  stream_curr_sound .dsb 6     ;reserve 6 bytes, one for each stream
+  stream_status .dsb 6
+  stream_channel .dsb 6
+  stream_vol_duty .dsb 6
+  stream_ptr_lo .dsb 6        ;The first byte will hold the LO byte of an address
+  stream_ptr_hi .dsb 6         ;The second byte will hold the HI byte of an address      ;high 3 bits of the note period
+  sound_frame_counter .dsb 1   ;a primitive counter used to time notes in this demo
+  stream_note_lo .dsb 6    ;low 8 bits of period
+  stream_note_hi .dsb 6    ;high 3 bits of period
+  stream_tempo		.dsb	6 ; The value to add to our ticker each frame
+  stream_ticker_total	.dsb	6 ; Our running ticker totoal
+  stream_note_length_counter .dsb 6
+  stream_note_length	.dsb	6
+  current_song		.dsb 	1
+  stream_ve		.dsb	6 ; Current volume envelope
+  stream_ve_index	.dsb	6 ; Current position within volume envelope
+  stream_loop1		.dsb	6 ; Loop counter
+  stream_note_offset	.dsb	6 ; For key changes
+
+  ; Player center positions
+  playerX                 .dsw 1
+  playerY                 .dsw 1
+
+  ; Player limits
+  playerLeft              .dsw 1
+  playerRight             .dsw 1
+  playerTop               .dsw 1
+  playerBottom            .dsw 1
+
+  ; Car Limits
+  carLeft                 .dsw 1
+  carRight                .dsw 1
+  carTop                  .dsw 1
+  carBottom               .dsw 1
+
+  ; Positions of the car first sprite's center
+  carFirstSpriteY         .dsw 1
+  carFirstSpriteX         .dsw 1
+
+  firstCarSpriteOffset    .dsw 1
+  carSpeed                .dsw 1
+  carUpdateCounter        .dsw 1
+  frameCounter             .dw 1
+
+  dinoPace                 .dw 1
+  dinoDirection            .dw 1
+  dinoMoveVar              .dw 1
+
+  buttons                 .dsw 1    ; each pad constant represents when each
+                                    ; button is pressed
 
    .ende
 
-   ;NOTE: you can also split the variable declarations into individual pages, like this:
-
-   ;.enum $0100
-   ;.ende
-
-   ;.enum $0200
-   ;.ende
 
 ;----------------------------------------------------------------
 ; iNES header
@@ -85,7 +143,7 @@ DINO_Y = $0200
 
    .base $10000-(PRG_COUNT*$4000)
 
-.org $C000 
+.org $C000
 RESET:
   SEI          ; disable IRQs
   CLD          ; disable decimal mode
@@ -115,7 +173,7 @@ clrmem:
   STA $0200, x    ;move all sprites off screen
   INX
   BNE clrmem
-   
+
 vblankwait2:      ; Second wait for vblank, PPU is ready after this
   BIT $2002
   BPL vblankwait2
@@ -132,7 +190,7 @@ LoadPalettesLoop:
   LDA palette, x        ;load palette byte
   STA $2007             ;write to PPU
   INX                   ;set index to next byte
-  CPX #$20            
+  CPX #$20
   BNE LoadPalettesLoop  ;if x = $20, 32 bytes copied, all done
 
 
@@ -143,9 +201,13 @@ LoadSpritesLoop:
   LDA sprites, x        ; load data from address (sprites +  x)
   STA $0200, x          ; store into RAM address ($0200 + x)
   INX                   ; X = X + 1
-  CPX #$20              ; Compare X to hex $20, decimal 32
+  CPX #$80              ; Compare X to hex $20, decimal 32
   BNE LoadSpritesLoop   ; Branch to LoadSpritesLoop if compare was Not Equal to zero
                         ; if compare was equal to 32, keep going down
+
+  LDY #$01              ; init carUpdateCounter
+  STY carUpdateCounter
+  STY frameCounter
 
   LDA #%10000000   ; enable NMI, sprites from Pattern Table 0
   STA $2000
@@ -154,7 +216,7 @@ LoadSpritesLoop:
   STA $2001
 
   LDA #$03
-  STA $301
+  STA dinoDirection
 
 
   JSR sound_init ; sound initialization
@@ -165,167 +227,207 @@ LoadSpritesLoop:
   pha
   lda #$04
   jsr sound_load
-    
+
   pla     ;restore registers
   tay
   pla
   tax
   pla
-Forever: 
+Forever:
  inc sleeping ;go to sleep (wait for NMI).
-@loop:  
+@loop:
     lda sleeping
     bne @loop ;wait for NMI to clear the sleeping flag and wake us up
-  
+
    JMP Forever     ;jump back to Forever, infinite loop
 
-NMI:
-pha     ;save registers
-  txa
-  pha
-  tya
-  pha
 
-  lda #$00
-  sta $2003  ; set the low byte (00) of the RAM address
-  lda #$02
-  sta $4014  ; set the high byte (02) of the RAM address, start the transfer
-  jsr sound_play_frame
-  lda #$00
-  sta sleeping            ;wake up the main program
+;;;;;;
+;;;;;;   UTILS
+AddFourToRegisterX:
+  TXA           ; transfer value of register x to a
+  CLC           ; make sure the carry flag is clear
+  ADC #$04      ; add 04 to register x
+  TAX           ; transfer value of register a to x
+  RTS
 
-  
-  pla     ;restore registers
-  tay
-  pla
-  tax
-  pla
 
-LatchController:
-  LDA #$01
-  STA $4016
-  LDA #$00
-  STA $4016       ; tell both the controllers to latch buttons
+;;;;;;
+;;;;;;   CAR MOVING FUNCTIONS
+;;;;;;   Params:
+;;;;;;     firstCarSpriteOffset -> offset address of car's first sprite byte
+;;;;;;     carSpeed -> number of pixels to add/subtract to car's x coord
+;;;;;;
 
-  LDA $4016       ; player 1 - A
-  LDA $4016       ; player 1 - B
-  LDA $4016     ; player 1 - Select
-  LDA $4016     ; player 1 - Start
+moveCarLeft:
+  LDA firstCarSpriteOffset
+  CLC
+  ADC #$03                        ; offset for getting sprite X position
+  TAX
+  LDY #$00
+moveCarLeftLoop:
+  LDA CAR_SPRITES_BASE_ADDR, x       ; load sprite X position
+  SEC
+  SBC carSpeed
+  STA CAR_SPRITES_BASE_ADDR, x       ; save sprite X position
+  STA carFirstSpriteX
+  CPY #$00
+  BNE ContinueMoveCarLeftLoop
+  JSR UpdateCarFirstSpriteX
+ContinueMoveCarLeftLoop:
+  JSR AddFourToRegisterX
+  INY
+  CPY #$08                        ; 8 sprites processed: full car
+  BNE moveCarLeftLoop
+  RTS
 
-ReadUP:
-  LDA $4016     ; player 1 - UP
-  AND #%00000001  ; erase everything but bit 0
-  BEQ ReadUPDone   ; branch to ReadUPDone if button is NOT pressed (0)
-  LDA $0301
-  CMP #$00
-  BEQ UPContinue
-  JSR resetUP
-  LDA #$00
-  STA $0301
-UPContinue:
-  LDA $0200   ; load sprite position
-  CMP #$07    ; end of up side
-  BEQ endlabel ; branch to ReadUPDone if position is end of up side
-  LDX #$00
-  LDA #$10
-  STA $0302
-  JSR MoveRestLow
-  JSR animationRoutineB
-  JMP endController
+moveCarRight:
+  LDA firstCarSpriteOffset
+  CLC
+  ADC #$03                        ; offset for getting sprite X position
+  TAX
+  LDY #$00                       ; Y will keep track of sprites count
+moveCarRightLoop:
+  LDA CAR_SPRITES_BASE_ADDR, x       ; load sprite X position
+  CLC
+  ADC carSpeed
+  STA CAR_SPRITES_BASE_ADDR, x       ; save sprite X position
+  CPY #$00
+  BNE ContinueMoveCarRightLoop
+  JSR UpdateCarFirstSpriteX
+ContinueMoveCarRightLoop:
+  JSR AddFourToRegisterX
+  INY
+  CPY #$08                        ; 8 sprites processed: full car
+  BNE moveCarRightLoop
+  RTS
 
-endlabel:
-  lda #$09
-  jsr sound_load
-ReadUPDone:
+UpdateCarFirstSpriteX:
+  STA carFirstSpriteX
+  RTS
 
-ReadDown:
-  LDA $4016     ; player 1 - Down
-  AND #%00000001  ; erase everything but bit 0
-  BEQ ReadDownDone   ; branch to ReadADone if button is NOT pressed (0)
-  LDA $0301
-  CMP #$02
-  BEQ DownContinue
-  JSR resetDown
-  LDA #$02
-  STA $0301
-DownContinue:
-  LDA $0200   ; load sprite position
-  CMP #$D7    ; end of down side
-  BEQ endlabelD ; branch to ReadADone if position is end of down side
-  LDX #$00
-  LDA #$10
-  STA $0302
-  JSR MoveRestPlus
-  JSR animationRoutineF
-  JMP endController
+;;;;;;
+;;;;;;   CAR ANIMATION FUNCTIONS
+;;;;;;   Params:
+;;;;;;     firstCarSpriteOffset -> offset address of car's first sprite byte
+;;;;;;
 
-endlabelD:
-  lda #$08
-  jsr sound_load
-ReadDownDone:
+updateCarFrames:
+  LDX firstCarSpriteOffset
+  INX                          ; add 1 to get sprite tile address
+  LDY #$00                     ; init loop counter
+  LDA carUpdateCounter
+  AND #$01
+  BEQ animateCarReset      ; if update counter is even, add 1 to all tiles, else subtract 1
 
-ReadLeft:
-  LDA $4016     ; player 1 - Left
-  AND #%00000001  ; erase everything but bit 0
-  BEQ ReadLeftDone   ; branch to ReadADone if button is NOT pressed (0)
-  LDA $0301
-  CMP #$03
-  BEQ LeftContiue
-  CMP #$01
-  BEQ FlipLeft
-  JSR resetLeft
-  JMP LeftContiue
-FlipLeft:
-  JSR flipDino
-  LDA #$03
-  STA $0301
-LeftContiue:
-  LDA $0203
-  CMP #$07    ; end of left side
-  BEQ ReadLeftDone ; branch to ReadADone if position is end of left side
-  LDX #$03
-  LDA #$13
-  STA $0302
-  JSR MoveRestLow
-  JSR animationRoutineS
-  JMP endController
-ReadLeftDone:
 
-ReadRigth:
-  LDA $4016     ; player 1 - Right
-  AND #%00000001  ; erase everything but bit 0
-  BEQ ReadRigthDone   ; branch to ReadADone if button is NOT pressed (0)
-  LDA $0301
-  CMP #$01
-  BEQ RigthContiue
-  CMP #$03
-  BEQ FlipRigth
-  JSR resetRigth
-  JMP RigthContiue
-FlipRigth:
-  JSR flipDino
-  LDA #$01
-  STA $0301
-RigthContiue:
-  LDA $0203   ; load sprite position
-  CMP #$F1    ; end of rigth side
-  BEQ ReadRigthDone ; branch to ReadADone if position is end of rigth side
-  LDX #$03
-  LDA #$13
-  STA $0302
-  JSR MoveRestPlus
-  JSR animationRoutineS
-  JMP endController
-ReadRigthDone:
+animateCarAdd:
+  LDA CAR_SPRITES_BASE_ADDR, x        ; load sprite tile
+  CLC
+  ADC #$01
+  STA CAR_SPRITES_BASE_ADDR, x        ; store new sprite tile
+  JSR AddFourToRegisterX
+  INY
+  CPY #$06             ; 6 processed sprites
+  BNE animateCarAdd
+  JMP animateTires
 
-endController:
-  
-  jsr	sound_play_frame
+animateCarReset:
+  LDA CAR_SPRITES_BASE_ADDR, x        ; load sprite tile
+  SEC
+  SBC #$01            ; add 1
+  STA CAR_SPRITES_BASE_ADDR, x        ; store new sprite tile
+  JSR AddFourToRegisterX
+  INY
+  CPY #$06             ; $18 = 24 = 6 processed sprites
+  BNE animateCarReset
 
-	lda	#$00
-	sta	sleeping	; Wake up the main program
+animateTires:
+  LDY carUpdateCounter
+  TYA
+  AND #$03      ; if zero, its a multiple of 4
+  BEQ animateTiresReset
+  LDA CAR_SPRITES_BASE_ADDR, x
+  CLC
+  ADC #$01
+  STA CAR_SPRITES_BASE_ADDR, x
+  JSR AddFourToRegisterX
+  LDA CAR_SPRITES_BASE_ADDR, x
+  CLC
+  ADC #$01
+  STA CAR_SPRITES_BASE_ADDR, x
+  JMP carUpdateEnd
 
-  RTI        ; return from interrupt
+animateTiresReset:
+  LDA CAR_SPRITES_BASE_ADDR, x
+  SEC
+  SBC #$03
+  STA CAR_SPRITES_BASE_ADDR, x
+  JSR AddFourToRegisterX
+  LDA CAR_SPRITES_BASE_ADDR, x
+  SEC
+  SBC #$03
+  STA CAR_SPRITES_BASE_ADDR, x
+
+carUpdateEnd:
+  RTS
+
+
+;;;;;;
+;;;;;;   UPDATE POSITIONS FUNCTIONS
+;;;;;;
+
+UpdatePlayerPositionAndLimits:
+  LDA PLAYER_FIRST_SPRITE_Y
+  ADC #$04
+  STA playerY
+
+  SEC
+  SBC #$08
+  STA playerTop
+
+  CLC
+  ADC #$08
+  STA playerBottom
+
+  LDA PLAYER_FIRST_SPRITE_X
+  ADC #$04
+  STA playerX
+
+  CLC
+  ADC #$08
+  STA playerRight
+
+  SEC
+  SBC #$08
+  STA playerLeft
+
+  RTS
+
+UpdateCarLimits:
+  LDA carFirstSpriteY
+  CLC
+  ADC #CAR_BOTTOM_OFFSET
+  STA carBottom
+
+  LDA carFirstSpriteY
+  SEC
+  SBC #CAR_TOP_OFFSET
+  STA carTop
+
+  LDA carFirstSpriteX
+  CLC
+  ADC #CAR_RIGHT_OFFSET
+  STA carRight
+
+  LDA carFirstSpriteX
+  SEC
+  SBC #CAR_LEFT_OFFSET
+  STA carLeft
+
+  RTS
+
+;; || Dino Controle Functions ||
 
 resetLeft:
   LDY #03
@@ -336,15 +438,15 @@ resetLeft:
   STY DINO3_TILE
   LDY #19
   STY DINO4_TILE
-  LDA #%00000000
+  LDA #%00000011
   STA DINO1_ATR
   STA DINO2_ATR
   STA DINO3_ATR
   STA DINO4_ATR
   LDA #$03
-  STA $0301
+  STA dinoDirection
   LDA #$00
-  STA $0300
+  STA dinoPace
 RTS
 
 resetRigth:
@@ -356,15 +458,15 @@ resetRigth:
   STY DINO3_TILE
   LDY #14
   STY DINO4_TILE
-  LDA #%01000000
+  LDA #%01000011
   STA DINO1_ATR
   STA DINO2_ATR
   STA DINO3_ATR
   STA DINO4_ATR
   LDA #$01
-  STA $0301
+  STA dinoDirection
   LDA #$00
-  STA $0300
+  STA dinoPace
 RTS
 
 resetUP:
@@ -376,14 +478,14 @@ resetUP:
   STY DINO3_TILE
   LDY #16
   STY DINO4_TILE
-  LDA #%00000000
+  LDA #%00000011
   STA DINO1_ATR
   STA DINO2_ATR
   STA DINO3_ATR
   STA DINO4_ATR
   LDA #$00
-  STA $0301
-  STA $0300
+  STA dinoDirection
+  STA dinoPace
 RTS
 
 resetDown:
@@ -395,46 +497,46 @@ resetDown:
   STY DINO3_TILE
   LDY #18
   STY DINO4_TILE
-  LDA #%00000000
+  LDA #%00000011
   STA DINO1_ATR
   STA DINO2_ATR
   STA DINO3_ATR
   STA DINO4_ATR
   LDA #$02
-  STA $0301
+  STA dinoDirection
   LDA #$00
-  STA $0300
+  STA dinoPace
 RTS
 
 
 MoveRestPlus:
-  LDA $0200, X
+  LDA DINO_Y, X
   CLC
   ADC #$01     ; A = A + 1
-  STA $0200, X
-  TXA 
+  STA DINO_Y, X
+  TXA
   CLC
   ADC #$04
   TAX
-  CMP $0302
+  CMP dinoMoveVar
   BNE MoveRestPlus
 RTS
 
 MoveRestLow:
-  LDA $0200, X
+  LDA DINO_Y, X
   SEC
   SBC #$01     ; A = A - 1
-  STA $0200, X
-  TXA 
+  STA DINO_Y, X
+  TXA
   CLC
   ADC #$04
   TAX
-  CMP $0302
+  CMP dinoMoveVar
   BNE MoveRestLow
 RTS
 
 animationRoutineS:
-  LDA $0300
+  LDA dinoPace
   CMP #$0F
   BEQ addifS
   CMP #$1F
@@ -452,15 +554,15 @@ subifS:
   JSR sound_load
   JSR sub
 doneifS:
-  LDA $0300
+  LDA dinoPace
   ADC #$01
   AND #%00011111
-  STA $0300
-  
+  STA dinoPace
+
   RTS
 
 animationRoutineB:
-  LDA $0300
+  LDA dinoPace
   CMP #04
   BEQ addifB
   CMP #08
@@ -483,19 +585,19 @@ subifB:
 flipifB:
   JSR flipDino
 doneifB:
-  LDA $0300
+  LDA dinoPace
   CMP #28
 BNE paceB
   LDA #00
-  STA $0300
+  STA dinoPace
 RTS
 paceB:
   ADC #01
-  STA $0300
+  STA dinoPace
 RTS
 
 animationRoutineF:
-  LDA $0300
+  LDA dinoPace
   CMP #04
   BEQ addif3F
   CMP #08
@@ -532,16 +634,16 @@ subif4F:
   DEY
   STY DINO4_TILE
 doneifF:
-  
-  LDA $0300
+
+  LDA dinoPace
   CMP #28
 BNE paceF
   LDA #00
-  STA $0300
+  STA dinoPace
 RTS
 paceF:
   ADC #01
-  STA $0300
+  STA dinoPace
 RTS
 
 add:
@@ -584,21 +686,298 @@ flipDino:
   STY DINO3_TILE
   STX DINO4_TILE
   LDA DINO1_ATR
-  CMP #%01000000
+  CMP #%01000011
   BEQ secondBit
-  LDA #%01000000
+  LDA #%01000011
   JMP doneBit
 secondBit:
-  LDA #%00000000
+  LDA #%00000011
 doneBit:
   STA DINO1_ATR
   STA DINO2_ATR
   STA DINO3_ATR
   STA DINO4_ATR
-  
+
   LDA #$05
   JSR sound_load
 RTS
+
+
+NMI:
+pha     ;save registers
+  txa
+  pha
+  tya
+  pha
+
+  lda #$00
+  sta $2003  ; set the low byte (00) of the RAM address
+  lda #$02
+  sta $4014  ; set the high byte (02) of the RAM address, start the transfer
+  jsr sound_play_frame
+  lda #$00
+  sta sleeping            ;wake up the main program
+
+
+  pla     ;restore registers
+  tay
+  pla
+  tax
+  pla
+
+  LDA #$00
+  STA firstCarSpriteOffset
+  LDA #$02
+  STA carSpeed
+  JSR moveCarLeft
+
+  LDA #$20
+  STA firstCarSpriteOffset
+  LDA #$02
+  STA carSpeed
+  JSR moveCarRight
+
+  LDY frameCounter
+  CPY #$0D
+  BNE noUpdateCarFrames
+
+  ; update fist car
+  LDA #$00
+  STA firstCarSpriteOffset
+  JSR updateCarFrames
+
+  ; update second car
+  LDA #$20
+  STA firstCarSpriteOffset
+  JSR updateCarFrames
+
+
+  LDY carUpdateCounter          ; increment car update
+  INY
+  STY carUpdateCounter
+
+  LDY #$00                      ; reset frame counter
+  STY frameCounter
+  JMP LatchController
+
+noUpdateCarFrames:
+  LDY frameCounter              ; increment frame counter
+  INY
+  STY frameCounter
+  JMP LatchController
+
+LatchController:
+  LDA #$01
+  STA $4016
+  LDA #$00
+  STA $4016       ; tell both the controllers to latch buttons
+
+  LDA $4016       ; player 1 - A
+  LDA $4016       ; player 1 - B
+  LDA $4016     ; player 1 - Select
+  LDA $4016     ; player 1 - Start
+
+ReadUP:
+  LDA $4016     ; player 1 - UP
+  AND #%00000001  ; erase everything but bit 0
+  BEQ ReadUPDone   ; branch to ReadUPDone if button is NOT pressed (0)
+  LDA dinoDirection
+  CMP #$00
+  BEQ UPContinue
+  JSR resetUP
+  LDA #$00
+  STA dinoDirection
+UPContinue:
+  LDA DINO_Y   ; load sprite position
+  CMP #$07    ; end of up side
+  BEQ endlabel ; branch to ReadUPDone if position is end of up side
+  LDX #$00
+  LDA #$10
+  STA dinoMoveVar
+  JSR MoveRestLow
+  JSR animationRoutineB
+  JMP endController
+
+endlabel:
+  lda #$09
+  jsr sound_load
+ReadUPDone:
+
+ReadDown:
+  LDA $4016     ; player 1 - Down
+  AND #%00000001  ; erase everything but bit 0
+  BEQ ReadDownDone   ; branch to ReadADone if button is NOT pressed (0)
+  LDA dinoDirection
+  CMP #$02
+  BEQ DownContinue
+  JSR resetDown
+  LDA #$02
+  STA dinoDirection
+DownContinue:
+  LDA DINO_Y   ; load sprite position
+  CMP #$D7    ; end of down side
+  BEQ endlabelD ; branch to ReadADone if position is end of down side
+  LDX #$00
+  LDA #$10
+  STA dinoMoveVar
+  JSR MoveRestPlus
+  JSR animationRoutineF
+  JMP endController
+
+endlabelD:
+  lda #$08
+  jsr sound_load
+ReadDownDone:
+
+ReadLeft:
+  LDA $4016     ; player 1 - Left
+  AND #%00000001  ; erase everything but bit 0
+  BEQ ReadLeftDone   ; branch to ReadADone if button is NOT pressed (0)
+  LDA dinoDirection
+  CMP #$03
+  BEQ LeftContiue
+  CMP #$01
+  BEQ FlipLeft
+  JSR resetLeft
+  JMP LeftContiue
+FlipLeft:
+  JSR flipDino
+  LDA #$03
+  STA dinoDirection
+LeftContiue:
+  LDA DINO_X
+  CMP #$07    ; end of left side
+  BEQ ReadLeftDone ; branch to ReadADone if position is end of left side
+  LDX #$03
+  LDA #$13
+  STA dinoMoveVar
+  JSR MoveRestLow
+  JSR animationRoutineS
+  JMP endController
+ReadLeftDone:
+
+ReadRigth:
+  LDA $4016     ; player 1 - Right
+  AND #%00000001  ; erase everything but bit 0
+  BEQ ReadRigthDone   ; branch to ReadADone if button is NOT pressed (0)
+  LDA dinoDirection
+  CMP #$01
+  BEQ RigthContiue
+  CMP #$03
+  BEQ FlipRigth
+  JSR resetRigth
+  JMP RigthContiue
+FlipRigth:
+  JSR flipDino
+  LDA #$01
+  STA dinoDirection
+RigthContiue:
+  LDA DINO_X   ; load sprite position
+  CMP #$F1    ; end of rigth side
+  BEQ ReadRigthDone ; branch to ReadADone if position is end of rigth side
+  LDX #$03
+  LDA #$13
+  STA dinoMoveVar
+  JSR MoveRestPlus
+  JSR animationRoutineS
+  JMP endController
+ReadRigthDone:
+
+endController:
+
+  jsr	sound_play_frame
+
+	lda	#$00
+	sta	sleeping	; Wake up the main program
+
+  JSR UpdatePlayerPositionAndLimits
+
+;;;;;;
+;;;;;;   CHECK CAR COLLISION WITH PLAYER PIPELINE
+;;;;;;   Checks car collision for each car moving
+;;;;;;
+
+  LDX #$00
+CheckCarCollisionLoop:
+  LDA CAR_FIRST_SPRITE_Y_BASE_ADDR, x
+  STA carFirstSpriteY
+
+  LDA CAR_FIRST_SPRITE_X_BASE_ADDR, x
+  STA carFirstSpriteX
+
+  JSR UpdateCarLimits
+  JSR CheckCarCollision
+
+  TXA
+  CLC
+  ADC #$20
+  TAX           ; add 20 (offset to another car) to register X
+  CPX #CAR_SPRITES_LAST_OFFSET_ADDR
+  BEQ CheckMortarboardCollision
+  BNE CheckCarCollisionLoop
+
+CheckCarCollision:
+  LDA carLeft
+  CMP playerRight
+  BCS NoCarCollision
+
+  LDA carRight
+  CMP playerLeft
+  BCC NoCarCollision
+
+  LDA carTop
+  CMP playerBottom
+  BCS NoCarCollision
+
+  LDA carBottom
+  CMP playerTop
+  BCC NoCarCollision
+
+  ; Collision
+  LDA #$00
+  STA $0202
+  RTS
+CheckCarCollisionDone:
+
+NoCarCollision:
+  RTS
+
+
+;;;;;;
+;;;;;;   CHECK MORTARBOARD COLLISION WITH PLAYER
+;;;;;;
+
+CheckMortarboardCollision:
+  LDA #MORTARBOARD_LEFT
+  CMP playerRight
+  BCS NoMortarboardCollision
+
+  LDA #MORTARBOARD_RIGHT
+  CMP playerLeft
+  BCC NoMortarboardCollision
+
+  LDA #MORTARBOARD_TOP
+  CMP playerBottom
+  BCS NoMortarboardCollision
+
+  LDA #MORTARBOARD_BOTTOM
+  CMP playerTop
+  BCC NoMortarboardCollision
+
+  ; Collision
+  LDA #$02
+  STA $0202
+
+  RTI
+
+NoMortarboardCollision:
+  RTI
+
+;;;;;;;;;;;;;;
+
+  RTI        ; return from interrupt
+
+
 
 IRQ:
 
@@ -611,7 +990,7 @@ IRQ:
 .org $D000
 
 
-.include "sound.asm" 
+.include "sound.asm"
 .include "constants_sound.asm"
 .include "sound_data.i"
 
@@ -634,20 +1013,20 @@ note_table:
     .word $006A, $0064, $005E, $0059, $0054, $004F, $004B, $0046, $0042, $003F, $003B, $0038 ; C6-B6 ($33-$3E)
     .word $0034, $0031, $002F, $002C, $0029, $0027, $0025, $0023, $0021, $001F, $001D, $001B ; C7-B7 ($3F-$4A)
     .word $001A, $0018, $0017, $0015, $0014, $0013, $0012, $0011, $0010, $000F, $000E, $000D ; C8-B8 ($4B-$56)
-    .word $000C, $000C, $000B, $000A, $000A, $0009, $0008 
+    .word $000C, $000C, $000B, $000A, $000A, $0009, $0008
 
 .word $0000			; Rest
 song_headers:
 	.word	song0_header	; This is a silence song.
 	.word	song1_header	; Evil, demented notes
 	.word	song2_header	; A sound effect. Try playing it over other songs
-	.word	song3_header	; A little chord progression    
-  .word song4_header  
-  .word song5_header      
-  .word song6_header      
-  .word song7_header  
-  .word song8_header  
-  .word song9_header  
+	.word	song3_header	; A little chord progression
+  .word song4_header
+  .word song5_header
+  .word song6_header
+  .word song7_header
+  .word song8_header
+  .word song9_header
 
 note_length_table:
 	.byte	$01		; 32nd note
@@ -666,23 +1045,55 @@ note_length_table:
 
 	;; Other
 	;; Modified quarter to fit after d_sixtength triplets
-	.byte	$07 
+	.byte	$07
   .byte	$14		; 2 quarters plus an 8th
 	.byte	$0a
                   ; C9-F#9 ($57-$5D)
 song_data:  ;this data has two quarter rests in it.
     .byte half, C2, quarter, rest, eighth, D4, C4, quarter, B3, rest
 
-palette: 
+palette:
 .db $0F,$31,$32,$33,$0F,$35,$36,$37,$0F,$39,$3A,$3B,$0F,$3D,$3E,$0F
-.byte $15,$0B,$30,$0A
+.db $00,$02,$12,$0F,$00,$04,$14,$0F,$00,$17,$27,$0F,$15,$0B,$30,$0A
 
 sprites:
      ;vert tile attr horiz
-  .db $80, $03, $00, $80   ;sprite 0
-  .db $80, $08, $00, $88   ;sprite 1
-  .db $88, $0E, $00, $80   ;sprite 2
-  .db $88, $13, $00, $88   ;sprite 3
+  .db $80, $03, $03, $80   ;sprite 0
+  .db $80, $08, $03, $88   ;sprite 1
+  .db $88, $0E, $03, $80   ;sprite 2
+  .db $88, $13, $03, $88   ;sprite 3
+
+ ;; Car 0
+  ; car top
+  .db $40, $15, $02, $80   ;sprite 0
+  .db $40, $17, $02, $88   ;sprite 1
+  .db $40, $19, $02, $90   ;sprite 2
+  .db $40, $1B, $02, $98   ;sprite 3
+  ; car bottom
+  .db $48, $1D, $02, $80   ;sprite 4
+  .db $48, $23, $02, $90   ;sprite 5
+  ; car tires
+  .db $48, $1F, $02, $88   ;sprite 6
+  .db $48, $25, $02, $98   ;sprite 7
+
+  ;; Car 1
+  ; car top
+  .db $B0, $1B, $40, $80   ;sprite 8
+  .db $B0, $19, $40, $88   ;sprite 9
+  .db $B0, $17, $40, $90   ;sprite 10
+  .db $B0, $15, $40, $98   ;sprite 11
+  ; car bottom
+  .db $B8, $23, $40, $88   ;sprite 12
+  .db $B8, $1D, $40, $98   ;sprite 13
+  ; car tires
+  .db $B8, $25, $40, $80   ;sprite 14
+  .db $B8, $1F, $40, $90   ;sprite 15
+
+  ;; Mortarboard
+  .db $10, $06, $02, $80
+  .db $10, $04, $02, $88
+  .db $18, $02, $02, $80
+  .db $18, $00, $02, $88
 
 
    .org $fffa
@@ -696,4 +1107,5 @@ sprites:
 ;----------------------------------------------------------------
 
 .incbin "dino.chr"
+.incbin "cars.chr"
 .dsb $6000, $FF
