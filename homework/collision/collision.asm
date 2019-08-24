@@ -19,8 +19,8 @@ carLeft                 .dsw 1
 carRight                .dsw 1
 carTop                  .dsw 1
 carBottom               .dsw 1
-carFirstSpriteX         .dsw 1
 carFirstSpriteY         .dsw 1
+carFirstSpriteX         .dsw 1
 firstCarSpriteOffset    .dsw 1
 carSpeed                .dsw 1
 carUpdateCounter        .dsw 1
@@ -43,15 +43,18 @@ TOPWALL        = $0A
 BOTTOMWALL     = $DC
 LEFTWALL       = $08
 
-PLAYER_FIRST_SPRITE_Y  EQU $0200
-PLAYER_FIRST_SPRITE_X  EQU $0203
+PLAYER_FIRST_SPRITE_Y   EQU $0200
+PLAYER_FIRST_SPRITE_X   EQU $0203
 
-CAR_SPRITES_BASE_ADDR EQU $0210
+CAR_FIRST_SPRITE_Y_BASE_ADDR   EQU $0210
+CAR_FIRST_SPRITE_X_BASE_ADDR   EQU $0213
 
-CAR_LEFT_OFFSET EQU     $04
-CAR_RIGHT_OFFSET EQU    $1C
-CAR_TOP_OFFSET EQU      $04
-CAR_BOTTOM_OFFSET EQU   $0C
+CAR_SPRITES_BASE_ADDR   EQU $0210
+
+CAR_LEFT_OFFSET         EQU $04
+CAR_RIGHT_OFFSET        EQU $1C
+CAR_TOP_OFFSET          EQU $04
+CAR_BOTTOM_OFFSET       EQU $0C
 
 
   .org $C000
@@ -117,16 +120,16 @@ LoadSpritesLoop:
   LDA sprites, x        ; load data from address (sprites +  x)
   STA $0200, x          ; store into RAM address ($0200 + x)
   INX                   ; X = X + 1
-  CPX #$40              ; Compare X to hex $20, decimal 32
+  CPX #$60              ; Compare X to hex $20, decimal 32
   BNE LoadSpritesLoop   ; Branch to LoadSpritesLoop if compare was Not Equal to zero
                       ; if compare was equal to 32, keep going down
 
 
 ;;Set initial stats
-  LDA #$50
+  LDA #$80
   STA carFirstSpriteX
 
-  LDA #$50
+  LDA #$40
   STA carFirstSpriteY
 
 
@@ -218,56 +221,56 @@ updateCarFrames:
   BEQ animateCarReset      ; if update counter is even, add 1 to all tiles, else subtract 1
 
 
-  animateCarAdd:
-    LDA CAR_SPRITES_BASE_ADDR, x        ; load sprite tile
-    CLC
-    ADC #$01
-    STA CAR_SPRITES_BASE_ADDR, x        ; store new sprite tile
-    JSR AddFourToRegisterX
-    INY
-    CPY #$06             ; 6 processed sprites
-    BNE animateCarAdd
-    JMP animateTires
+animateCarAdd:
+  LDA CAR_SPRITES_BASE_ADDR, x        ; load sprite tile
+  CLC
+  ADC #$01
+  STA CAR_SPRITES_BASE_ADDR, x        ; store new sprite tile
+  JSR AddFourToRegisterX
+  INY
+  CPY #$06             ; 6 processed sprites
+  BNE animateCarAdd
+  JMP animateTires
 
-  animateCarReset:
-    LDA CAR_SPRITES_BASE_ADDR, x        ; load sprite tile
-    SEC
-    SBC #$01            ; add 1
-    STA CAR_SPRITES_BASE_ADDR, x        ; store new sprite tile
-    JSR AddFourToRegisterX
-    INY
-    CPY #$06             ; $18 = 24 = 6 processed sprites
-    BNE animateCarReset
+animateCarReset:
+  LDA CAR_SPRITES_BASE_ADDR, x        ; load sprite tile
+  SEC
+  SBC #$01            ; add 1
+  STA CAR_SPRITES_BASE_ADDR, x        ; store new sprite tile
+  JSR AddFourToRegisterX
+  INY
+  CPY #$06             ; $18 = 24 = 6 processed sprites
+  BNE animateCarReset
 
-  animateTires:
-    LDY carUpdateCounter
-    TYA
-    AND #$03      ; if zero, its a multiple of 4
-    BEQ animateTiresReset
-    LDA CAR_SPRITES_BASE_ADDR, x
-    CLC
-    ADC #$01
-    STA CAR_SPRITES_BASE_ADDR, x
-    JSR AddFourToRegisterX
-    LDA CAR_SPRITES_BASE_ADDR, x
-    CLC
-    ADC #$01
-    STA CAR_SPRITES_BASE_ADDR, x
-    JMP carUpdateEnd
+animateTires:
+  LDY carUpdateCounter
+  TYA
+  AND #$03      ; if zero, its a multiple of 4
+  BEQ animateTiresReset
+  LDA CAR_SPRITES_BASE_ADDR, x
+  CLC
+  ADC #$01
+  STA CAR_SPRITES_BASE_ADDR, x
+  JSR AddFourToRegisterX
+  LDA CAR_SPRITES_BASE_ADDR, x
+  CLC
+  ADC #$01
+  STA CAR_SPRITES_BASE_ADDR, x
+  JMP carUpdateEnd
 
-  animateTiresReset:
-    LDA CAR_SPRITES_BASE_ADDR, x
-    SEC
-    SBC #$03
-    STA CAR_SPRITES_BASE_ADDR, x
-    JSR AddFourToRegisterX
-    LDA CAR_SPRITES_BASE_ADDR, x
-    SEC
-    SBC #$03
-    STA CAR_SPRITES_BASE_ADDR, x
+animateTiresReset:
+  LDA CAR_SPRITES_BASE_ADDR, x
+  SEC
+  SBC #$03
+  STA CAR_SPRITES_BASE_ADDR, x
+  JSR AddFourToRegisterX
+  LDA CAR_SPRITES_BASE_ADDR, x
+  SEC
+  SBC #$03
+  STA CAR_SPRITES_BASE_ADDR, x
 
-  carUpdateEnd:
-    RTS
+carUpdateEnd:
+  RTS
 
 
 NMI:
@@ -284,6 +287,17 @@ NMI:
 
   ; update car
   LDA #$00
+  STA firstCarSpriteOffset
+  JSR updateCarFrames
+
+  LDA #$20
+  STA firstCarSpriteOffset
+  LDA #$02
+  STA carSpeed
+  JSR moveCarRight
+
+  ; update car
+  LDA #$20
   STA firstCarSpriteOffset
   JSR updateCarFrames
 
@@ -373,35 +387,54 @@ MoveRightLoop:
 ReadRightDone:       ; handling this button is done
 
   JSR UpdatePlayerPositionAndLimits
-  JSR UpdateCarLimits
 
-CheckCollision:
+  LDX #$00
+CheckCarCollisionLoop:
+  LDA CAR_FIRST_SPRITE_Y_BASE_ADDR, x
+  STA carFirstSpriteY
+
+  LDA CAR_FIRST_SPRITE_X_BASE_ADDR, x
+  STA carFirstSpriteX
+
+  JSR UpdateCarLimits
+  JSR CheckCarCollision
+
+  TXA           ; transfer value of register x to a
+  CLC           ; make sure the carry flag is clear
+  ADC #$20      ; add 20 to register x
+  TAX           ; transfer value of register a to x
+  CPX #$40
+  BEQ GameEngineDone
+  BNE CheckCarCollisionLoop
+
+CheckCarCollision:
   LDA playerRight
   LDA carLeft
   CMP playerRight
-  BCS GameEngineDone
+  BCS NoCarCollision
 
   LDA playerLeft
   LDA carRight
   CMP playerLeft
-  BCC GameEngineDone
+  BCC NoCarCollision
 
   LDA playerBottom
   LDA carTop
   CMP playerBottom
-  BCS GameEngineDone
+  BCS NoCarCollision
 
   LDA playerTop
   LDA carBottom
   CMP playerTop
-  BCC GameEngineDone
+  BCC NoCarCollision
 
   LDA #$F5
   STA $0202
-  RTI
-CheckCollisionDone:
+  RTS
+CheckCarCollisionDone:
 
-
+NoCarCollision:
+  RTS
 
 UpdatePlayerPositionAndLimits:
   LDA PLAYER_FIRST_SPRITE_Y
@@ -467,22 +500,38 @@ palette:
   .db $0F,$1C,$15,$14,$31,$02,$38,$3C,$0F,$1C,$15,$14,$31,$02,$38,$3C
 
 sprites:
-   ;vert tile attr horiz
-  .db $80, $32, $00, $80   ;sprite 0 player
-  .db $80, $33, $00, $88   ;sprite 1 player
-  .db $88, $34, $00, $80   ;sprite 2 player
-  .db $88, $35, $00, $88   ;sprite 3 player
+  ;; Player
+  .db $80, $32, $00, $80   ;sprite 0
+  .db $80, $33, $00, $88   ;sprite 1
+  .db $88, $34, $00, $80   ;sprite 2
+  .db $88, $35, $00, $88   ;sprite 3
+
+  ;; Car 0
   ; car top
-  .db $50, $00, $02, $50   ;sprite 0
-  .db $50, $02, $02, $58   ;sprite 1
-  .db $50, $04, $02, $60   ;sprite 2
-  .db $50, $06, $02, $68   ;sprite 3
+  .db $40, $00, $02, $80   ;sprite 0
+  .db $40, $02, $02, $88   ;sprite 1
+  .db $40, $04, $02, $90   ;sprite 2
+  .db $40, $06, $02, $98   ;sprite 3
   ; car bottom
-  .db $58, $08, $02, $50   ;sprite 4
-  .db $58, $0E, $02, $60   ;sprite 5
+  .db $48, $08, $02, $88   ;sprite 4
+  .db $48, $0E, $02, $98   ;sprite 5
   ; car tires
-  .db $58, $0A, $02, $58   ;sprite 6
-  .db $58, $10, $02, $68   ;sprite 7
+  .db $48, $0A, $02, $80   ;sprite 6
+  .db $48, $10, $02, $90   ;sprite 7
+
+  ;; Car 1
+  ; car top
+  .db $B0, $06, $02, $80   ;sprite 8
+  .db $B0, $04, $02, $88   ;sprite 9
+  .db $B0, $02, $02, $90   ;sprite 10
+  .db $B0, $00, $02, $98   ;sprite 11
+  ; car bottom
+  .db $B8, $0E, $02, $88   ;sprite 12
+  .db $B8, $08, $02, $98   ;sprite 13
+  ; car tires
+  .db $B8, $10, $02, $80   ;sprite 14
+  .db $B8, $0A, $02, $90   ;sprite 15
+
 
   .org $FFFA     ;first of the three vectors starts here
   .dw NMI        ;when an NMI happens (once per frame if enabled) the
