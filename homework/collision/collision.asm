@@ -9,17 +9,19 @@
 ;; VARIABLES
 .enum $0000 ;start variables at ram location 0
 
-playerx       .dsw 1
-playery       .dsw 1
-playerleft    .dsw 1
-playerright   .dsw 1
-playertop     .dsw 1
-playerbottom  .dsw 1
-carleft       .dsw 1
-carright      .dsw 1
-cartop        .dsw 1
-carbottom     .dsw 1
-buttons       .dsw 1
+playerX         .dsw 1
+playerY         .dsw 1
+playerLeft      .dsw 1
+playerRight     .dsw 1
+playerTop       .dsw 1
+playerBottom    .dsw 1
+carLeft         .dsw 1
+carRight        .dsw 1
+carTop          .dsw 1
+carBottom       .dsw 1
+carFirstSpriteX .dsw 1
+carFirstSpriteY .dsw 1
+buttons         .dsw 1
 
 .ende
 
@@ -38,8 +40,15 @@ TOPWALL        = $0A
 BOTTOMWALL     = $DC
 LEFTWALL       = $08
 
-PLAYERSPRITE0Y  = $0200
-PLAYERSPRITE0X  = $0203
+PLAYER_FIRST_SPRITE_Y  EQU $0200
+PLAYER_FIRST_SPRITE_X  EQU $0203
+
+CAR_SPRITES_BASE_ADDR EQU $0210
+
+CAR_LEFT_OFFSET EQU     $04
+CAR_RIGHT_OFFSET EQU    $1C
+CAR_TOP_OFFSET EQU      $04
+CAR_BOTTOM_OFFSET EQU   $0C
 
 
   .org $C000
@@ -112,34 +121,40 @@ LoadSpritesLoop:
 
 ;;Set initial stats
   LDA #$84
-  STA playerx
+  STA playerX
 
   LDA #$8C
-  STA playerright
+  STA playerRight
 
   LDA #$7C
-  STA playerleft
+  STA playerLeft
 
   LDA #$84
-  STA playery
+  STA playerY
 
   LDA #$8C
-  STA playerbottom
+  STA playerBottom
 
   LDA #$7C
-  STA playertop
+  STA playerTop
+
+  LDA #$50
+  STA carFirstSpriteX
 
   LDA #$6C
-  STA carright
+  STA carRight
 
   LDA #$4C
-  STA carleft
+  STA carLeft
+
+  LDA #$50
+  STA carFirstSpriteY
 
   LDA #$5C
-  STA carbottom
+  STA carBottom
 
   LDA #$4C
-  STA cartop
+  STA carTop
 
 
   LDA #%10000000   ; enable NMI, sprites from Pattern Table 1
@@ -178,12 +193,12 @@ ReadUp:
   BEQ ReadUpDone
   LDX #$00
 MoveUpLoop:
-  LDA PLAYERSPRITE0Y, x
+  LDA PLAYER_FIRST_SPRITE_Y, x
   CMP #TOPWALL
   BEQ ReadUpDone
   SEC
   SBC #$01        ;;bally position = bally - ballspeedy
-  STA PLAYERSPRITE0Y, x
+  STA PLAYER_FIRST_SPRITE_Y, x
   TXA           ; transfer value of register x to a
   CLC           ; make sure the carry flag is clear
   ADC #$04      ; add 04 to register x
@@ -198,12 +213,12 @@ ReadDown:
   BEQ ReadDownDone
   LDX #$00
 MoveDownLoop:
-  LDA PLAYERSPRITE0Y, x
+  LDA PLAYER_FIRST_SPRITE_Y, x
   CMP #BOTTOMWALL
   BEQ ReadDownDone
   CLC
   ADC #$01        ;;bally position = bally - ballspeedy
-  STA PLAYERSPRITE0Y, x
+  STA PLAYER_FIRST_SPRITE_Y, x
   TXA           ; transfer value of register x to a
   CLC           ; make sure the carry flag is clear
   ADC #$04      ; add 04 to register x
@@ -220,12 +235,12 @@ ReadLeft:
                     ; add instructions here to do something when button IS pressed (1)
   LDX #$00
 MoveLeftLoop:
-  LDA PLAYERSPRITE0X, x
+  LDA PLAYER_FIRST_SPRITE_X, x
   CMP #LEFTWALL
   BEQ ReadLeftDone
   SEC
   SBC #$01
-  STA PLAYERSPRITE0X, x
+  STA PLAYER_FIRST_SPRITE_X, x
   TXA           ; transfer value of register x to a
   CLC           ; make sure the carry flag is clear
   ADC #$04      ; add 04 to register x
@@ -242,12 +257,12 @@ ReadRight:
                     ; add instructions here to do something when button IS pressed (1)
   LDX #$00
 MoveRightLoop:
-  LDA PLAYERSPRITE0X, x
+  LDA PLAYER_FIRST_SPRITE_X, x
   CMP #RIGHTWALL
   BEQ ReadRightDone
   CLC               ; make sure the carry flag is clear
   ADC #$01
-  STA PLAYERSPRITE0X, x
+  STA PLAYER_FIRST_SPRITE_X, x
   TXA           ; transfer value of register x to a
   CLC           ; make sure the carry flag is clear
   ADC #$04      ; add 04 to register x
@@ -257,26 +272,27 @@ MoveRightLoop:
 ReadRightDone:       ; handling this button is done
 
   JSR UpdatePlayerPositionAndLimits
+  JSR UpdateCarLimits
 
 CheckCollision:
-  LDA playerright
-  LDA carleft
-  CMP playerright
+  LDA playerRight
+  LDA carLeft
+  CMP playerRight
   BCS GameEngineDone
 
-  LDA playerleft
-  LDA carright
-  CMP playerleft
+  LDA playerLeft
+  LDA carRight
+  CMP playerLeft
   BCC GameEngineDone
 
-  LDA playerbottom
-  LDA cartop
-  CMP playerbottom
+  LDA playerBottom
+  LDA carTop
+  CMP playerBottom
   BCS GameEngineDone
 
-  LDA playertop
-  LDA carbottom
-  CMP playertop
+  LDA playerTop
+  LDA carBottom
+  CMP playerTop
   BCC GameEngineDone
 
   LDA #$F5
@@ -287,31 +303,55 @@ CheckCollisionDone:
 
 
 UpdatePlayerPositionAndLimits:
-  LDA PLAYERSPRITE0Y
+  LDA PLAYER_FIRST_SPRITE_Y
   ADC #$04
-  STA playery
+  STA playerY
 
   SEC
   SBC #$08
-  STA playertop
+  STA playerTop
 
   CLC
   ADC #$08
-  STA playerbottom
+  STA playerBottom
 
-  LDA PLAYERSPRITE0X
+  LDA PLAYER_FIRST_SPRITE_X
   ADC #$04
-  STA playerx
+  STA playerX
 
   CLC
   ADC #$08
-  STA playerright
+  STA playerRight
 
   SEC
   SBC #$08
-  STA playerleft
+  STA playerLeft
 
   RTS
+
+UpdateCarLimits:
+  LDA carFirstSpriteY
+  CLC
+  ADC #CAR_BOTTOM_OFFSET
+  STA carBottom
+
+  LDA carFirstSpriteY
+  SEC
+  SBC #CAR_TOP_OFFSET
+  STA carTop
+
+  LDA carFirstSpriteX
+  CLC
+  ADC #CAR_RIGHT_OFFSET
+  STA carRight
+
+  LDA carFirstSpriteX
+  SEC
+  SBC #CAR_LEFT_OFFSET
+  STA carLeft
+
+  RTS
+
 
 GameEngineDone:
   RTI
