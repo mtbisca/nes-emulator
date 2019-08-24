@@ -901,7 +901,7 @@ ReadDown:
   STA dinoDirection
 DownContinue:
   LDA DINO_Y   ; load sprite position
-  CMP #$D7    ; end of down side
+  CMP #$D8    ; end of down side
   BEQ ReadDownDone ; branch to ReadADone if position is end of down side
   LDX #$00
   LDA #$10
