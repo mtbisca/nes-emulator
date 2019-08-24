@@ -31,6 +31,11 @@ TOPWALL        = $0A
 BOTTOMWALL     = $DC
 LEFTWALL       = $08
 
+MOTARBOARD_LEFT         EQU $7C
+MOTARBOARD_RIGHT        EQU $8C
+MOTARBOARD_TOP          EQU $0C
+MOTARBOARD_BOTTOM       EQU $1C
+
 PLAYER_FIRST_SPRITE_Y   EQU $0200
 PLAYER_FIRST_SPRITE_X   EQU $0203
 
@@ -724,7 +729,7 @@ pha     ;save registers
   STA firstCarSpriteOffset
   LDA #$02
   STA carSpeed
-  JSR moveCarRight
+  JSR moveCarLeft
 
   LDA #$20
   STA firstCarSpriteOffset
@@ -885,6 +890,91 @@ endController:
 	lda	#$00
 	sta	sleeping	; Wake up the main program
 
+  JSR UpdatePlayerPositionAndLimits
+
+;;;;;;
+;;;;;;   CHECK CAR COLLISION WITH PLAYER PIPELINE
+;;;;;;   Checks car collision for each car moving
+;;;;;;
+
+  LDX #$00
+CheckCarCollisionLoop:
+  LDA CAR_FIRST_SPRITE_Y_BASE_ADDR, x
+  STA carFirstSpriteY
+
+  LDA CAR_FIRST_SPRITE_X_BASE_ADDR, x
+  STA carFirstSpriteX
+
+  JSR UpdateCarLimits
+  JSR CheckCarCollision
+
+  TXA
+  CLC
+  ADC #$20
+  TAX           ; add 20 (offset to another car) to register X
+  CPX #CAR_SPRITES_LAST_OFFSET_ADDR
+  BEQ CheckMotarboardCollision
+  BNE CheckCarCollisionLoop
+
+CheckCarCollision:
+  LDA carLeft
+  CMP playerRight
+  BCS NoCarCollision
+
+  LDA carRight
+  CMP playerLeft
+  BCC NoCarCollision
+
+  LDA carTop
+  CMP playerBottom
+  BCS NoCarCollision
+
+  LDA carBottom
+  CMP playerTop
+  BCC NoCarCollision
+
+  ; Collision
+  LDA #$00
+  STA $0202
+  RTS
+CheckCarCollisionDone:
+
+NoCarCollision:
+  RTS
+
+
+;;;;;;
+;;;;;;   CHECK MOTARBOARD COLLISION WITH PLAYER
+;;;;;;
+
+CheckMotarboardCollision:
+  LDA #MOTARBOARD_LEFT
+  CMP playerRight
+  BCS NoMotarboardCollision
+
+  LDA #MOTARBOARD_RIGHT
+  CMP playerLeft
+  BCC NoMotarboardCollision
+
+  LDA #MOTARBOARD_TOP
+  CMP playerBottom
+  BCS NoMotarboardCollision
+
+  LDA #MOTARBOARD_BOTTOM
+  CMP playerTop
+  BCC NoMotarboardCollision
+
+  ; Collision
+  LDA #$02
+  STA $0202
+
+  RTI
+
+NoMotarboardCollision:
+  RTI
+
+;;;;;;;;;;;;;;
+
   RTI        ; return from interrupt
 
 
@@ -980,24 +1070,30 @@ sprites:
   .db $40, $19, $02, $90   ;sprite 2
   .db $40, $1B, $02, $98   ;sprite 3
   ; car bottom
-  .db $48, $1D, $02, $88   ;sprite 4
-  .db $48, $23, $02, $98   ;sprite 5
+  .db $48, $1D, $02, $80   ;sprite 4
+  .db $48, $23, $02, $90   ;sprite 5
   ; car tires
-  .db $48, $25, $02, $80   ;sprite 6
-  .db $48, $1F, $02, $90   ;sprite 7
+  .db $48, $1F, $02, $88   ;sprite 6
+  .db $48, $25, $02, $98   ;sprite 7
 
   ;; Car 1
   ; car top
-  .db $B0, $1B, $02, $80   ;sprite 8
-  .db $B0, $19, $02, $88   ;sprite 9
-  .db $B0, $17, $02, $90   ;sprite 10
-  .db $B0, $15, $02, $98   ;sprite 11
+  .db $B0, $1B, $40, $80   ;sprite 8
+  .db $B0, $19, $40, $88   ;sprite 9
+  .db $B0, $17, $40, $90   ;sprite 10
+  .db $B0, $15, $40, $98   ;sprite 11
   ; car bottom
-  .db $B8, $23, $02, $88   ;sprite 12
-  .db $B8, $1D, $02, $98   ;sprite 13
+  .db $B8, $23, $40, $88   ;sprite 12
+  .db $B8, $1D, $40, $98   ;sprite 13
   ; car tires
-  .db $B8, $1F, $02, $80   ;sprite 14
-  .db $B8, $25, $02, $90   ;sprite 15
+  .db $B8, $25, $40, $80   ;sprite 14
+  .db $B8, $1F, $40, $90   ;sprite 15
+
+  ;; Motarboard
+  .db $10, $06, $02, $80
+  .db $10, $04, $02, $88
+  .db $18, $02, $02, $80
+  .db $18, $00, $02, $88
 
 
    .org $fffa
@@ -1011,5 +1107,5 @@ sprites:
 ;----------------------------------------------------------------
 
 .incbin "dino.chr"
-.incbin "cars8.chr"
+.incbin "cars.chr"
 .dsb $6000, $FF
