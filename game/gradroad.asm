@@ -880,17 +880,13 @@ ReadUp:
 UpContinue:
   LDA DINO_Y   ; load sprite position
   CMP #$07    ; end of up side
-  BEQ endlabel ; branch to ReadUpDone if position is end of up side
+  BEQ ReadUpDone ; branch to ReadUpDone if position is end of up side
   LDX #$00
   LDA #$10
   STA dinoMoveVar
   JSR MoveRestLow
   JSR animationRoutineB
   JMP endController
-
-endlabel:
-  lda #$09
-  jsr sound_load
 ReadUpDone:
 
 ReadDown:
@@ -906,17 +902,13 @@ ReadDown:
 DownContinue:
   LDA DINO_Y   ; load sprite position
   CMP #$D7    ; end of down side
-  BEQ endlabelD ; branch to ReadADone if position is end of down side
+  BEQ ReadDownDone ; branch to ReadADone if position is end of down side
   LDX #$00
   LDA #$10
   STA dinoMoveVar
   JSR MoveRestPlus
   JSR animationRoutineF
   JMP endController
-
-endlabelD:
-  lda #$08
-  jsr sound_load
 ReadDownDone:
 
 ReadLeft:
@@ -1024,8 +1016,6 @@ CheckCarCollision:
   BCC NoCarCollision
 
   ; Collision
-  LDA #$00
-  STA $0202
   LDA #$08
   JSR sound_load
   JSR loseReset
