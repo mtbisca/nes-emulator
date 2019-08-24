@@ -1,5 +1,5 @@
 ;----------------------------------------------------------------
-; constants
+; CONSTANTS
 ;----------------------------------------------------------------
 
 PRG_COUNT = 1 ;1 = 16KB, 2 = 32KB
@@ -26,7 +26,7 @@ PAD_DOWN   = %00000100
 PAD_LEFT   = %00000010
 PAD_RIGHT  = %00000001
 
-RIGHTWALL      = $F1  ; when player reaches one of these, do something
+RIGHTWALL      = $F1  ; when dino reaches one of these, do something
 TOPWALL        = $0A
 BOTTOMWALL     = $DC
 LEFTWALL       = $08
@@ -36,8 +36,8 @@ MORTARBOARD_RIGHT        EQU $8C
 MORTARBOARD_TOP          EQU $0C
 MORTARBOARD_BOTTOM       EQU $1C
 
-PLAYER_FIRST_SPRITE_Y   EQU $0200
-PLAYER_FIRST_SPRITE_X   EQU $0203
+DINO_FIRST_SPRITE_Y   EQU $0200
+DINO_FIRST_SPRITE_X   EQU $0203
 
 CAR_FIRST_SPRITE_Y_BASE_ADDR   EQU $0210
 CAR_FIRST_SPRITE_X_BASE_ADDR   EQU $0213
@@ -51,7 +51,7 @@ CAR_TOP_OFFSET          EQU $04
 CAR_BOTTOM_OFFSET       EQU $0C
 
 ;----------------------------------------------------------------
-; variables
+; VARIABLES
 ;----------------------------------------------------------------
 
   .enum $0000
@@ -92,15 +92,15 @@ CAR_BOTTOM_OFFSET       EQU $0C
   stream_loop1		.dsb	6 ; Loop counter
   stream_note_offset	.dsb	6 ; For key changes
 
-  ; Player center positions
-  playerX                 .dsw 1
-  playerY                 .dsw 1
+  ; Dino center positions
+  dinoX                 .dsw 1
+  dinoY                 .dsw 1
 
-  ; Player limits
-  playerLeft              .dsw 1
-  playerRight             .dsw 1
-  playerTop               .dsw 1
-  playerBottom            .dsw 1
+  ; Dino limits
+  dinoLeft              .dsw 1
+  dinoRight             .dsw 1
+  dinoTop               .dsw 1
+  dinoBottom            .dsw 1
 
   ; Car Limits
   carLeft                 .dsw 1
@@ -374,33 +374,33 @@ carUpdateEnd:
 
 
 ;;;;;;
-;;;;;;   UPDATE POSITIONS FUNCTIONS
+;;;;;;   UPDATE LIMITS FUNCTIONS
 ;;;;;;
 
-UpdatePlayerPositionAndLimits:
-  LDA PLAYER_FIRST_SPRITE_Y
+UpdateDinoPositionAndLimits:
+  LDA DINO_FIRST_SPRITE_Y
   ADC #$04
-  STA playerY
+  STA dinoY
 
   SEC
   SBC #$08
-  STA playerTop
+  STA dinoTop
 
   CLC
   ADC #$08
-  STA playerBottom
+  STA dinoBottom
 
-  LDA PLAYER_FIRST_SPRITE_X
+  LDA DINO_FIRST_SPRITE_X
   ADC #$04
-  STA playerX
+  STA dinoX
 
   CLC
   ADC #$08
-  STA playerRight
+  STA dinoRight
 
   SEC
   SBC #$08
-  STA playerLeft
+  STA dinoLeft
 
   RTS
 
@@ -469,7 +469,7 @@ resetRigth:
   STA dinoPace
 RTS
 
-resetUP:
+resetUp:
   LDY #00
   STY DINO1_TILE
   LDY #05
@@ -704,26 +704,26 @@ RTS
 
 
 NMI:
-pha     ;save registers
-  txa
-  pha
-  tya
-  pha
+  PHA     ;save registers
+  TXA
+  PHA
+  TYA
+  PHA
 
-  lda #$00
-  sta $2003  ; set the low byte (00) of the RAM address
-  lda #$02
-  sta $4014  ; set the high byte (02) of the RAM address, start the transfer
-  jsr sound_play_frame
-  lda #$00
-  sta sleeping            ;wake up the main program
+  LDA #$00
+  STA $2003  ; set the low byte (00) of the RAM address
+  LDA #$02
+  STA $4014  ; set the high byte (02) of the RAM address, start the transfer
+  JSR sound_play_frame
+  LDA #$00
+  STA sleeping            ;wake up the main program
 
 
-  pla     ;restore registers
-  tay
-  pla
-  tax
-  pla
+  PLA     ;restore registers
+  TAY
+  PLA
+  TAX
+  PLA
 
   LDA #$00
   STA firstCarSpriteOffset
@@ -758,39 +758,50 @@ pha     ;save registers
 
   LDY #$00                      ; reset frame counter
   STY frameCounter
-  JMP LatchController
+  JMP ReadController
 
 noUpdateCarFrames:
   LDY frameCounter              ; increment frame counter
   INY
   STY frameCounter
-  JMP LatchController
+  JMP ReadController
 
-LatchController:
+;;;;;;
+;;;;;;   CONTROLLER FUNCTIONS
+;;;;;;   Store at variable buttons if each button was pressed
+;;;;;;
+
+ReadController:
   LDA #$01
   STA $4016
   LDA #$00
-  STA $4016       ; tell both the controllers to latch buttons
+  STA $4016        ; tell both the controllers to latch buttons
+  LDX #$08
+ReadControllerLoop:
+  LDA $4016
+  LSR A            ; bit0 -> Carry
+  ROL buttons      ; bit0 <- Carry
+  DEX
+  BNE ReadControllerLoop
 
-  LDA $4016       ; player 1 - A
-  LDA $4016       ; player 1 - B
-  LDA $4016     ; player 1 - Select
-  LDA $4016     ; player 1 - Start
+;;;;;;
+;;;;;;   DINO MOVING FUNCTIONS
+;;;;;;
 
-ReadUP:
-  LDA $4016     ; player 1 - UP
-  AND #%00000001  ; erase everything but bit 0
-  BEQ ReadUPDone   ; branch to ReadUPDone if button is NOT pressed (0)
+ReadUp:
+  LDA buttons
+  AND #%00001000
+  BEQ ReadUpDone   ; branch to ReadUpDone if button is NOT pressed (0)
   LDA dinoDirection
   CMP #$00
-  BEQ UPContinue
-  JSR resetUP
+  BEQ UpContinue
+  JSR resetUp
   LDA #$00
   STA dinoDirection
-UPContinue:
+UpContinue:
   LDA DINO_Y   ; load sprite position
   CMP #$07    ; end of up side
-  BEQ endlabel ; branch to ReadUPDone if position is end of up side
+  BEQ endlabel ; branch to ReadUpDone if position is end of up side
   LDX #$00
   LDA #$10
   STA dinoMoveVar
@@ -801,11 +812,11 @@ UPContinue:
 endlabel:
   lda #$09
   jsr sound_load
-ReadUPDone:
+ReadUpDone:
 
 ReadDown:
-  LDA $4016     ; player 1 - Down
-  AND #%00000001  ; erase everything but bit 0
+  LDA buttons
+  AND #%00000100
   BEQ ReadDownDone   ; branch to ReadADone if button is NOT pressed (0)
   LDA dinoDirection
   CMP #$02
@@ -830,8 +841,8 @@ endlabelD:
 ReadDownDone:
 
 ReadLeft:
-  LDA $4016     ; player 1 - Left
-  AND #%00000001  ; erase everything but bit 0
+  LDA buttons
+  AND #%00000010
   BEQ ReadLeftDone   ; branch to ReadADone if button is NOT pressed (0)
   LDA dinoDirection
   CMP #$03
@@ -857,8 +868,8 @@ LeftContiue:
 ReadLeftDone:
 
 ReadRigth:
-  LDA $4016     ; player 1 - Right
-  AND #%00000001  ; erase everything but bit 0
+  LDA buttons
+  AND #%00000001
   BEQ ReadRigthDone   ; branch to ReadADone if button is NOT pressed (0)
   LDA dinoDirection
   CMP #$01
@@ -890,10 +901,10 @@ endController:
 	lda	#$00
 	sta	sleeping	; Wake up the main program
 
-  JSR UpdatePlayerPositionAndLimits
+  JSR UpdateDinoPositionAndLimits
 
 ;;;;;;
-;;;;;;   CHECK CAR COLLISION WITH PLAYER PIPELINE
+;;;;;;   CHECK CAR COLLISION WITH DINO PIPELINE
 ;;;;;;   Checks car collision for each car moving
 ;;;;;;
 
@@ -918,19 +929,19 @@ CheckCarCollisionLoop:
 
 CheckCarCollision:
   LDA carLeft
-  CMP playerRight
+  CMP dinoRight
   BCS NoCarCollision
 
   LDA carRight
-  CMP playerLeft
+  CMP dinoLeft
   BCC NoCarCollision
 
   LDA carTop
-  CMP playerBottom
+  CMP dinoBottom
   BCS NoCarCollision
 
   LDA carBottom
-  CMP playerTop
+  CMP dinoTop
   BCC NoCarCollision
 
   ; Collision
@@ -944,24 +955,24 @@ NoCarCollision:
 
 
 ;;;;;;
-;;;;;;   CHECK MORTARBOARD COLLISION WITH PLAYER
+;;;;;;   CHECK MORTARBOARD COLLISION WITH DINO
 ;;;;;;
 
 CheckMortarboardCollision:
   LDA #MORTARBOARD_LEFT
-  CMP playerRight
+  CMP dinoRight
   BCS NoMortarboardCollision
 
   LDA #MORTARBOARD_RIGHT
-  CMP playerLeft
+  CMP dinoLeft
   BCC NoMortarboardCollision
 
   LDA #MORTARBOARD_TOP
-  CMP playerBottom
+  CMP dinoBottom
   BCS NoMortarboardCollision
 
   LDA #MORTARBOARD_BOTTOM
-  CMP playerTop
+  CMP dinoTop
   BCC NoMortarboardCollision
 
   ; Collision
