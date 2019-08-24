@@ -66,6 +66,7 @@ CAR_BOTTOM_OFFSET       EQU $0C
   sound_ptr2		.dsb	2
   ptr1 .dsb 2              ;a pointer
   jmp_ptr		.dsb	2
+  end_game_sound_flag		.dsb	1
 
   sound_temp2 .dsb 6
   sound_temp1 .dsb 6
@@ -1025,16 +1026,25 @@ CheckMortarboardCollision:
   LDA #MORTARBOARD_BOTTOM
   CMP dinoTop
   BCC ppuCleanUp
+  
+  LDA #$00
+  CMP end_game_sound_flag
+  BEQ endgame
+  
+
 
   
-  ; Collision
-  LDA #$02
-  STA $0202
-
 
   RTI
 
 NoMortarboardCollision:
+  RTI
+
+endgame:
+  LDA #$01
+  STA end_game_sound_flag
+  LDA #$09
+  JSR sound_load
   RTI
 
 ppuCleanUp:
@@ -1045,6 +1055,7 @@ ppuCleanUp:
   LDA #$00        ;;tell the ppu there is no background scrolling
   STA $2005
   STA $2005
+  
   RTI
 
 
