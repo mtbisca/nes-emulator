@@ -1028,6 +1028,7 @@ CheckCarCollision:
   STA $0202
   LDA #$08
   JSR sound_load
+  JSR loseReset
   RTS
 CheckCarCollisionDone:
 
