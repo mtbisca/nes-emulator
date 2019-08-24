@@ -172,6 +172,13 @@ ReadDown:
   LDA $4016     ; player 1 - Down
   AND #%00000001  ; erase everything but bit 0
   BEQ ReadDownDone   ; branch to ReadADone if button is NOT pressed (0)
+  LDA $0301
+  CMP #$02
+  BEQ DownContinue
+  JSR resetDown
+  LDA #$02
+  STA $0301
+DownContinue:
   LDA $0200   ; load sprite position
   CMP #$D7    ; end of down side
   BEQ ReadDownDone ; branch to ReadADone if position is end of down side
@@ -179,6 +186,7 @@ ReadDown:
   LDA #$10
   STA $0302
   JSR MoveRestPlus
+  JSR animationRoutineF
   JMP endController
 ReadDownDone:
 
@@ -280,7 +288,6 @@ resetRigth:
   STA $0300
 RTS
 
-
 resetUP:
   LDY #00
   STY DINO1_TILE
@@ -297,6 +304,26 @@ resetUP:
   STA DINO4_ATR
   LDA #$00
   STA $0301
+  STA $0300
+RTS
+
+resetDown:
+  LDY #02
+  STY DINO1_TILE
+  LDY #07
+  STY DINO2_TILE
+  LDY #12
+  STY DINO3_TILE
+  LDY #18
+  STY DINO4_TILE
+  LDA #%00000000
+  STA DINO1_ATR
+  STA DINO2_ATR
+  STA DINO3_ATR
+  STA DINO4_ATR
+  LDA #$02
+  STA $0301
+  LDA #$00
   STA $0300
 RTS
 
@@ -339,7 +366,6 @@ addifS:
   JMP doneifS
 subifS:
   JSR sub
-  JMP doneifS
 doneifS:
   LDA $0300
   ADC #$01
@@ -370,7 +396,6 @@ subifB:
   JMP doneifB
 flipifB:
   JSR flipDino
-  JMP doneifB
 doneifB:
   LDA $0300
   CMP #28
@@ -379,6 +404,55 @@ BNE paceB
   STA $0300
 RTS
 paceB:
+  ADC #01
+  STA $0300
+RTS
+
+animationRoutineF:
+  LDA $0300
+  CMP #04
+  BEQ addif3F
+  CMP #08
+  BEQ flipifF
+  CMP #16
+  BEQ subif4F
+  CMP #20
+  BEQ addif4F
+  CMP #24
+  BEQ flipifF
+  CMP #28
+  BEQ subif3F
+  JMP doneifF
+flipifF:
+  JSR flipDino
+  JMP doneifF
+addif3F:
+  LDY DINO3_TILE
+  INY
+  STY DINO3_TILE
+  JMP doneifF
+addif4F:
+  LDY DINO4_TILE
+  INY
+  STY DINO4_TILE
+  JMP doneifF
+subif3F:
+  LDY DINO3_TILE
+  DEY
+  STY DINO3_TILE
+  JMP doneifF
+subif4F:
+  LDY DINO4_TILE
+  DEY
+  STY DINO4_TILE
+doneifF:
+  LDA $0300
+  CMP #28
+BNE paceF
+  LDA #00
+  STA $0300
+RTS
+paceF:
   ADC #01
   STA $0300
 RTS
