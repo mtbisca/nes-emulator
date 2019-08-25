@@ -770,7 +770,7 @@ NMI:
   LDA #$02
   STA $4014  ; set the high byte (02) of the RAM address, start the transfer
   JSR sound_play_frame
-  LDA #$00 
+  LDA #$00
   STA sleeping            ;wake up the main program
 
 
@@ -783,8 +783,7 @@ NMI:
   LDA end_game_sound_flag
   CMP #01
   BNE moveAll
-  RTI
-  ; JMP ppuCleanUp
+  JMP ppuCleanUp
 
 moveAll:
 ;; MOVE CARS PIPELINE
@@ -1004,7 +1003,7 @@ CheckCarCollisionLoop:
   TAX           ; add 20 (offset to another car) to register X
   CPX #CAR_SPRITES_LAST_OFFSET_ADDR
   BEQ CheckMortarboardCollision
-  BNE CheckCarCollisionLoop
+  JMP CheckCarCollisionLoop
 
 CheckCarCollision:
   LDA carLeft
@@ -1024,12 +1023,12 @@ CheckCarCollision:
   BCC NoCarCollision
 
   ; Collision
-  LDA #$09
-  JSR sound_load
+  ;LDA #$08
+  ;JSR sound_load
+  LDX #$01
+  STX end_game_sound_flag
+  PLA
   JMP endgame
-  
-  ; RTS
-CheckCarCollisionDone:
 
 NoCarCollision:
   RTS
@@ -1056,8 +1055,6 @@ CheckMortarboardCollision:
   CMP dinoTop
   BCC ppuCleanUp
 
-  LDA #$00
-  CMP end_game_sound_flag
   LDA #$09
   JSR sound_load
   JMP endgame
@@ -1076,8 +1073,8 @@ ppuCleanUp:
   STA $2005
   STA $2005
   ; JSR	sound_play_frame
-  lda	#$00
-	sta	sleeping	; Wake up the main program
+  ;lda	#$00
+	;sta	sleeping	; Wake up the main program
 
   RTI
 
