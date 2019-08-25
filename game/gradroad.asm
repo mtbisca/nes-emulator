@@ -31,10 +31,10 @@ TOPWALL        = $0A
 BOTTOMWALL     = $DC
 LEFTWALL       = $08
 
-MORTARBOARD_LEFT         EQU $74
-MORTARBOARD_RIGHT        EQU $84
-MORTARBOARD_TOP          EQU $08
-MORTARBOARD_BOTTOM       EQU $12
+MORTARBOARD_LEFT         EQU $78
+MORTARBOARD_RIGHT        EQU $87
+MORTARBOARD_TOP          EQU $07
+MORTARBOARD_BOTTOM       EQU $0E
 
 DINO_FIRST_SPRITE_Y   EQU $0200
 DINO_FIRST_SPRITE_X   EQU $0203
@@ -45,10 +45,10 @@ CAR_FIRST_SPRITE_X_BASE_ADDR   EQU $0213
 CAR_SPRITES_BASE_ADDR         EQU $0210
 CAR_SPRITES_LAST_OFFSET_ADDR  EQU $C0
 
-CAR_LEFT_OFFSET         EQU $01
-CAR_RIGHT_OFFSET        EQU $1A
-CAR_TOP_OFFSET          EQU $04
-CAR_BOTTOM_OFFSET       EQU $0C
+CAR_LEFT_OFFSET         EQU $02
+CAR_RIGHT_OFFSET        EQU $1D
+CAR_TOP_OFFSET          EQU $06
+CAR_BOTTOM_OFFSET       EQU $08
 
 ;----------------------------------------------------------------
 ; VARIABLES
@@ -92,10 +92,6 @@ CAR_BOTTOM_OFFSET       EQU $0C
   stream_ve_index	.dsb	6 ; Current position within volume envelope
   stream_loop1		.dsb	6 ; Loop counter
   stream_note_offset	.dsb	6 ; For key changes
-
-  ; Dino center positions
-  dinoX                 .dsw 1
-  dinoY                 .dsw 1
 
   ; Dino limits
   dinoLeft              .dsw 1
@@ -430,30 +426,26 @@ carUpdateEnd:
 ;;;;;;   UPDATE LIMITS FUNCTIONS
 ;;;;;;
 
-UpdateDinoPositionAndLimits:
+UpdateDinoLimits:
   LDA DINO_FIRST_SPRITE_Y
-  ADC #$04
-  STA dinoY
-
-  SEC
-  SBC #$08
-  STA dinoTop
-
   CLC
   ADC #$08
   STA dinoBottom
 
-  LDA DINO_FIRST_SPRITE_X
-  ADC #$04
-  STA dinoX
-
-  CLC
-  ADC #$07
-  STA dinoRight
-
+  LDA DINO_FIRST_SPRITE_Y
   SEC
-  SBC #$07
+  SBC #$06
+  STA dinoTop
+
+  LDA DINO_FIRST_SPRITE_X
+  CLC
+  ADC #$02
   STA dinoLeft
+
+  LDA DINO_FIRST_SPRITE_X
+  CLC
+  ADC #$0D
+  STA dinoRight
 
   RTS
 
@@ -474,8 +466,8 @@ UpdateCarLimits:
   STA carRight
 
   LDA carFirstSpriteX
-  SEC
-  SBC #CAR_LEFT_OFFSET
+  CLC
+  ADC #CAR_LEFT_OFFSET
   STA carLeft
 
   RTS
@@ -990,7 +982,7 @@ endController:
 	; lda	#$00
 	; sta	sleeping	; Wake up the main program
 
-  JSR UpdateDinoPositionAndLimits
+  JSR UpdateDinoLimits
 
 ;;;;;;
 ;;;;;;   CHECK CAR COLLISION WITH DINO PIPELINE
