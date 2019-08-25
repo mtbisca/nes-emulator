@@ -1026,7 +1026,6 @@ CheckCarCollision:
   BCC NoCarCollision
 
   ; Collision
-<<<<<<< HEAD
   LDA #$08
   JSR sound_load
   LDA #$01
@@ -1034,14 +1033,7 @@ CheckCarCollision:
   ; PLA
   ; JMP endgame
   RTS
-=======
-  ;LDA #$08
-  ;JSR sound_load
-  LDX #$01
-  STX end_game_sound_flag
-  PLA
   JMP endgame
->>>>>>> 634285a180c469ea9f67d6db1c443cc43d1d1f06
 
 NoCarCollision:
   RTS
