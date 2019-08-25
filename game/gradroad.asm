@@ -287,7 +287,7 @@ LoadAttributeLoop:
   tax
   pla
 Forever:
- inc sleeping ;go to sleep (wait for NMI).
+  inc sleeping ;go to sleep (wait for NMI).
 @loop:
     lda sleeping
     bne @loop ;wait for NMI to clear the sleeping flag and wake us up
@@ -997,6 +997,9 @@ CheckCarCollisionLoop:
 
   JSR UpdateCarLimits
   JSR CheckCarCollision
+  LDA end_game_sound_flag
+  CMP #$01
+  BEQ endgame
 
   TXA
   CLC
@@ -1024,12 +1027,13 @@ CheckCarCollision:
   BCC NoCarCollision
 
   ; Collision
-  LDA #$09
+  LDA #$08
   JSR sound_load
-  JMP endgame
-  
-  ; RTS
-CheckCarCollisionDone:
+  LDA #$01
+  STA end_game_sound_flag
+  ; PLA
+  ; JMP endgame
+  RTS
 
 NoCarCollision:
   RTS
@@ -1056,15 +1060,14 @@ CheckMortarboardCollision:
   CMP dinoTop
   BCC ppuCleanUp
 
-  LDA #$00
-  CMP end_game_sound_flag
   LDA #$09
   JSR sound_load
   JMP endgame
 
 endgame:
-  LDX #$01
-  STX end_game_sound_flag
+  LDA #$01
+  STA end_game_sound_flag
+  ; RTI
   ; JSR sound_load
 
 ppuCleanUp:
@@ -1074,10 +1077,10 @@ ppuCleanUp:
   STA $2001
   LDA #$00        ;;tell the ppu there is no background scrolling
   STA $2005
-  STA $2005
+  ; STA $2005
   ; JSR	sound_play_frame
   lda	#$00
-	sta	sleeping	; Wake up the main program
+	; sta	sleeping	; Wake up the main program
 
   RTI
 
