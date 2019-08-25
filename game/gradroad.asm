@@ -783,7 +783,7 @@ NMI:
   LDA end_game_sound_flag
   CMP #01
   BNE moveAll
-  JMP ppuCleanUp
+  JMP ReadController
 
 moveAll:
 ;; MOVE CARS PIPELINE
@@ -870,6 +870,17 @@ ReadControllerLoop:
   ROL buttons      ; bit0 <- Carry
   DEX
   BNE ReadControllerLoop
+
+  LDA end_game_sound_flag
+  CMP #01
+  BNE ReadUp
+  LDA buttons
+  CMP #%00010000
+  BEQ endreset
+  JMP ppuCleanUp
+
+endreset:
+  JMP RESET
 
 ;;;;;;
 ;;;;;;   DINO MOVING FUNCTIONS
