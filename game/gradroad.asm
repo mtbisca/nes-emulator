@@ -31,10 +31,10 @@ TOPWALL        = $0A
 BOTTOMWALL     = $DC
 LEFTWALL       = $08
 
-MORTARBOARD_LEFT         EQU $7C
-MORTARBOARD_RIGHT        EQU $8C
-MORTARBOARD_TOP          EQU $0C
-MORTARBOARD_BOTTOM       EQU $1C
+MORTARBOARD_LEFT         EQU $78
+MORTARBOARD_RIGHT        EQU $87
+MORTARBOARD_TOP          EQU $07
+MORTARBOARD_BOTTOM       EQU $0E
 
 DINO_FIRST_SPRITE_Y   EQU $0200
 DINO_FIRST_SPRITE_X   EQU $0203
@@ -43,12 +43,12 @@ CAR_FIRST_SPRITE_Y_BASE_ADDR   EQU $0210
 CAR_FIRST_SPRITE_X_BASE_ADDR   EQU $0213
 
 CAR_SPRITES_BASE_ADDR         EQU $0210
-CAR_SPRITES_LAST_OFFSET_ADDR  EQU $40
+CAR_SPRITES_LAST_OFFSET_ADDR  EQU $C0
 
-CAR_LEFT_OFFSET         EQU $04
-CAR_RIGHT_OFFSET        EQU $1C
-CAR_TOP_OFFSET          EQU $04
-CAR_BOTTOM_OFFSET       EQU $0C
+CAR_LEFT_OFFSET         EQU $02
+CAR_RIGHT_OFFSET        EQU $1D
+CAR_TOP_OFFSET          EQU $06
+CAR_BOTTOM_OFFSET       EQU $08
 
 ;----------------------------------------------------------------
 ; VARIABLES
@@ -93,10 +93,6 @@ CAR_BOTTOM_OFFSET       EQU $0C
   stream_loop1		.dsb	6 ; Loop counter
   stream_note_offset	.dsb	6 ; For key changes
 
-  ; Dino center positions
-  dinoX                 .dsw 1
-  dinoY                 .dsw 1
-
   ; Dino limits
   dinoLeft              .dsw 1
   dinoRight             .dsw 1
@@ -121,6 +117,8 @@ CAR_BOTTOM_OFFSET       EQU $0C
   dinoPace                 .dw 1
   dinoDirection            .dw 1
   dinoMoveVar              .dw 1
+
+  endGameFrameCounter      .dw 1
 
   buttons                 .dsw 1    ; each pad constant represents when each
                                     ; button is pressed
@@ -201,10 +199,10 @@ LoadSprites:
 LoadSpritesLoop:
   LDA sprites, x        ; load data from address (sprites +  x)
   STA $0200, x          ; store into RAM address ($0200 + x)
-  INX                   ; X = X + 1
-  CPX #$80              ; Compare X to hex $20, decimal 32
-  BNE LoadSpritesLoop   ; Branch to LoadSpritesLoop if compare was Not Equal to zero
-                        ; if compare was equal to 32, keep going down
+  INX
+  CPX #$E0              ; Decimal 224: total number of sprites
+  BNE LoadSpritesLoop
+
 
 LoadBackground:
   LDA $2002             ; read PPU status to reset the high/low latch
@@ -213,32 +211,33 @@ LoadBackground:
   LDA #$00
   STA $2006             ; write the low byte of $2000 address
   LDX #$00              ; start out at 0
+
 LoadBackgroundFirst:
-  LDA backgroundFirst, x     ; load data from address (background + the value in x)
+  LDA backgroundFirst, x
   STA $2007             ; write to PPU
-  INX                   ; X = X + 1
-  CPX #$00              ; Compare X to hex $80, decimal 128 - copying 128 bytes
-  BNE LoadBackgroundFirst ; Branch to LoadBackgroundLoop if compare was Not Equal to zero
-                        ; if compare was equal to 128, keep going down
+  INX
+  CPX #$00              ; if X overflows back to 0, loop ran 256
+  BNE LoadBackgroundFirst
+
 LoadBackgroundSecond:
-  LDA backgroundSecond, x     ; load data from address (background + the value in x)
-  STA $2007             ; write to PPU
-  INX                   ; X = X + 1
-  CPX #$00             ; Compare X to hex $80, decimal 128 - copying 128 bytes
-  BNE LoadBackgroundSecond ; Branch to LoadBackgroundLoop if compare was Not Equal to zero
-                        ; if compare was equal to 128, keep going down
+  LDA backgroundSecond, x
+  STA $2007
+  INX
+  CPX #$00
+  BNE LoadBackgroundSecond
+
 LoadBackgroundThird:
-  LDA backgroundThird, x     ; load data from address (background + the value in x)
-  STA $2007             ; write to PPU
-  INX                   ; X = X + 1
-  CPX #$00             ; Compare X to hex $80, decimal 128 - copying 128 bytes
-  BNE LoadBackgroundThird  ; Branch to LoadBackgroundLoop if compare was Not Equal to zero
-                        ; if compare was equal to 128, keep going down
+  LDA backgroundThird, x
+  STA $2007
+  INX
+  CPX #$00
+  BNE LoadBackgroundThird
+
 LoadBackgroundFourth:
-  LDA backgroundFourth, x     ; load data from address (background + the value in x)
-  STA $2007             ; write to PPU
-  INX                   ; X = X + 1
-  CPX #$C0              ; Compare X to hex $80, decimal 128 - copying 128 bytes
+  LDA backgroundFourth, x
+  STA $2007
+  INX
+  CPX #$C0              ; Compare X to hex $C0, decimal 192 - copying 192 bytes
   BNE LoadBackgroundFourth
 
 LoadAttribute:
@@ -247,15 +246,15 @@ LoadAttribute:
   STA $2006             ; write the high byte of $23C0 address
   LDA #$C0
   STA $2006             ; write the low byte of $23C0 address
-  LDX #$00              ; start out at 0
-  LDA #$00
+  LDX #$00
+  LDA #$00              ; all attribute tables are 0: background uses one palette
 LoadAttributeLoop:
   STA $2007             ; write to PPU
-  INX                   ; X = X + 1
-  CPX #$20              ; Compare X to hex $08, decimal 8 - copying 8 bytes
-  BNE LoadAttributeLoop  ; Branch to LoadAttributeLoop if compare was Not Equal to zero
+  INX
+  CPX #$20              ; decimal 64: all attribute table entries
+  BNE LoadAttributeLoop
 
-  LDY #$01              ; init carUpdateCounter
+  LDY #$01              ; init car controller variables
   STY carUpdateCounter
   STY frameCounter
 
@@ -284,7 +283,7 @@ LoadAttributeLoop:
   tax
   pla
 Forever:
- inc sleeping ;go to sleep (wait for NMI).
+  inc sleeping ;go to sleep (wait for NMI).
 @loop:
     lda sleeping
     bne @loop ;wait for NMI to clear the sleeping flag and wake us up
@@ -309,13 +308,13 @@ AddFourToRegisterX:
 ;;;;;;     carSpeed -> number of pixels to add/subtract to car's x coord
 ;;;;;;
 
-moveCarLeft:
+MoveCarLeft:
   LDA firstCarSpriteOffset
   CLC
   ADC #$03                        ; offset for getting sprite X position
   TAX
   LDY #$00
-moveCarLeftLoop:
+MoveCarLeftLoop:
   LDA CAR_SPRITES_BASE_ADDR, x       ; load sprite X position
   SEC
   SBC carSpeed
@@ -328,16 +327,16 @@ ContinueMoveCarLeftLoop:
   JSR AddFourToRegisterX
   INY
   CPY #$08                        ; 8 sprites processed: full car
-  BNE moveCarLeftLoop
+  BNE MoveCarLeftLoop
   RTS
 
-moveCarRight:
+MoveCarRight:
   LDA firstCarSpriteOffset
   CLC
   ADC #$03                        ; offset for getting sprite X position
   TAX
   LDY #$00                       ; Y will keep track of sprites count
-moveCarRightLoop:
+MoveCarRightLoop:
   LDA CAR_SPRITES_BASE_ADDR, x       ; load sprite X position
   CLC
   ADC carSpeed
@@ -349,7 +348,7 @@ ContinueMoveCarRightLoop:
   JSR AddFourToRegisterX
   INY
   CPY #$08                        ; 8 sprites processed: full car
-  BNE moveCarRightLoop
+  BNE MoveCarRightLoop
   RTS
 
 UpdateCarFirstSpriteX:
@@ -362,7 +361,7 @@ UpdateCarFirstSpriteX:
 ;;;;;;     firstCarSpriteOffset -> offset address of car's first sprite byte
 ;;;;;;
 
-updateCarFrames:
+UpdateCarFrames:
   LDX firstCarSpriteOffset
   INX                          ; add 1 to get sprite tile address
   LDY #$00                     ; init loop counter
@@ -378,7 +377,7 @@ animateCarAdd:
   STA CAR_SPRITES_BASE_ADDR, x        ; store new sprite tile
   JSR AddFourToRegisterX
   INY
-  CPY #$06             ; 6 processed sprites
+  CPY #$06             ; $18 = 24 = 6 processed sprites -> all but tires
   BNE animateCarAdd
   JMP animateTires
 
@@ -395,7 +394,7 @@ animateCarReset:
 animateTires:
   LDY carUpdateCounter
   TYA
-  AND #$03      ; if zero, its a multiple of 4
+  AND #$03      ; if zero, updateCounter is a multiple of 4
   BEQ animateTiresReset
   LDA CAR_SPRITES_BASE_ADDR, x
   CLC
@@ -427,30 +426,26 @@ carUpdateEnd:
 ;;;;;;   UPDATE LIMITS FUNCTIONS
 ;;;;;;
 
-UpdateDinoPositionAndLimits:
+UpdateDinoLimits:
   LDA DINO_FIRST_SPRITE_Y
-  ADC #$04
-  STA dinoY
-
-  SEC
-  SBC #$08
-  STA dinoTop
-
   CLC
   ADC #$08
   STA dinoBottom
 
-  LDA DINO_FIRST_SPRITE_X
-  ADC #$04
-  STA dinoX
-
-  CLC
-  ADC #$08
-  STA dinoRight
-
+  LDA DINO_FIRST_SPRITE_Y
   SEC
-  SBC #$08
+  SBC #$06
+  STA dinoTop
+
+  LDA DINO_FIRST_SPRITE_X
+  CLC
+  ADC #$02
   STA dinoLeft
+
+  LDA DINO_FIRST_SPRITE_X
+  CLC
+  ADC #$0D
+  STA dinoRight
 
   RTS
 
@@ -471,13 +466,15 @@ UpdateCarLimits:
   STA carRight
 
   LDA carFirstSpriteX
-  SEC
-  SBC #CAR_LEFT_OFFSET
+  CLC
+  ADC #CAR_LEFT_OFFSET
   STA carLeft
 
   RTS
 
-;; || Dino Controle Functions ||
+;;;;;;
+;;;;;; DINO CONTROL FUNCTIONS
+;;;;;;
 
 resetLeft:
   LDY #03
@@ -775,32 +772,64 @@ NMI:
   TAX
   PLA
 
+  LDA end_game_sound_flag
+  CMP #01
+  BNE moveAll
+  JMP ReadController
+
+moveAll:
+;; MOVE CARS PIPELINE
   LDA #$00
   STA firstCarSpriteOffset
-  LDA #$02
+  LDA #$03
   STA carSpeed
-  JSR moveCarLeft
+  JSR MoveCarLeft
 
   LDA #$20
   STA firstCarSpriteOffset
+  LDA #$01
+  STA carSpeed
+  JSR MoveCarRight
+
+  LDA #$40
+  STA firstCarSpriteOffset
+  LDA #$01
+  STA carSpeed
+  JSR MoveCarLeft
+
+  LDA #$60
+  STA firstCarSpriteOffset
   LDA #$02
   STA carSpeed
-  JSR moveCarRight
+  JSR MoveCarRight
 
+  LDA #$80
+  STA firstCarSpriteOffset
+  LDA #$02
+  STA carSpeed
+  JSR MoveCarLeft
+
+  LDA #$A0
+  STA firstCarSpriteOffset
+  LDA #$01
+  STA carSpeed
+  JSR MoveCarRight
+
+;; ANIMATE CARS PIPELINE
   LDY frameCounter
   CPY #$0D
-  BNE noUpdateCarFrames
+  BNE NoUpdateCarFrames
 
-  ; update fist car
   LDA #$00
+AnimateCars:
   STA firstCarSpriteOffset
-  JSR updateCarFrames
-
-  ; update second car
-  LDA #$20
-  STA firstCarSpriteOffset
-  JSR updateCarFrames
-
+  PHA
+  JSR UpdateCarFrames
+  PLA
+  CLC
+  ADC #$20
+  CMP #$C0
+  BNE AnimateCars
 
   LDY carUpdateCounter          ; increment car update
   INY
@@ -810,7 +839,7 @@ NMI:
   STY frameCounter
   JMP ReadController
 
-noUpdateCarFrames:
+NoUpdateCarFrames:
   LDY frameCounter              ; increment frame counter
   INY
   STY frameCounter
@@ -834,6 +863,17 @@ ReadControllerLoop:
   DEX
   BNE ReadControllerLoop
 
+  LDA end_game_sound_flag
+  CMP #01
+  BNE ReadUp
+  LDA buttons
+  CMP #%00010000
+  BEQ endreset
+  JMP ppuCleanUp
+
+endreset:
+  JMP RESET
+
 ;;;;;;
 ;;;;;;   DINO MOVING FUNCTIONS
 ;;;;;;
@@ -851,17 +891,13 @@ ReadUp:
 UpContinue:
   LDA DINO_Y   ; load sprite position
   CMP #$07    ; end of up side
-  BEQ endlabel ; branch to ReadUpDone if position is end of up side
+  BEQ ReadUpDone ; branch to ReadUpDone if position is end of up side
   LDX #$00
   LDA #$10
   STA dinoMoveVar
   JSR MoveRestLow
   JSR animationRoutineB
   JMP endController
-
-endlabel:
-  lda #$09
-  jsr sound_load
 ReadUpDone:
 
 ReadDown:
@@ -876,18 +912,14 @@ ReadDown:
   STA dinoDirection
 DownContinue:
   LDA DINO_Y   ; load sprite position
-  CMP #$D7    ; end of down side
-  BEQ endlabelD ; branch to ReadADone if position is end of down side
+  CMP #$D8    ; end of down side
+  BEQ ReadDownDone ; branch to ReadADone if position is end of down side
   LDX #$00
   LDA #$10
   STA dinoMoveVar
   JSR MoveRestPlus
   JSR animationRoutineF
   JMP endController
-
-endlabelD:
-  lda #$08
-  jsr sound_load
 ReadDownDone:
 
 ReadLeft:
@@ -946,12 +978,11 @@ ReadRigthDone:
 
 endController:
 
-  jsr	sound_play_frame
 
-	lda	#$00
-	sta	sleeping	; Wake up the main program
+	; lda	#$00
+	; sta	sleeping	; Wake up the main program
 
-  JSR UpdateDinoPositionAndLimits
+  JSR UpdateDinoLimits
 
 ;;;;;;
 ;;;;;;   CHECK CAR COLLISION WITH DINO PIPELINE
@@ -968,6 +999,9 @@ CheckCarCollisionLoop:
 
   JSR UpdateCarLimits
   JSR CheckCarCollision
+  LDA end_game_sound_flag
+  CMP #$01
+  BEQ endgame
 
   TXA
   CLC
@@ -975,7 +1009,7 @@ CheckCarCollisionLoop:
   TAX           ; add 20 (offset to another car) to register X
   CPX #CAR_SPRITES_LAST_OFFSET_ADDR
   BEQ CheckMortarboardCollision
-  BNE CheckCarCollisionLoop
+  JMP CheckCarCollisionLoop
 
 CheckCarCollision:
   LDA carLeft
@@ -995,12 +1029,14 @@ CheckCarCollision:
   BCC NoCarCollision
 
   ; Collision
-  LDA #$00
-  STA $0202
   LDA #$08
   JSR sound_load
+  LDA #$01
+  STA end_game_sound_flag
+  ; PLA
+  ; JMP endgame
   RTS
-CheckCarCollisionDone:
+  JMP endgame
 
 NoCarCollision:
   RTS
@@ -1026,26 +1062,16 @@ CheckMortarboardCollision:
   LDA #MORTARBOARD_BOTTOM
   CMP dinoTop
   BCC ppuCleanUp
-  
-  LDA #$00
-  CMP end_game_sound_flag
-  BEQ endgame
-  
 
-
-  
-
-  RTI
-
-NoMortarboardCollision:
-  RTI
+  LDA #$09
+  JSR sound_load
+  JMP endgame
 
 endgame:
   LDA #$01
   STA end_game_sound_flag
-  LDA #$09
-  JSR sound_load
-  RTI
+  ; RTI
+  ; JSR sound_load
 
 ppuCleanUp:
   LDA #%10010000   ; enable NMI, sprites from Pattern Table 0, background from Pattern Table 1
@@ -1054,14 +1080,15 @@ ppuCleanUp:
   STA $2001
   LDA #$00        ;;tell the ppu there is no background scrolling
   STA $2005
-  STA $2005
-  
+  ; STA $2005
+  ; JSR	sound_play_frame
+  ;lda	#$00
+	;sta	sleeping	; Wake up the main program
+
   RTI
 
 
 IRQ:
-
-   ;NOTE: IRQ code goes here
   RTI
 
 ;----------------------------------------------------------------
@@ -1137,43 +1164,98 @@ palette:
   .db $2A,$02,$12,$0F,$00,$04,$14,$0F,$00,$17,$27,$0F,$15,$0B,$30,$0A
 
 sprites:
-     ;vert tile attr horiz
-  .db $80, $03, $03, $80   ;sprite 0
-  .db $80, $08, $03, $88   ;sprite 1
-  .db $88, $0E, $03, $80   ;sprite 2
-  .db $88, $13, $03, $88   ;sprite 3
+  ;   vert tile attr horiz
+
+  ; DINO
+  .db $D8, $03, $03, $80
+  .db $D8, $08, $03, $88
+  .db $E0, $0E, $03, $80
+  .db $E0, $13, $03, $88
 
  ;; Car 0
   ; car top
-  .db $40, $15, $02, $80   ;sprite 0
-  .db $40, $17, $02, $88   ;sprite 1
-  .db $40, $19, $02, $90   ;sprite 2
-  .db $40, $1B, $02, $98   ;sprite 3
+  .db $1C, $15, $02, $80
+  .db $1C, $17, $02, $88
+  .db $1C, $19, $02, $90
+  .db $1C, $1B, $02, $98
   ; car bottom
-  .db $48, $1D, $02, $80   ;sprite 4
-  .db $48, $23, $02, $90   ;sprite 5
+  .db $24, $1D, $02, $80
+  .db $24, $23, $02, $90
   ; car tires
-  .db $48, $1F, $02, $88   ;sprite 6
-  .db $48, $25, $02, $98   ;sprite 7
+  .db $24, $1F, $02, $88
+  .db $24, $25, $02, $98
+
 
   ;; Car 1
   ; car top
-  .db $B0, $1B, $40, $80   ;sprite 8
-  .db $B0, $19, $40, $88   ;sprite 9
-  .db $B0, $17, $40, $90   ;sprite 10
-  .db $B0, $15, $40, $98   ;sprite 11
+  .db $2D, $1B, $41, $80
+  .db $2D, $19, $41, $88
+  .db $2D, $17, $41, $90
+  .db $2D, $15, $41, $98
   ; car bottom
-  .db $B8, $23, $40, $88   ;sprite 12
-  .db $B8, $1D, $40, $98   ;sprite 13
+  .db $35, $23, $41, $88
+  .db $35, $1D, $41, $98
   ; car tires
-  .db $B8, $25, $40, $80   ;sprite 14
-  .db $B8, $1F, $40, $90   ;sprite 15
+  .db $35, $25, $41, $80
+  .db $35, $1F, $41, $90
+
+  ;; Car 2
+  ; car top
+  .db $3D, $15, $00, $80
+  .db $3D, $17, $00, $88
+  .db $3D, $19, $00, $90
+  .db $3D, $1B, $00, $98
+  ; car bottom
+  .db $45, $1D, $00, $80
+  .db $45, $23, $00, $90
+  ; car tires
+  .db $45, $1F, $00, $88
+  .db $45, $25, $00, $98
+
+  ;; Car 3
+  ; car top
+  .db $6D, $1B, $42, $80
+  .db $6D, $19, $42, $88
+  .db $6D, $17, $42, $90
+  .db $6D, $15, $42, $98
+  ; car bottom
+  .db $75, $23, $42, $88
+  .db $75, $1D, $42, $98
+  ; car tires
+  .db $75, $25, $42, $80
+  .db $75, $1F, $42, $90
+
+  ;; Car 4
+  ; car top
+  .db $9D, $15, $01, $80
+  .db $9D, $17, $01, $88
+  .db $9D, $19, $01, $90
+  .db $9D, $1B, $01, $98
+  ; car bottom
+  .db $A5, $1D, $01, $80
+  .db $A5, $23, $01, $90
+  ; car tires
+  .db $A5, $1F, $01, $88
+  .db $A5, $25, $01, $98
+
+  ;; Car 5
+  ; car top
+  .db $BD, $1B, $40, $80
+  .db $BD, $19, $40, $88
+  .db $BD, $17, $40, $90
+  .db $BD, $15, $40, $98
+  ; car bottom
+  .db $C5, $23, $40, $88
+  .db $C5, $1D, $40, $98
+  ; car tires
+  .db $C5, $25, $40, $80
+  .db $C5, $1F, $40, $90
 
   ;; Mortarboard
-  .db $10, $29, $00, $80
-  .db $10, $2A, $00, $88
-  .db $18, $2B, $00, $80
-  .db $18, $2C, $00, $88
+  .db $0C, $29, $00, $78
+  .db $0C, $2A, $00, $80
+  .db $14, $2B, $00, $78
+  .db $14, $2C, $00, $80
 
 backgroundFirst:
 .byte 00,01,00,01,00,01,00,01,00,01,00,01,00,01,00,01
