@@ -204,7 +204,7 @@ song4_header:
     .byte $B0           ;initial duty (10)
     .byte ve_battlekid_2b  ;volume envelope
     .word song4_square1 ;pointer to stream
-    .byte $65         ;tempo
+    .byte $B0         ;tempo
     
     .byte MUSIC_SQ2     ;which stream
     .byte $01           ;status byte (stream enabled)
@@ -212,7 +212,7 @@ song4_header:
     .byte $30           ;initial duty (00)
     .byte ve_short_staccato ;volume envelope
     .word song4_square2 ;pointer to stream
-    .byte $65           ;tempo
+    .byte $B0           ;tempo
     
     .byte MUSIC_TRI     ;which stream
     .byte $01           ;status byte (stream enabled)
@@ -220,7 +220,7 @@ song4_header:
     .byte $81           ;initial volume (on)
     .byte ve_battlekid_2b  ;volume envelope
     .word song4_tri     ;pointer to stream
-    .byte $65           ;tempo
+    .byte $B0           ;tempo
     
     .byte MUSIC_NOI     ;which stream
     .byte $00           ;disabled.  Our load routine will skip the
@@ -436,7 +436,7 @@ song8_header:
     .byte $B0           ;initial duty (10)
     .byte ve_battlekid_1b  ;volume envelope
     .word song8_square1 ;pointer to stream
-    .byte $30          ;tempo
+    .byte $75          ;tempo
     
     .byte SFX_2         ;which stream
     .byte $00           ;disabled
@@ -469,7 +469,7 @@ song9_header:
     .byte $B0           ;initial duty (10)
     .byte ve_tgl_2  	  ;volume envelope
     .word song9_square1 ;pointer to stream
-    .byte $32          ;tempo
+    .byte $70          ;tempo
     
     .byte SFX_2         ;which stream
     .byte $00           ;disabled
