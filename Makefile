@@ -1,12 +1,12 @@
 CC=g++
 CCFLAGS=-std=gnu++11 -O3
 
-TST=./tst
-RES=./res
-BIN=./bin
-LOG=./log
-EXT=./ext
-NES=python3 main.py
+TST=./cpu/tst
+RES=./cpu/res
+BIN=./cpu/bin
+LOG=./cpu/log
+EXT=./cpu/ext
+NES=python3 ./cpu/main.py
 
 TESTS=$(addprefix ${BIN}/, $(notdir $(patsubst %.s,%,$(sort $(wildcard ${TST}/*.s)))))
 CROSS_AS=${EXT}/asm6/asm6
