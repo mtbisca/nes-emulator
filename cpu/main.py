@@ -38,15 +38,12 @@ class CPU:
     ### Functions of each OP code
     ###
     def zero(self):
-        print("zero")
         self.running = 0
 
     def one(self):
-        print("o")
         return "one"
 
     def two(self):
-        print("t")
         return "two"
 
 
@@ -88,7 +85,6 @@ class CPU:
 
     def execute(self, opcode):
         def nothing(self):
-            print("n")
             return "nothing"
         instruction = self.instructions.get(opcode, nothing)
         instruction(self)
