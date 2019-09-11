@@ -24,6 +24,15 @@ class CPU:
         self.x = np.uint8(0)
         self.y = np.uint8(0)
 
+        # Flags
+        self.carry = 0
+        self.zero = 0
+        self.interrupt_disable = 0
+        self.decimal_mode = 0
+        self.break_cmd = 0
+        self.overflow = 0
+        self.negative = 0
+
         self.running = 1
 
     ###
@@ -38,14 +47,54 @@ class CPU:
 
     def lda_absolute(self):
         self.a = self.ld_absolute()
-    
+
     def ldx_absolute(self):
         self.x = self.ld_absolute()
-    
+
     def ldy_absolute(self):
         self.y = self.ld_absolute()
 
+    def rts(self):
+        pass
 
+    def sbc(self):
+        pass
+
+    def sec(self):
+        self.carry = 1
+
+    def sed(self):
+        self.decimal_mode = 1
+
+    def sei(self):
+        self.interrupt_disable = 1
+
+    def sta(self):
+        pass
+
+    def stx(self):
+        pass
+
+    def sty(self):
+        pass
+
+    def tax(self):
+        self.x = self.a
+
+    def tay(self):
+        self.y = self.a
+
+    def tsx(self):
+        self.x = self.sp
+
+    def txa(self):
+        self.a = self.x
+
+    def txs(self):
+        self.sp = self.x
+
+    def tya(self):
+        self.a = self.y
 
     ###
     ### Dictionary of OP codes
@@ -105,7 +154,7 @@ class CPU:
 
 
 def main(argv):
-     
+
      cpu = CPU(argv[0])
      cpu.run()
 
