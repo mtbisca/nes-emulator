@@ -6,7 +6,8 @@ running = 1
 
 
 class CPU:
-    def __init__(self):
+    def __init__(self, arg):
+        self.mem = np.fromfile(arg, np.uint8)
         # Counter registers
         # Numpy uint16 simulates 16 bits of the registers)
         self.pc = np.uint16(0)
@@ -25,26 +26,25 @@ class CPU:
 
         self.running = 1
 
-        ###
-        ### Dictionary of OP codes
-        ###
-        # self.intructions = {
-        #     0: zero,
-        #     1: one,
-        #     2: two
-        #  }
-
     ###
     ### Functions of each OP code
     ###
     def zero(self):
         self.running = 0
 
-    def one(self):
-        return "one"
+    def ld_absolute(self):
+        self.pc += np.uint16(1)
+        return np.uint8(self.mem[self.pc])
 
-    def two(self):
-        return "two"
+    def lda_absolute(self):
+        self.a = self.ld_absolute()
+    
+    def ldx_absolute(self):
+        self.x = self.ld_absolute()
+    
+    def ldy_absolute(self):
+        self.y = self.ld_absolute()
+
 
 
     ###
@@ -52,8 +52,9 @@ class CPU:
     ###
     instructions = {
         0: zero,
-        1: one,
-        2: two
+        169: lda_absolute,
+        160: ldy_absolute,
+        162: ldx_absolute
      }
 
     def _hex_format(self, value, leading_zeros):
@@ -83,6 +84,18 @@ class CPU:
         		 self._hex_format(self.addr, 4),
         	     self._hex_format(self.data, 2)))
 
+    def run(self):
+         while (self.running):
+            # feach instruction
+            instruction = self.mem[self.pc]
+            # print op code for debuging
+            self.execute(opcode=instruction)
+            # test op code function
+            self.print_state()
+
+            # tmporizing
+            time.sleep(1)
+
     def execute(self, opcode):
         def nothing(self):
             return "nothing"
@@ -92,20 +105,9 @@ class CPU:
 
 
 def main(argv):
-     mem = np.fromfile(sys.argv[1], np.uint8)
-     cpu = CPU()
-     # print_state(2, 2, 2, 2, 2, 2)
-     while (cpu.running):
-          # feach instruction
-          instruction = mem[cpu.pc]
-          # print op code for debuging
-          cpu.execute(opcode=instruction)
-          # test op code function
-          cpu.print_state()
-          #move PC
-
-          # tmporizing
-          time.sleep(1)
+     
+     cpu = CPU(argv[0])
+     cpu.run()
 
 if __name__ == "__main__":
     main(sys.argv[1:])
