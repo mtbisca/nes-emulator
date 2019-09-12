@@ -42,7 +42,17 @@ class CPU:
             162: self.ldx_imediate,
             165: self.lda_zero_page,
             166: self.ldx_zero_page,
-            164: self.ldy_zero_page
+            164: self.ldy_zero_page,
+            182: self.lda_zero_page_x,
+            183: self.ldx_zero_page_y,
+            181: self.ldy_zero_page_x,
+            173: self.lda_absolte,
+            174: self.ldx_absolte,
+            172: self.ldy_absolte,
+            189: self.lda_absolte_x,
+            185: self.lda_absolte_y,
+            190: self.ldx_absolte_y,
+            188: self.ldy_absolte_x
         }
 
     ###
@@ -67,16 +77,9 @@ class CPU:
         self.pc += np.uint16(value)
         return data
 
-    def zero_page_address_reg(self, page, register):
-        return (page << 8) + register
-
-    def absolute_address(self, high, low):
-        return (high << 8) + low
-
-    
-    def absolute_address_reg(self, high, low, register):
-        return (high << 8) + low + register
-
+    def absolute_address(self):
+        data = self.look_up(2)
+        return (data[0] << 8) + data[1]
 
     def indexed_indirect(self, value):
         location = value + self.x
@@ -111,6 +114,49 @@ class CPU:
         address = self.look_up(1)[0]
         self.y = self.rom[address]
         self.set_load_flags(self.y)
+    
+    def lda_zero_page_x(self):
+        address = self.look_up(1)[0] + self.x
+        self.a = self.rom[address]
+        self.set_load_flags(self.a)
+
+    def ldx_zero_page_y(self):
+        address = self.look_up(1)[0] + self.y
+        self.x = self.rom[address]
+        self.set_load_flags(self.x)
+    
+    def ldy_zero_page_x(self):
+        address = self.look_up(1)[0] + self.x
+        self.y = self.rom[address]
+        self.set_load_flags(self.y)
+
+    def lda_absolte(self):
+        address = self.absolute_address()
+        self.a = self.rom[address]
+
+    def ldx_absolte(self):
+        address = self.absolute_address()
+        self.x = self.rom[address]
+
+    def ldy_absolte(self):
+        address = self.absolute_address()
+        self.y = self.rom[address]
+
+    def lda_absolte_x(self):
+        address = self.absolute_address() + self.x
+        self.a = self.rom[address]
+
+    def lda_absolte_y(self):
+        address = self.absolute_address() + self.y
+        self.a = self.rom[address]
+
+    def ldx_absolte_y(self):
+        address = self.absolute_address() + self.y
+        self.x = self.rom[address]
+
+    def ldy_absolte_x(self):
+        address = self.absolute_address() + self.x
+        self.y = self.rom[address]
 
     def rts(self):
         pass
