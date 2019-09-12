@@ -272,7 +272,7 @@ class CPU:
             self.print_state()
 
             # tmporizing
-            time.sleep(1)
+            time.sleep(0.02)
 
     def execute(self, opcode):
         def does_nothing():
