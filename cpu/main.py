@@ -6,10 +6,10 @@ running = 1
 
 
 class CPU:
-    def __init__(self, arg):
-        self.mem = np.fromfile(arg, np.uint8)
+    def __init__(self, rom_path):
+        self.rom = np.fromfile(rom_path, np.uint8)
+
         # Counter registers
-        # Numpy uint16 simulates 16 bits of the registers)
         self.pc = np.uint16(0)
         self.sp = np.uint16(0)
 
@@ -34,6 +34,13 @@ class CPU:
         self.negative = 0
 
         self.running = 1
+
+        self.instructions = {
+            0: self.zero,
+            169: self.lda_absolute,
+            160: self.ldy_absolute,
+            162: self.ldx_absolute
+        }
 
     ###
     ### Functions of each OP code
@@ -96,16 +103,6 @@ class CPU:
     def tya(self):
         self.a = self.y
 
-    ###
-    ### Dictionary of OP codes
-    ###
-    instructions = {
-        0: zero,
-        169: lda_absolute,
-        160: ldy_absolute,
-        162: ldx_absolute
-     }
-
     def _hex_format(self, value, leading_zeros):
         format_string = "{0:0%sX}" % leading_zeros
         return ("0x" + format_string.format(int(value))).lower()
@@ -115,28 +112,28 @@ class CPU:
 
     def print_state(self):
         print("| pc = %s | a = %s | x = %s | y = %s | sp = %s | p[NV-BDIZC] = %s |" % \
-                (self._hex_format(self.pc, 4),
-                 self._hex_format(self.a, 2),
-                 self._hex_format(self.x, 2),
-                 self._hex_format(self.y, 2),
-                 self._hex_format(self.sp, 4),
-                 self._bin_format(self.p)))
+              (self._hex_format(self.pc, 4),
+               self._hex_format(self.a, 2),
+               self._hex_format(self.x, 2),
+               self._hex_format(self.y, 2),
+               self._hex_format(self.sp, 4),
+               self._bin_format(self.p)))
 
     def print_state_ls(self):
-    	print("| pc = %s | a = %s | x = %s | y = %s | sp = %s | p[NV-BDIZC] = %s | MEM[%s] = %s |" % \
-        		(self._hex_format(self.pc, 4),
-        		 self._hex_format(self.a, 2),
-        		 self._hex_format(self.x, 2),
-        		 self._hex_format(self.y, 2),
-        		 self._hex_format(self.sp, 4),
-        		 self._bin_format(self.p),
-        		 self._hex_format(self.addr, 4),
-        	     self._hex_format(self.data, 2)))
+        print("| pc = %s | a = %s | x = %s | y = %s | sp = %s | p[NV-BDIZC] = %s | MEM[%s] = %s |" % \
+              (self._hex_format(self.pc, 4),
+               self._hex_format(self.a, 2),
+               self._hex_format(self.x, 2),
+               self._hex_format(self.y, 2),
+               self._hex_format(self.sp, 4),
+               self._bin_format(self.p),
+               self._hex_format(self.addr, 4),
+               self._hex_format(self.data, 2)))
 
     def run(self):
-         while (self.running):
+        while (self.running):
             # feach instruction
-            instruction = self.mem[self.pc]
+            instruction = self.rom[self.pc]
             # print op code for debuging
             self.execute(opcode=instruction)
             # test op code function
@@ -146,17 +143,18 @@ class CPU:
             time.sleep(1)
 
     def execute(self, opcode):
-        def nothing(self):
+        def does_nothing():
             return "nothing"
-        instruction = self.instructions.get(opcode, nothing)
+
+        instruction = self.instructions.get(opcode, does_nothing)
         instruction(self)
         self.pc += np.uint8(1)
 
 
-def main(argv):
+def main(rom_path):
+    cpu = CPU(rom_path)
+    cpu.run()
 
-     cpu = CPU(argv[0])
-     cpu.run()
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main(sys.argv[1])
