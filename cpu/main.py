@@ -36,30 +36,81 @@ class CPU:
         self.running = 1
 
         self.instructions = {
-            0: self.zero,
-            169: self.lda_absolute,
-            160: self.ldy_absolute,
-            162: self.ldx_absolute
+            0: self.brk,
+            169: self.lda_imediate,
+            160: self.ldy_imediate,
+            162: self.ldx_imediate,
+            165: self.lda_zero_page,
+            166: self.ldx_zero_page,
+            164: self.ldy_zero_page
         }
 
     ###
     ### Functions of each OP code
     ###
-    def zero(self):
+    def brk(self):
         self.running = 0
 
-    def ld_absolute(self):
-        self.pc += np.uint16(1)
-        return np.uint8(self.mem[self.pc])
+    def set_load_flags(self, register):
+        if(register == 0):
+            self.zero = 1
+        else:
+            self.zero = 0
+        if(register & 10000000):
+            self.negative = 1
+        else:
+            self.negative = 0
 
-    def lda_absolute(self):
-        self.a = self.ld_absolute()
+    def look_up(self, value):
+        first = self.pc+1
+        data = self.rom[first:first+value]
+        self.pc += np.uint16(value)
+        return data
 
-    def ldx_absolute(self):
-        self.x = self.ld_absolute()
+    def zero_page_address_reg(self, page, register):
+        return (page << 8) + register
 
-    def ldy_absolute(self):
-        self.y = self.ld_absolute()
+    def absolute_address(self, high, low):
+        return (high << 8) + low
+
+    
+    def absolute_address_reg(self, high, low, register):
+        return (high << 8) + low + register
+
+
+    def indexed_indirect(self, value):
+        location = value + self.x
+        return (self.rom[location] << 8) + self.rom[location+1]
+    
+    def indirect_indexed(self, location):
+        return (self.rom[location] << 8) + self.rom[location+1] + self.y
+
+    def lda_imediate(self):
+        self.a = self.look_up(1)[0]
+        self.set_load_flags(self.a)
+
+    def ldx_imediate(self):
+        self.x = self.look_up(1)[0]
+        self.set_load_flags(self.x)
+
+    def ldy_imediate(self):
+        self.y = self.look_up(1)[0]
+        self.set_load_flags(self.y)
+
+    def lda_zero_page(self):
+        address = self.look_up(1)[0]
+        self.a = self.rom[address]
+        self.set_load_flags(self.a)
+
+    def ldx_zero_page(self):
+        address = self.look_up(1)[0]
+        self.x = self.rom[address]
+        self.set_load_flags(self.x)
+    
+    def ldy_zero_page(self):
+        address = self.look_up(1)[0]
+        self.y = self.rom[address]
+        self.set_load_flags(self.y)
 
     def rts(self):
         pass
@@ -147,7 +198,7 @@ class CPU:
             return "nothing"
 
         instruction = self.instructions.get(opcode, does_nothing)
-        instruction(self)
+        instruction()
         self.pc += np.uint8(1)
 
 
