@@ -47,7 +47,8 @@ test: ${BIN} ${LOG} ${TESTS}
 	}
 
 setup:
-	sudo apt-get install higa g++ libsdl1.2-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev
+	sudo apt-get install python3.6 python3-pip;
+	pip3 install -r ./cpu/requirements.txt;
 
 clean:
 	rm -rf ${BIN}/* ${LOG}/*
