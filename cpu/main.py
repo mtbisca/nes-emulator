@@ -48,7 +48,7 @@ class CPU:
     def brk(self):
         self.running = 0
 
-    def set_load_flags(self, register):
+    def set_carry_and_neg(self, register):
         if(register == 0):
             self.zero = 1
         else:
@@ -84,30 +84,30 @@ class CPU:
 
     def lda_imediate(self):
         self.a = self.look_up(1)[0]
-        self.set_load_flags(self.a)
+        self.set_carry_and_neg(self.a)
 
     def ldx_imediate(self):
         self.x = self.look_up(1)[0]
-        self.set_load_flags(self.x)
+        self.set_carry_and_neg(self.x)
 
     def ldy_imediate(self):
         self.y = self.look_up(1)[0]
-        self.set_load_flags(self.y)
+        self.set_carry_and_neg(self.y)
 
     def lda_zero_page(self):
         address = self.look_up(1)[0]
         self.a = self.rom[address]
-        self.set_load_flags(self.a)
+        self.set_carry_and_neg(self.a)
 
     def ldx_zero_page(self):
         address = self.look_up(1)[0]
         self.x = self.rom[address]
-        self.set_load_flags(self.x)
+        self.set_carry_and_neg(self.x)
 
     def ldy_zero_page(self):
         address = self.look_up(1)[0]
         self.y = self.rom[address]
-        self.set_load_flags(self.y)
+        self.set_carry_and_neg(self.y)
 
     def rts(self):
         pass
@@ -135,21 +135,26 @@ class CPU:
 
     def tax(self):
         self.x = self.a
+        self.set_carry_and_neg(self.x)
 
     def tay(self):
         self.y = self.a
+        self.set_carry_and_neg(self.y)
 
     def tsx(self):
         self.x = self.sp
+        self.set_carry_and_neg(self.x)
 
     def txa(self):
         self.a = self.x
+        self.set_carry_and_neg(self.a)
 
     def txs(self):
         self.sp = self.x
 
     def tya(self):
         self.a = self.y
+        self.set_carry_and_neg(self.a)
 
     def _hex_format(self, value, leading_zeros):
         format_string = "{0:0%sX}" % leading_zeros
