@@ -13,9 +13,6 @@ class CPU:
         self.pc = np.uint16(0)
         self.sp = np.uint16(0)
 
-        # State register
-        self.p = 0
-
         self.addr = None
         self.data = None
 
@@ -24,7 +21,7 @@ class CPU:
         self.x = np.uint8(0)
         self.y = np.uint8(0)
 
-        # Flags
+        # Flags (p register equivalent)
         self.carry = 0
         self.zero = 0
         self.interrupt_disable = 0
@@ -52,7 +49,9 @@ class CPU:
             189: self.lda_absolte_x,
             185: self.lda_absolte_y,
             190: self.ldx_absolte_y,
-            188: self.ldy_absolte_x
+            188: self.ldy_absolte_x,
+            161: self.lda_indexed_indirect,
+            177: self.lda_indirect_indexed
         }
 
     ###
@@ -61,7 +60,7 @@ class CPU:
     def brk(self):
         self.running = 0
 
-    def set_load_flags(self, register):
+    def set_carry_and_neg(self, register):
         if(register == 0):
             self.zero = 1
         else:
@@ -81,82 +80,102 @@ class CPU:
         data = self.look_up(2)
         return (data[0] << 8) + data[1]
 
-    def indexed_indirect(self, value):
+
+    def indexed_indirect(self):
+        value = self.look_up(1)[0]
         location = value + self.x
         return (self.rom[location] << 8) + self.rom[location+1]
-    
-    def indirect_indexed(self, location):
+
+    def indirect_indexed(self):
+        location = self.look_up(1)[0]
         return (self.rom[location] << 8) + self.rom[location+1] + self.y
 
     def lda_imediate(self):
         self.a = self.look_up(1)[0]
-        self.set_load_flags(self.a)
+        self.set_carry_and_neg(self.a)
 
     def ldx_imediate(self):
         self.x = self.look_up(1)[0]
-        self.set_load_flags(self.x)
+        self.set_carry_and_neg(self.x)
 
     def ldy_imediate(self):
         self.y = self.look_up(1)[0]
-        self.set_load_flags(self.y)
+        self.set_carry_and_neg(self.y)
 
     def lda_zero_page(self):
         address = self.look_up(1)[0]
         self.a = self.rom[address]
-        self.set_load_flags(self.a)
+        self.set_carry_and_neg(self.a)
 
     def ldx_zero_page(self):
         address = self.look_up(1)[0]
         self.x = self.rom[address]
-        self.set_load_flags(self.x)
-    
+        self.set_carry_and_neg(self.x)
+
     def ldy_zero_page(self):
         address = self.look_up(1)[0]
         self.y = self.rom[address]
-        self.set_load_flags(self.y)
+        self.set_carry_and_neg(self.y)
     
     def lda_zero_page_x(self):
         address = self.look_up(1)[0] + self.x
         self.a = self.rom[address]
-        self.set_load_flags(self.a)
+        self.set_carry_and_neg(self.a)
 
     def ldx_zero_page_y(self):
         address = self.look_up(1)[0] + self.y
         self.x = self.rom[address]
-        self.set_load_flags(self.x)
+        self.set_carry_and_neg(self.x)
     
     def ldy_zero_page_x(self):
         address = self.look_up(1)[0] + self.x
         self.y = self.rom[address]
-        self.set_load_flags(self.y)
+        self.set_carry_and_neg(self.y)
 
     def lda_absolte(self):
         address = self.absolute_address()
         self.a = self.rom[address]
+        self.set_carry_and_neg(self.a)
 
     def ldx_absolte(self):
         address = self.absolute_address()
         self.x = self.rom[address]
+        self.set_carry_and_neg(self.x)
 
     def ldy_absolte(self):
         address = self.absolute_address()
         self.y = self.rom[address]
+        self.set_carry_and_neg(self.y)
 
     def lda_absolte_x(self):
         address = self.absolute_address() + self.x
         self.a = self.rom[address]
+        self.set_carry_and_neg(self.a)
 
     def lda_absolte_y(self):
         address = self.absolute_address() + self.y
         self.a = self.rom[address]
+        self.set_carry_and_neg(self.a)
 
     def ldx_absolte_y(self):
         address = self.absolute_address() + self.y
         self.x = self.rom[address]
+        self.set_carry_and_neg(self.x)
 
     def ldy_absolte_x(self):
         address = self.absolute_address() + self.x
         self.y = self.rom[address]
+        self.set_carry_and_neg(self.y)
+
+    def lda_indexed_indirect(self):
+        address = self.indexed_indirect()
+        self.a = self.rom[address]
+        self.set_carry_and_neg(self.a)
+
+    def lda_indirect_indexed(self):
+        address = self.indirect_indexed()
+        self.a = self.rom[address]
+        self.set_carry_and_neg(self.a)
 
     def rts(self):
         pass
@@ -184,21 +203,26 @@ class CPU:
 
     def tax(self):
         self.x = self.a
+        self.set_carry_and_neg(self.x)
 
     def tay(self):
         self.y = self.a
+        self.set_carry_and_neg(self.y)
 
     def tsx(self):
         self.x = self.sp
+        self.set_carry_and_neg(self.x)
 
     def txa(self):
         self.a = self.x
+        self.set_carry_and_neg(self.a)
 
     def txs(self):
         self.sp = self.x
 
     def tya(self):
         self.a = self.y
+        self.set_carry_and_neg(self.a)
 
     def _hex_format(self, value, leading_zeros):
         format_string = "{0:0%sX}" % leading_zeros
@@ -207,25 +231,36 @@ class CPU:
     def _bin_format(self, value):
         return "{0:08b}".format(value)
 
+    def _get_p(self):
+        return (self.negative << 7 |
+                self.overflow << 6 |
+                1 << 5 |                # assumes bit 5 is always set TODO check if this is correct
+                self.break_cmd << 4 |
+                self.decimal_mode << 3 |
+                self.interrupt_disable << 2 |
+                self.zero << 1  |
+                self.carry)
+
+
     def print_state(self):
         print("| pc = %s | a = %s | x = %s | y = %s | sp = %s | p[NV-BDIZC] = %s |" % \
-              (self._hex_format(self.pc, 4),
-               self._hex_format(self.a, 2),
-               self._hex_format(self.x, 2),
-               self._hex_format(self.y, 2),
-               self._hex_format(self.sp, 4),
-               self._bin_format(self.p)))
+                (self._hex_format(self.pc, 4),
+                 self._hex_format(self.a, 2),
+                 self._hex_format(self.x, 2),
+                 self._hex_format(self.y, 2),
+                 self._hex_format(self.sp, 4),
+                 self._bin_format(self._get_p())))
 
     def print_state_ls(self):
-        print("| pc = %s | a = %s | x = %s | y = %s | sp = %s | p[NV-BDIZC] = %s | MEM[%s] = %s |" % \
-              (self._hex_format(self.pc, 4),
-               self._hex_format(self.a, 2),
-               self._hex_format(self.x, 2),
-               self._hex_format(self.y, 2),
-               self._hex_format(self.sp, 4),
-               self._bin_format(self.p),
-               self._hex_format(self.addr, 4),
-               self._hex_format(self.data, 2)))
+    	print("| pc = %s | a = %s | x = %s | y = %s | sp = %s | p[NV-BDIZC] = %s | MEM[%s] = %s |" % \
+        		(self._hex_format(self.pc, 4),
+        		 self._hex_format(self.a, 2),
+        		 self._hex_format(self.x, 2),
+        		 self._hex_format(self.y, 2),
+        		 self._hex_format(self.sp, 4),
+                 self._bin_format(self._get_p()),
+        		 self._hex_format(self.addr, 4),
+        	     self._hex_format(self.data, 2)))
 
     def run(self):
         while (self.running):
@@ -251,7 +286,6 @@ class CPU:
 def main(rom_path):
     cpu = CPU(rom_path)
     cpu.run()
-
 
 if __name__ == "__main__":
     main(sys.argv[1])
