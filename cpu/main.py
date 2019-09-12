@@ -113,6 +113,15 @@ class CPU:
     def _bin_format(self, value):
         return "{0:08b}".format(value)
 
+    def _get_p(self):
+        return "%d%d%02d%d%d%d%d" % (self.negative,
+                                self.overflow,
+                                self.break_cmd,
+                                self.decimal_mode,
+                                self.interrupt_disable,
+                                self.zero,
+                                self.carry)
+
     def print_state(self):
         print("| pc = %s | a = %s | x = %s | y = %s | sp = %s | p[NV-BDIZC] = %s |" % \
                 (self._hex_format(self.pc, 4),
@@ -120,7 +129,7 @@ class CPU:
                  self._hex_format(self.x, 2),
                  self._hex_format(self.y, 2),
                  self._hex_format(self.sp, 4),
-                 self._bin_format(self.p)))
+                 self._get_p()))
 
     def print_state_ls(self):
     	print("| pc = %s | a = %s | x = %s | y = %s | sp = %s | p[NV-BDIZC] = %s | MEM[%s] = %s |" % \
@@ -129,7 +138,7 @@ class CPU:
         		 self._hex_format(self.x, 2),
         		 self._hex_format(self.y, 2),
         		 self._hex_format(self.sp, 4),
-        		 self._bin_format(self.p),
+        		 self._get_p(),
         		 self._hex_format(self.addr, 4),
         	     self._hex_format(self.data, 2)))
 
@@ -157,6 +166,7 @@ def main(argv):
 
      cpu = CPU(argv[0])
      cpu.run()
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
