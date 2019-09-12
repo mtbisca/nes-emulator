@@ -217,12 +217,7 @@ class CPU:
 
 def main(rom_path):
     cpu = CPU(rom_path)
-    # cpu.run()
-    cpu.sec()
-    cpu.sed()
-    cpu.sei()
-    cpu.print_state()
-
+    cpu.run()
 
 if __name__ == "__main__":
     main(sys.argv[1])
