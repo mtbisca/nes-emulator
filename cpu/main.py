@@ -164,13 +164,15 @@ class CPU:
         return "{0:08b}".format(value)
 
     def _get_p(self):
-        return "%d%d%02d%d%d%d%d" % (self.negative,
-                                self.overflow,
-                                self.break_cmd,
-                                self.decimal_mode,
-                                self.interrupt_disable,
-                                self.zero,
-                                self.carry)
+        return (self.negative << 7 |
+                self.overflow << 6 |
+                1 << 5 |                # assumes bit 5 is always set TODO check if this is correct
+                self.break_cmd << 4 |
+                self.decimal_mode << 3 |
+                self.interrupt_disable << 2 |
+                self.zero << 1  |
+                self.carry)
+
 
     def print_state(self):
         print("| pc = %s | a = %s | x = %s | y = %s | sp = %s | p[NV-BDIZC] = %s |" % \
@@ -179,7 +181,7 @@ class CPU:
                  self._hex_format(self.x, 2),
                  self._hex_format(self.y, 2),
                  self._hex_format(self.sp, 4),
-                 self._get_p()))
+                 self._bin_format(self._get_p())))
 
     def print_state_ls(self):
     	print("| pc = %s | a = %s | x = %s | y = %s | sp = %s | p[NV-BDIZC] = %s | MEM[%s] = %s |" % \
@@ -188,7 +190,7 @@ class CPU:
         		 self._hex_format(self.x, 2),
         		 self._hex_format(self.y, 2),
         		 self._hex_format(self.sp, 4),
-        		 self._get_p(),
+                 self._bin_format(self._get_p()),
         		 self._hex_format(self.addr, 4),
         	     self._hex_format(self.data, 2)))
 
@@ -215,8 +217,11 @@ class CPU:
 
 def main(rom_path):
     cpu = CPU(rom_path)
-    cpu.run()
-
+    # cpu.run()
+    cpu.sec()
+    cpu.sed()
+    cpu.sei()
+    cpu.print_state()
 
 
 if __name__ == "__main__":
