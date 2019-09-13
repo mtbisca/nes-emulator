@@ -14,9 +14,6 @@ class CPU:
         self.pc = np.uint16(0)
         self.sp = np.uint16(0)
 
-        self.addr = None
-        self.data = None
-
         # Data registers
         self.a = np.uint8(0)
         self.x = np.uint8(0)
@@ -111,6 +108,9 @@ class CPU:
         return data
 
     # Addressing Modes
+    def immediate(self):
+        return self.get_bytes(1)[0]
+
     def absolute_address(self):
         data = self.get_bytes(2)
         return (data[0] << 8) + data[1]
@@ -537,7 +537,7 @@ class CPU:
                self._hex_format(self.sp, 4),
                self._bin_format(self._get_p())))
 
-    def print_state_ls(self):
+    def print_state_ls(self, address):
         print("| pc = %s | a = %s | x = %s | y = %s | sp = %s | p[NV-BDIZC] = %s | MEM[%s] = %s |" % \
               (self._hex_format(self.pc, 4),
                self._hex_format(self.a, 2),
@@ -545,8 +545,8 @@ class CPU:
                self._hex_format(self.y, 2),
                self._hex_format(self.sp, 4),
                self._bin_format(self._get_p()),
-               self._hex_format(self.addr, 4),
-               self._hex_format(self.data, 2)))
+               self._hex_format(address, 4),
+               self._hex_format(self.rom[address], 2)))
 
     def run(self):
         while self.running:
