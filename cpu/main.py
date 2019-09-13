@@ -7,6 +7,9 @@ class CPU:
     def __init__(self, rom_path):
         self.rom = np.fromfile(rom_path, np.uint8)
 
+        # Internal RAM has 2KB
+        self.ram = np.zeros(2*1024, dtype=np.uint8)
+
         # Counter registers
         self.pc = np.uint16(0)
         self.sp = np.uint16(0)
@@ -120,7 +123,7 @@ class CPU:
         """
         Bit Test
         """
-        memory_value = self.rom[address]
+        memory_value = self.ram[address]
         if (self.a & memory_value) == np.uint8(0):
             self.zero = 1
         else:
@@ -391,7 +394,7 @@ class CPU:
         # TODO: switch does_nothing for None when only valid opcodes are being read
         instruction = self.instructions.get(opcode, does_nothing)
         instruction()
-        self.pc += np.uint8(1)
+        self.pc += np.uint16(1)
 
 
 def main(rom_path):
