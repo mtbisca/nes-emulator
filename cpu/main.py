@@ -32,32 +32,30 @@ class CPU:
 
         self.instructions = {
             0: self.brk,
-            169: self.lda_imediate,
-            160: self.ldy_imediate,
-            162: self.ldx_imediate,
+            24: self.clc,
+            144: self.bcc,
+            176: self.bcs,
+            169: self.lda_immediate,
+            160: self.ldy_immediate,
+            162: self.ldx_immediate,
             165: self.lda_zero_page,
             166: self.ldx_zero_page,
             164: self.ldy_zero_page,
             182: self.lda_zero_page_x,
             183: self.ldx_zero_page_y,
             181: self.ldy_zero_page_x,
-            173: self.lda_absolte,
-            174: self.ldx_absolte,
-            172: self.ldy_absolte,
-            189: self.lda_absolte_x,
-            185: self.lda_absolte_y,
-            190: self.ldx_absolte_y,
-            188: self.ldy_absolte_x,
+            173: self.lda_absolute,
+            174: self.ldx_absolute,
+            172: self.ldy_absolute,
+            189: self.lda_absolute_x,
+            185: self.lda_absolute_y,
+            190: self.ldx_absolute_y,
+            188: self.ldy_absolute_x,
             161: self.lda_indexed_indirect,
             177: self.lda_indirect_indexed
         }
 
-    ###
-    ### Functions of each OP code
-    ###
-    def brk(self):
-        self.running = False
-
+    # Set flags
     def set_carry_and_neg(self, register):
         if register == 0:
             self.zero = 1
@@ -68,15 +66,20 @@ class CPU:
         else:
             self.negative = 0
 
-    def look_up(self, value):
+    def look_up(self, length):
         first = self.pc + 1
-        data = self.rom[first:first + value]
-        self.pc += np.uint16(value)
+        data = self.rom[first:first + length]
+        self.pc += np.uint16(length)
         return data
 
+    # Addressing Modes
     def absolute_address(self):
         data = self.look_up(2)
         return (data[0] << 8) + data[1]
+
+    def relative_address(self):
+        offset = self.look_up(1)[0]
+        self.pc += offset
 
     def indexed_indirect(self):
         value = self.look_up(1)[0]
@@ -87,15 +90,41 @@ class CPU:
         location = self.look_up(1)[0]
         return (self.rom[location] << 8) + self.rom[location + 1] + self.y
 
-    def lda_imediate(self):
+    # Instructions
+    def brk(self):
+        # TODO: implement BRK properly
+        self.running = False
+
+    def clc(self):
+        self.carry = 0
+
+    def bcc(self):
+        """
+        Branch if Carry Clear
+        If carry flag is clear, then add the offset to the PC to cause
+        a branch to a new location
+        """
+        if self.carry == 0:
+            self.relative_address()
+
+    def bcs(self):
+        """
+        Branch if Carry Set
+        If carry flag is set, then add the offset to the PC to cause
+        a branch to a new location
+        """
+        if self.carry == 1:
+            self.relative_address()
+
+    def lda_immediate(self):
         self.a = self.look_up(1)[0]
         self.set_carry_and_neg(self.a)
 
-    def ldx_imediate(self):
+    def ldx_immediate(self):
         self.x = self.look_up(1)[0]
         self.set_carry_and_neg(self.x)
 
-    def ldy_imediate(self):
+    def ldy_immediate(self):
         self.y = self.look_up(1)[0]
         self.set_carry_and_neg(self.y)
 
@@ -129,37 +158,37 @@ class CPU:
         self.y = self.rom[address]
         self.set_carry_and_neg(self.y)
 
-    def lda_absolte(self):
+    def lda_absolute(self):
         address = self.absolute_address()
         self.a = self.rom[address]
         self.set_carry_and_neg(self.a)
 
-    def ldx_absolte(self):
+    def ldx_absolute(self):
         address = self.absolute_address()
         self.x = self.rom[address]
         self.set_carry_and_neg(self.x)
 
-    def ldy_absolte(self):
+    def ldy_absolute(self):
         address = self.absolute_address()
         self.y = self.rom[address]
         self.set_carry_and_neg(self.y)
 
-    def lda_absolte_x(self):
+    def lda_absolute_x(self):
         address = self.absolute_address() + self.x
         self.a = self.rom[address]
         self.set_carry_and_neg(self.a)
 
-    def lda_absolte_y(self):
+    def lda_absolute_y(self):
         address = self.absolute_address() + self.y
         self.a = self.rom[address]
         self.set_carry_and_neg(self.a)
 
-    def ldx_absolte_y(self):
+    def ldx_absolute_y(self):
         address = self.absolute_address() + self.y
         self.x = self.rom[address]
         self.set_carry_and_neg(self.x)
 
-    def ldy_absolte_x(self):
+    def ldy_absolute_x(self):
         address = self.absolute_address() + self.x
         self.y = self.rom[address]
         self.set_carry_and_neg(self.y)
