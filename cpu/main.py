@@ -46,6 +46,11 @@ class CPU:
             48: self.bmi,
             80: self.bvc,
             112: self.bvs,
+            10: self.asl_accumulator,
+            6: self.asl_zero_page,
+            22: self.asl_zero_page_x,
+            14: self.asl_absolute,
+            30: self.asl_absolute_x,
             169: self.lda_immediate,
             160: self.ldy_immediate,
             162: self.ldx_immediate,
@@ -205,8 +210,41 @@ class CPU:
         """
         pass
 
-    def asl(self):
-        pass
+    def asl(self, value_to_shift):
+        """
+        Arithmetic Shift Left
+        """
+        # Set C to contents of old bit 7
+        self.carry = value_to_shift >> 7
+        # Shift all the bits one bit left
+        result = value_to_shift << 1
+        # Set N if bit 7 of the result is set
+        self.negative = value_to_shift >> 7
+
+        return result
+
+    def asl_accumulator(self):
+        self.a = self.asl(self.a)
+
+    def asl_zero_page(self):
+        address = self.get_bytes(1)[0]
+        value = self.asl(self.ram[address])
+        self.ram[address] = value
+
+    def asl_zero_page_x(self):
+        address = self.get_bytes(1)[0] + self.x
+        value = self.asl(self.ram[address])
+        self.ram[address] = value
+
+    def asl_absolute(self):
+        address = self.absolute_address()
+        value = self.asl(self.ram[address])
+        self.ram[address] = value
+
+    def asl_absolute_x(self):
+        address = self.absolute_address() + self.x
+        value = self.asl(self.ram[address])
+        self.ram[address] = value
 
     def lda_immediate(self):
         self.a = self.get_bytes(1)[0]
