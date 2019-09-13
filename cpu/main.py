@@ -35,6 +35,12 @@ class CPU:
             24: self.clc,
             144: self.bcc,
             176: self.bcs,
+            240: self.beq,
+            208: self.bne,
+            16: self.bpl,
+            48: self.bmi,
+            80: self.bvc,
+            112: self.bvs,
             169: self.lda_immediate,
             160: self.ldy_immediate,
             162: self.ldx_immediate,
@@ -78,6 +84,9 @@ class CPU:
         return (data[0] << 8) + data[1]
 
     def relative_address(self):
+        """
+        Add offset to PC to cause a branch to a new location
+        """
         offset = self.look_up(1)[0]
         self.pc += offset
 
@@ -92,17 +101,22 @@ class CPU:
 
     # Instructions
     def brk(self):
+        """
+        Force Interrupt
+        """
         # TODO: implement BRK properly
-        self.running = False
+        pass
+        # self.running = False
 
     def clc(self):
+        """
+        Clear Carry Flag
+        """
         self.carry = 0
 
     def bcc(self):
         """
         Branch if Carry Clear
-        If carry flag is clear, then add the offset to the PC to cause
-        a branch to a new location
         """
         if self.carry == 0:
             self.relative_address()
@@ -110,10 +124,50 @@ class CPU:
     def bcs(self):
         """
         Branch if Carry Set
-        If carry flag is set, then add the offset to the PC to cause
-        a branch to a new location
         """
         if self.carry == 1:
+            self.relative_address()
+
+    def beq(self):
+        """
+        Branch if Equal
+        """
+        if self.zero == 1:
+            self.relative_address()
+
+    def bne(self):
+        """
+        Branch if Not Equal
+        """
+        if self.zero == 0:
+            self.relative_address()
+
+    def bpl(self):
+        """
+        Branch if Positive
+        """
+        if self.negative == 0:
+            self.relative_address()
+
+    def bmi(self):
+        """
+        Branch if Minus
+        """
+        if self.negative == 1:
+            self.relative_address()
+
+    def bvc(self):
+        """
+        Branch if Overflow Clear
+        """
+        if self.overflow == 0:
+            self.relative_address()
+
+    def bvs(self):
+        """
+        Branch if Overflow Set
+        """
+        if self.overflow == 1:
             self.relative_address()
 
     def lda_immediate(self):
