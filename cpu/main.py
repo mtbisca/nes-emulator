@@ -34,45 +34,67 @@ class CPU:
         self.running = True
 
         self.instructions = {
-            0: self.brk,
-            24: self.clc,
-            36: self.bit_zero_page,
-            44: self.bit_absolute,
-            144: self.bcc,
-            176: self.bcs,
-            240: self.beq,
-            208: self.bne,
-            16: self.bpl,
-            48: self.bmi,
-            80: self.bvc,
-            112: self.bvs,
-            10: self.asl_accumulator,
-            6: self.asl_zero_page,
-            22: self.asl_zero_page_x,
-            14: self.asl_absolute,
-            30: self.asl_absolute_x,
-            169: self.lda_immediate,
-            160: self.ldy_immediate,
-            162: self.ldx_immediate,
-            165: self.lda_zero_page,
-            166: self.ldx_zero_page,
-            164: self.ldy_zero_page,
-            182: self.lda_zero_page_x,
-            183: self.ldx_zero_page_y,
-            181: self.ldy_zero_page_x,
-            173: self.lda_absolute,
-            174: self.ldx_absolute,
-            172: self.ldy_absolute,
-            189: self.lda_absolute_x,
-            185: self.lda_absolute_y,
-            190: self.ldx_absolute_y,
-            188: self.ldy_absolute_x,
-            161: self.lda_indexed_indirect,
-            177: self.lda_indirect_indexed
+            0x00: self.brk,
+            0x18: self.clc,
+            0x24: self.bit_zero_page,
+            0x2C: self.bit_absolute,
+            0x90: self.bcc,
+            0xB0: self.bcs,
+            0xF0: self.beq,
+            0xD0: self.bne,
+            0x10: self.bpl,
+            0x30: self.bmi,
+            0x50: self.bvc,
+            0x70: self.bvs,
+            0x0A: self.asl_accumulator,
+            0x06: self.asl_zero_page,
+            0x16: self.asl_zero_page_x,
+            0x0E: self.asl_absolute,
+            0x1E: self.asl_absolute_x,
+            0xA9: self.lda_immediate,
+            0xA5: self.lda_zero_page,
+            0xB5: self.lda_zero_page_x,
+            0xAD: self.lda_absolute,
+            0xBD: self.lda_absolute_x,
+            0xB9: self.lda_absolute_y,
+            0xA1: self.lda_indexed_indirect,
+            0xB1: self.lda_indirect_indexed,
+            0xA2: self.ldx_immediate,
+            0xA6: self.ldx_zero_page,
+            0xB6: self.ldx_zero_page_y,
+            0xAE: self.ldx_absolute,
+            0xBE: self.ldx_absolute_y,
+            0xA0: self.ldy_immediate,
+            0xA4: self.ldy_zero_page,
+            0xB4: self.ldy_zero_page_x,
+            0xAC: self.ldy_absolute,
+            0xBC: self.ldy_absolute_x,
+            0x85: self.sta_zero_page,
+            0x95: self.sta_zero_page_x,
+            0x8D: self.sta_absolute,
+            0x9D: self.sta_absolute_x,
+            0x99: self.sta_absolute_y,
+            0x81: self.sta_indexed_indirect,
+            0x91: self.sta_indirect_indexed,
+            0x86: self.stx_zero_page,
+            0x96: self.stx_zero_page_y,
+            0x8E: self.stx_absolute,
+            0x84: self.sty_zero_page,
+            0x94: self.sty_zero_page_x,
+            0x8C: self.sty_absolute,
+            0xAA: self.tax,
+            0xA8: self.tay,
+            0xBA: self.tsx,
+            0x8A: self.txa,
+            0x9A: self.txs,
+            0x98: self.tya,
+            0x38: self.sec,
+            0xF8: self.sed,
+            0x78: self.sei
         }
 
     # Set flags
-    def set_carry_and_neg(self, register):
+    def set_zero_and_neg(self, register):
         if register == 0:
             self.zero = 1
         else:
@@ -248,90 +270,90 @@ class CPU:
 
     def lda_immediate(self):
         self.a = self.get_bytes(1)[0]
-        self.set_carry_and_neg(self.a)
+        self.set_zero_and_neg(self.a)
 
     def ldx_immediate(self):
         self.x = self.get_bytes(1)[0]
-        self.set_carry_and_neg(self.x)
+        self.set_zero_and_neg(self.x)
 
     def ldy_immediate(self):
         self.y = self.get_bytes(1)[0]
-        self.set_carry_and_neg(self.y)
+        self.set_zero_and_neg(self.y)
 
     def lda_zero_page(self):
         address = self.get_bytes(1)[0]
         self.a = self.rom[address]
-        self.set_carry_and_neg(self.a)
+        self.set_zero_and_neg(self.a)
 
     def ldx_zero_page(self):
         address = self.get_bytes(1)[0]
         self.x = self.rom[address]
-        self.set_carry_and_neg(self.x)
+        self.set_zero_and_neg(self.x)
 
     def ldy_zero_page(self):
         address = self.get_bytes(1)[0]
         self.y = self.rom[address]
-        self.set_carry_and_neg(self.y)
+        self.set_zero_and_neg(self.y)
 
     def lda_zero_page_x(self):
         address = self.get_bytes(1)[0] + self.x
         self.a = self.rom[address]
-        self.set_carry_and_neg(self.a)
+        self.set_zero_and_neg(self.a)
 
     def ldx_zero_page_y(self):
         address = self.get_bytes(1)[0] + self.y
         self.x = self.rom[address]
-        self.set_carry_and_neg(self.x)
+        self.set_zero_and_neg(self.x)
 
     def ldy_zero_page_x(self):
         address = self.get_bytes(1)[0] + self.x
         self.y = self.rom[address]
-        self.set_carry_and_neg(self.y)
+        self.set_zero_and_neg(self.y)
 
     def lda_absolute(self):
         address = self.absolute_address()
         self.a = self.rom[address]
-        self.set_carry_and_neg(self.a)
+        self.set_zero_and_neg(self.a)
 
     def ldx_absolute(self):
         address = self.absolute_address()
         self.x = self.rom[address]
-        self.set_carry_and_neg(self.x)
+        self.set_zero_and_neg(self.x)
 
     def ldy_absolute(self):
         address = self.absolute_address()
         self.y = self.rom[address]
-        self.set_carry_and_neg(self.y)
+        self.set_zero_and_neg(self.y)
 
     def lda_absolute_x(self):
         address = self.absolute_address() + self.x
         self.a = self.rom[address]
-        self.set_carry_and_neg(self.a)
+        self.set_zero_and_neg(self.a)
 
     def lda_absolute_y(self):
         address = self.absolute_address() + self.y
         self.a = self.rom[address]
-        self.set_carry_and_neg(self.a)
+        self.set_zero_and_neg(self.a)
 
     def ldx_absolute_y(self):
         address = self.absolute_address() + self.y
         self.x = self.rom[address]
-        self.set_carry_and_neg(self.x)
+        self.set_zero_and_neg(self.x)
 
     def ldy_absolute_x(self):
         address = self.absolute_address() + self.x
         self.y = self.rom[address]
-        self.set_carry_and_neg(self.y)
+        self.set_zero_and_neg(self.y)
 
     def lda_indexed_indirect(self):
         address = self.indexed_indirect()
         self.a = self.rom[address]
-        self.set_carry_and_neg(self.a)
+        self.set_zero_and_neg(self.a)
 
     def lda_indirect_indexed(self):
         address = self.indirect_indexed()
         self.a = self.rom[address]
-        self.set_carry_and_neg(self.a)
+        self.set_zero_and_neg(self.a)
 
     def rts(self):
         pass
