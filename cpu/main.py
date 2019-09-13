@@ -2,8 +2,6 @@ import numpy as np
 import sys
 import time
 
-running = 1
-
 
 class CPU:
     def __init__(self, rom_path):
@@ -30,7 +28,7 @@ class CPU:
         self.overflow = 0
         self.negative = 0
 
-        self.running = 1
+        self.running = True
 
         self.instructions = {
             0: self.brk,
@@ -58,21 +56,21 @@ class CPU:
     ### Functions of each OP code
     ###
     def brk(self):
-        self.running = 0
+        self.running = False
 
     def set_carry_and_neg(self, register):
-        if(register == 0):
+        if register == 0:
             self.zero = 1
         else:
             self.zero = 0
-        if(register & 10000000):
+        if register & 10000000:
             self.negative = 1
         else:
             self.negative = 0
 
     def look_up(self, value):
-        first = self.pc+1
-        data = self.rom[first:first+value]
+        first = self.pc + 1
+        data = self.rom[first:first + value]
         self.pc += np.uint16(value)
         return data
 
@@ -80,15 +78,14 @@ class CPU:
         data = self.look_up(2)
         return (data[0] << 8) + data[1]
 
-
     def indexed_indirect(self):
         value = self.look_up(1)[0]
         location = value + self.x
-        return (self.rom[location] << 8) + self.rom[location+1]
+        return (self.rom[location] << 8) + self.rom[location + 1]
 
     def indirect_indexed(self):
         location = self.look_up(1)[0]
-        return (self.rom[location] << 8) + self.rom[location+1] + self.y
+        return (self.rom[location] << 8) + self.rom[location + 1] + self.y
 
     def lda_imediate(self):
         self.a = self.look_up(1)[0]
@@ -116,7 +113,7 @@ class CPU:
         address = self.look_up(1)[0]
         self.y = self.rom[address]
         self.set_carry_and_neg(self.y)
-    
+
     def lda_zero_page_x(self):
         address = self.look_up(1)[0] + self.x
         self.a = self.rom[address]
@@ -126,7 +123,7 @@ class CPU:
         address = self.look_up(1)[0] + self.y
         self.x = self.rom[address]
         self.set_carry_and_neg(self.x)
-    
+
     def ldy_zero_page_x(self):
         address = self.look_up(1)[0] + self.x
         self.y = self.rom[address]
@@ -234,50 +231,46 @@ class CPU:
     def _get_p(self):
         return (self.negative << 7 |
                 self.overflow << 6 |
-                1 << 5 |                # assumes bit 5 is always set TODO check if this is correct
+                1 << 5 |  # assumes bit 5 is always set TODO check if this is correct
                 self.break_cmd << 4 |
                 self.decimal_mode << 3 |
                 self.interrupt_disable << 2 |
-                self.zero << 1  |
+                self.zero << 1 |
                 self.carry)
-
 
     def print_state(self):
         print("| pc = %s | a = %s | x = %s | y = %s | sp = %s | p[NV-BDIZC] = %s |" % \
-                (self._hex_format(self.pc, 4),
-                 self._hex_format(self.a, 2),
-                 self._hex_format(self.x, 2),
-                 self._hex_format(self.y, 2),
-                 self._hex_format(self.sp, 4),
-                 self._bin_format(self._get_p())))
+              (self._hex_format(self.pc, 4),
+               self._hex_format(self.a, 2),
+               self._hex_format(self.x, 2),
+               self._hex_format(self.y, 2),
+               self._hex_format(self.sp, 4),
+               self._bin_format(self._get_p())))
 
     def print_state_ls(self):
-    	print("| pc = %s | a = %s | x = %s | y = %s | sp = %s | p[NV-BDIZC] = %s | MEM[%s] = %s |" % \
-        		(self._hex_format(self.pc, 4),
-        		 self._hex_format(self.a, 2),
-        		 self._hex_format(self.x, 2),
-        		 self._hex_format(self.y, 2),
-        		 self._hex_format(self.sp, 4),
-                 self._bin_format(self._get_p()),
-        		 self._hex_format(self.addr, 4),
-        	     self._hex_format(self.data, 2)))
+        print("| pc = %s | a = %s | x = %s | y = %s | sp = %s | p[NV-BDIZC] = %s | MEM[%s] = %s |" % \
+              (self._hex_format(self.pc, 4),
+               self._hex_format(self.a, 2),
+               self._hex_format(self.x, 2),
+               self._hex_format(self.y, 2),
+               self._hex_format(self.sp, 4),
+               self._bin_format(self._get_p()),
+               self._hex_format(self.addr, 4),
+               self._hex_format(self.data, 2)))
 
     def run(self):
-        while (self.running):
-            # feach instruction
-            instruction = self.rom[self.pc]
-            # print op code for debuging
-            self.execute(opcode=instruction)
-            # test op code function
+        while self.running:
+            rom_byte = self.rom[self.pc]
+            self.execute(opcode=rom_byte)
             self.print_state()
-
-            # tmporizing
             time.sleep(0.02)
 
     def execute(self, opcode):
+        # Being used in order to ignore invalid opcodes
         def does_nothing():
             return "nothing"
 
+        # TODO: switch does_nothing for None when only valid opcodes are being read
         instruction = self.instructions.get(opcode, does_nothing)
         instruction()
         self.pc += np.uint8(1)
@@ -286,6 +279,7 @@ class CPU:
 def main(rom_path):
     cpu = CPU(rom_path)
     cpu.run()
+
 
 if __name__ == "__main__":
     main(sys.argv[1])
