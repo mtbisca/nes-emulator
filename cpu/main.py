@@ -74,31 +74,31 @@ class CPU:
         else:
             self.negative = 0
 
-    def look_up(self, length):
-        first = self.pc + 1
-        data = self.rom[first:first + length]
-        self.pc += np.uint16(length)
+    def get_bytes(self, size):
+        position = self.pc + 1
+        data = self.rom[position:position + size]
+        self.pc += np.uint16(size)
         return data
 
     # Addressing Modes
     def absolute_address(self):
-        data = self.look_up(2)
+        data = self.get_bytes(2)
         return (data[0] << 8) + data[1]
 
     def relative_address(self):
         """
         Add offset to PC to cause a branch to a new location
         """
-        offset = self.look_up(1)[0]
+        offset = self.get_bytes(1)[0]
         self.pc += offset
 
     def indexed_indirect(self):
-        value = self.look_up(1)[0]
+        value = self.get_bytes(1)[0]
         location = value + self.x
         return (self.rom[location] << 8) + self.rom[location + 1]
 
     def indirect_indexed(self):
-        location = self.look_up(1)[0]
+        location = self.get_bytes(1)[0]
         return (self.rom[location] << 8) + self.rom[location + 1] + self.y
 
     # Instructions
@@ -133,7 +133,7 @@ class CPU:
         self.negative = memory_value >> 7
 
     def bit_zero_page(self):
-        address = self.look_up(1)[0]
+        address = self.get_bytes(1)[0]
         self.bit(address)
 
     def bit_absolute(self):
@@ -206,44 +206,44 @@ class CPU:
         pass
 
     def lda_immediate(self):
-        self.a = self.look_up(1)[0]
+        self.a = self.get_bytes(1)[0]
         self.set_carry_and_neg(self.a)
 
     def ldx_immediate(self):
-        self.x = self.look_up(1)[0]
+        self.x = self.get_bytes(1)[0]
         self.set_carry_and_neg(self.x)
 
     def ldy_immediate(self):
-        self.y = self.look_up(1)[0]
+        self.y = self.get_bytes(1)[0]
         self.set_carry_and_neg(self.y)
 
     def lda_zero_page(self):
-        address = self.look_up(1)[0]
+        address = self.get_bytes(1)[0]
         self.a = self.rom[address]
         self.set_carry_and_neg(self.a)
 
     def ldx_zero_page(self):
-        address = self.look_up(1)[0]
+        address = self.get_bytes(1)[0]
         self.x = self.rom[address]
         self.set_carry_and_neg(self.x)
 
     def ldy_zero_page(self):
-        address = self.look_up(1)[0]
+        address = self.get_bytes(1)[0]
         self.y = self.rom[address]
         self.set_carry_and_neg(self.y)
 
     def lda_zero_page_x(self):
-        address = self.look_up(1)[0] + self.x
+        address = self.get_bytes(1)[0] + self.x
         self.a = self.rom[address]
         self.set_carry_and_neg(self.a)
 
     def ldx_zero_page_y(self):
-        address = self.look_up(1)[0] + self.y
+        address = self.get_bytes(1)[0] + self.y
         self.x = self.rom[address]
         self.set_carry_and_neg(self.x)
 
     def ldy_zero_page_x(self):
-        address = self.look_up(1)[0] + self.x
+        address = self.get_bytes(1)[0] + self.x
         self.y = self.rom[address]
         self.set_carry_and_neg(self.y)
 
