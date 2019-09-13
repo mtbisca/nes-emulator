@@ -362,45 +362,154 @@ class CPU:
         pass
 
     def sec(self):
+        """
+        Set Carry Flag
+        """
         self.carry = 1
 
     def sed(self):
+        """
+        Set Decimal Flag
+        """
         self.decimal_mode = 1
 
     def sei(self):
+        """
+        Set Interrupt Disable
+        """
         self.interrupt_disable = 1
 
-    def sta(self):
-        pass
+    def sta_absolute(self):
+        """
+        Store Accumulator - Absolute
+        """
+        address = self.absolute_address()
+        self.rom[address] = self.a
 
-    def stx(self):
-        pass
+    def sta_absolute_x(self):
+        """
+        Store Accumulator - Absolute, X
+        """
+        address = self.absolute_address() + self.x
+        self.rom[address] = self.a
 
-    def sty(self):
-        pass
+    def sta_absolute_y(self):
+        """
+        Store Accumulator - Absolute, Y
+        """
+        address = self.absolute_address() + self.y
+        self.rom[address] = self.a
+
+    def sta_zero_page(self):
+        """
+        Store Accumulator - Zero Page
+        """
+        address = self.get_bytes(1)[0]
+        self.rom[address] = self.a
+
+    def sta_zero_page_x(self):
+        """
+        Store Accumulator - Zero Page, X
+        """
+        address = self.get_bytes(1)[0] + self.x
+        self.rom[address] = self.a
+
+    def sta_indexed_indirect(self):
+        """
+        Store Accumulator - (Indirect, X)
+        """
+        address = self.indexed_indirect()
+        self.rom[address] = self.a
+
+    def sta_indirect_indexed(self):
+        """
+        Store Accumulator - (Indirect, X)
+        """
+        address = self.indirect_indexed()
+        self.rom[address] = self.a
+
+    def stx_absolute(self):
+        """
+        Store X Register - Absolute
+        """
+        address = self.absolute_address()
+        self.rom[address] = self.x
+
+    def stx_zero_page(self):
+        """
+        Store X Register - Zero Page
+        """
+        address = self.get_bytes(1)[0]
+        self.rom[address] = self.x
+
+    def stx_zero_page_y(self):
+        """
+        Store X Register - Zero Page, Y
+        """
+        address = self.get_bytes(1)[0] + self.y
+        self.rom[address] = self.x
+
+    def sty_absolute(self):
+        """
+        Store Y Register - Absolute
+        """
+        address = self.absolute_address()
+        self.rom[address] = self.y
+
+    def sty_zero_page(self):
+        """
+        Store Y Register - Zero Page
+        """
+        address = self.get_bytes(1)[0]
+        self.rom[address] = self.y
+
+    def sty_zero_page_x(self):
+        """
+        Store Y Register - Zero Page, X
+        """
+        address = self.get_bytes(1)[0] + self.x
+        self.rom[address] = self.y
 
     def tax(self):
+        """
+        Transfer Accumulator to X
+        """
         self.x = self.a
-        self.set_carry_and_neg(self.x)
+        self.set_zero_and_neg(self.x)
 
     def tay(self):
+        """
+        Transfer Accumulator to Y
+        """
         self.y = self.a
-        self.set_carry_and_neg(self.y)
+        self.set_zero_and_neg(self.y)
 
     def tsx(self):
+        """
+        Transfer Stack Pointer to X
+        """
         self.x = self.sp
-        self.set_carry_and_neg(self.x)
+        self.set_zero_and_neg(self.x)
 
     def txa(self):
+        """
+        Transfer X to Accumulator
+        """
         self.a = self.x
-        self.set_carry_and_neg(self.a)
+        self.set_zero_and_neg(self.a)
 
     def txs(self):
+        """
+        Transfer X to Stack Pointer
+        """
         self.sp = self.x
 
     def tya(self):
+        """
+        Transfer Y to Accumulator
+        """
         self.a = self.y
-        self.set_carry_and_neg(self.a)
+        self.set_zero_and_neg(self.a)
 
     def _hex_format(self, value, leading_zeros):
         format_string = "{0:0%sX}" % leading_zeros
