@@ -33,6 +33,8 @@ class CPU:
         self.instructions = {
             0: self.brk,
             24: self.clc,
+            36: self.bit_zero_page,
+            44: self.bit_absolute,
             144: self.bcc,
             176: self.bcs,
             240: self.beq,
@@ -114,6 +116,30 @@ class CPU:
         """
         self.carry = 0
 
+    def bit(self, address):
+        """
+        Bit Test
+        """
+        memory_value = self.rom[address]
+        if (self.a & memory_value) == np.uint8(0):
+            self.zero = 1
+        else:
+            self.zero = 0
+
+        # Set V to bit 6 of the memory value
+        self.overflow = (memory_value >> 6) & 1
+
+        # Set N to bit 7 of the memory value
+        self.negative = memory_value >> 7
+
+    def bit_zero_page(self):
+        address = self.look_up(1)[0]
+        self.bit(address)
+
+    def bit_absolute(self):
+        address = self.absolute_address()
+        self.bit(address)
+
     def bcc(self):
         """
         Branch if Carry Clear
@@ -169,6 +195,15 @@ class CPU:
         """
         if self.overflow == 1:
             self.relative_address()
+
+    def adc(self):
+        """
+        Add with Carry
+        """
+        pass
+
+    def asl(self):
+        pass
 
     def lda_immediate(self):
         self.a = self.look_up(1)[0]
