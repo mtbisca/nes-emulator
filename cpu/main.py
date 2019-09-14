@@ -590,7 +590,7 @@ class CPU:
     def cpx_absolute(self):
         address = self.absolute_address()
         self.cmp_if(self.x, self.rom[address])
-
+    
     def _hex_format(self, value, leading_zeros):
         format_string = "{0:0%sX}" % leading_zeros
         return ("0x" + format_string.format(int(value))).lower()
