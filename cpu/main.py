@@ -96,7 +96,10 @@ class CPU:
             0xDD: self.cmp_absolute_x,
             0xD9: self.cmp_absolute_y,
             0xC1: self.cmp_indexed_indirect,
-            0xD1: self.cmp_indirect_indexed
+            0xD1: self.cmp_indirect_indexed,
+            0xE0: self.cpx_immediate,
+            0xE4: self.cpx_zero_page,
+            0xEC: self.cpx_absolute
         }
 
     # Set flags
@@ -576,6 +579,17 @@ class CPU:
     def cmp_indirect_indexed(self):
         address = self.indirect_indexed()
         self.cmp_if(self.a, self.rom[address])
+
+    "Compare x"
+    def cpx_immediate(self):
+        self.cmp_if(self.x, self.get_bytes(1)[0])
+    def cpx_zero_page(self):
+        address = self.get_bytes(1)[0]
+        result = self.x - self.rom[address]
+        self.cmp_if(self.x, self.rom[address])
+    def cpx_absolute(self):
+        address = self.absolute_address()
+        self.cmp_if(self.x, self.rom[address])
 
     def _hex_format(self, value, leading_zeros):
         format_string = "{0:0%sX}" % leading_zeros
