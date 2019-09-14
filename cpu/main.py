@@ -108,7 +108,13 @@ class CPU:
             0xC6: self.dec_zero_page,
             0xD6: self.dec_zero_page_x,
             0xCE: self.dec_absolute,
-            0xDE: self. dec_absolute_x
+            0xDE: self. dec_absolute_x,
+            0xE6: self.inc_zero_page,
+            0xF6: self.inc_zero_page_x,
+            0xEE: self.inc_absolute,
+            0xFE: self.inc_absolute_x,
+            0xE8: self.inx,
+            0xC8: self.iny
         }
 
     # Set flags
@@ -632,6 +638,34 @@ class CPU:
     "Decrement y"
     def dey(self):
         self.y -= 1
+        self.set_zero_and_neg(self.y)
+    
+    "Increment 1 in value held at memory[adress]"
+    def inc_zero_page(self):
+        address = self.get_bytes(1)[0]
+        self.rom[address] += 1
+        set_zero_and_neg(self.rom[address])
+    def inc_zero_page_x(self):
+        address = self.get_bytes(1)[0] + self.x
+        self.rom[address] += 1
+        set_zero_and_neg(self.rom[address])
+    def inc_absolute(self):
+        address = self.absolute_address()
+        self.rom[address] += 1
+        set_zero_and_neg(self.rom[address])
+    def inc_absolute_x(self):
+        address = self.absolute_address() + self.x
+        self.rom[address] += 1
+        set_zero_and_neg(self.rom[address])
+    
+    "Increment 1 in x"
+    def inx(self):
+        self.x += 1
+        self.set_zero_and_neg(self.x)
+
+    "Increment 1 in y"
+    def iny(self):
+        self.y += 1
         self.set_zero_and_neg(self.y)
 
     def _hex_format(self, value, leading_zeros):
