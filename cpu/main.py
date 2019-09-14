@@ -12,9 +12,6 @@ class CPU:
         self.pc = np.uint16(0x4020)
         self.sp = np.uint16(0)
 
-        self.addr = None
-        self.data = None
-
         # Data registers
         self.a = np.uint8(0)
         self.x = np.uint8(0)
@@ -32,45 +29,78 @@ class CPU:
         self.running = True
 
         self.instructions = {
-            0: self.brk,
-            24: self.clc,
-            36: self.bit_zero_page,
-            44: self.bit_absolute,
-            144: self.bcc,
-            176: self.bcs,
-            240: self.beq,
-            208: self.bne,
-            16: self.bpl,
-            48: self.bmi,
-            80: self.bvc,
-            112: self.bvs,
-            10: self.asl_accumulator,
-            6: self.asl_zero_page,
-            22: self.asl_zero_page_x,
-            14: self.asl_absolute,
-            30: self.asl_absolute_x,
-            169: self.lda_immediate,
-            160: self.ldy_immediate,
-            162: self.ldx_immediate,
-            165: self.lda_zero_page,
-            166: self.ldx_zero_page,
-            164: self.ldy_zero_page,
-            182: self.lda_zero_page_x,
-            183: self.ldx_zero_page_y,
-            181: self.ldy_zero_page_x,
-            173: self.lda_absolute,
-            174: self.ldx_absolute,
-            172: self.ldy_absolute,
-            189: self.lda_absolute_x,
-            185: self.lda_absolute_y,
-            190: self.ldx_absolute_y,
-            188: self.ldy_absolute_x,
-            161: self.lda_indexed_indirect,
-            177: self.lda_indirect_indexed
+            0x00: self.brk,
+            0x18: self.clc,
+            0x24: self.bit_zero_page,
+            0x2C: self.bit_absolute,
+            0x90: self.bcc,
+            0xB0: self.bcs,
+            0xF0: self.beq,
+            0xD0: self.bne,
+            0x10: self.bpl,
+            0x30: self.bmi,
+            0x50: self.bvc,
+            0x70: self.bvs,
+            0x0A: self.asl_accumulator,
+            0x06: self.asl_zero_page,
+            0x16: self.asl_zero_page_x,
+            0x0E: self.asl_absolute,
+            0x1E: self.asl_absolute_x,
+            0xA9: self.lda_immediate,
+            0xA5: self.lda_zero_page,
+            0xB5: self.lda_zero_page_x,
+            0xAD: self.lda_absolute,
+            0xBD: self.lda_absolute_x,
+            0xB9: self.lda_absolute_y,
+            0xA1: self.lda_indexed_indirect,
+            0xB1: self.lda_indirect_indexed,
+            0xA2: self.ldx_immediate,
+            0xA6: self.ldx_zero_page,
+            0xB6: self.ldx_zero_page_y,
+            0xAE: self.ldx_absolute,
+            0xBE: self.ldx_absolute_y,
+            0xA0: self.ldy_immediate,
+            0xA4: self.ldy_zero_page,
+            0xB4: self.ldy_zero_page_x,
+            0xAC: self.ldy_absolute,
+            0xBC: self.ldy_absolute_x,
+            0x85: self.sta_zero_page,
+            0x95: self.sta_zero_page_x,
+            0x8D: self.sta_absolute,
+            0x9D: self.sta_absolute_x,
+            0x99: self.sta_absolute_y,
+            0x81: self.sta_indexed_indirect,
+            0x91: self.sta_indirect_indexed,
+            0x86: self.stx_zero_page,
+            0x96: self.stx_zero_page_y,
+            0x8E: self.stx_absolute,
+            0x84: self.sty_zero_page,
+            0x94: self.sty_zero_page_x,
+            0x8C: self.sty_absolute,
+            0xAA: self.tax,
+            0xA8: self.tay,
+            0xBA: self.tsx,
+            0x8A: self.txa,
+            0x9A: self.txs,
+            0x98: self.tya,
+            0x38: self.sec,
+            0xF8: self.sed,
+            0x78: self.sei,
+            0xD8: self.cld,
+            0x58: self.cli,
+            0xB8: self.clv,
+            0xC9: self.cmp_imediate,
+            0xC5: self.cmp_zero_page,
+            0xD5: self.cmp_zero_page_x,
+            0xCD: self.cmp_absolute,
+            0xDD: self.cmp_absolute_x,
+            0xD9: self.cmp_absolute_y,
+            0xC1: self.cmp_indexed_indirect,
+            0xD1: self.cmp_indirect_indexed
         }
 
     # Set flags
-    def set_carry_and_neg(self, register):
+    def set_zero_and_neg(self, register):
         if register == 0:
             self.zero = 1
         else:
@@ -87,6 +117,9 @@ class CPU:
         return data
 
     # Addressing Modes
+    def immediate(self):
+        return self.get_bytes(1)[0]
+
     def absolute_address(self):
         data = self.get_bytes(2)
         return (data[0] << 8) + data[1]
@@ -246,15 +279,15 @@ class CPU:
 
     def lda_immediate(self):
         self.a = self.get_bytes(1)[0]
-        self.set_carry_and_neg(self.a)
+        self.set_zero_and_neg(self.a)
 
     def ldx_immediate(self):
         self.x = self.get_bytes(1)[0]
-        self.set_carry_and_neg(self.x)
+        self.set_zero_and_neg(self.x)
 
     def ldy_immediate(self):
         self.y = self.get_bytes(1)[0]
-        self.set_carry_and_neg(self.y)
+        self.set_zero_and_neg(self.y)
 
     def lda_zero_page(self):
         address = self.get_bytes(1)[0]
@@ -338,45 +371,211 @@ class CPU:
         pass
 
     def sec(self):
+        """
+        Set Carry Flag
+        """
         self.carry = 1
 
     def sed(self):
+        """
+        Set Decimal Flag
+        """
         self.decimal_mode = 1
 
     def sei(self):
+        """
+        Set Interrupt Disable
+        """
         self.interrupt_disable = 1
 
-    def sta(self):
-        pass
+    def sta_absolute(self):
+        """
+        Store Accumulator - Absolute
+        """
+        address = self.absolute_address()
+        self.rom[address] = self.a
 
-    def stx(self):
-        pass
+    def sta_absolute_x(self):
+        """
+        Store Accumulator - Absolute, X
+        """
+        address = self.absolute_address() + self.x
+        self.rom[address] = self.a
 
-    def sty(self):
-        pass
+    def sta_absolute_y(self):
+        """
+        Store Accumulator - Absolute, Y
+        """
+        address = self.absolute_address() + self.y
+        self.rom[address] = self.a
+
+    def sta_zero_page(self):
+        """
+        Store Accumulator - Zero Page
+        """
+        address = self.get_bytes(1)[0]
+        self.rom[address] = self.a
+
+    def sta_zero_page_x(self):
+        """
+        Store Accumulator - Zero Page, X
+        """
+        address = self.get_bytes(1)[0] + self.x
+        self.rom[address] = self.a
+
+    def sta_indexed_indirect(self):
+        """
+        Store Accumulator - (Indirect, X)
+        """
+        address = self.indexed_indirect()
+        self.rom[address] = self.a
+
+    def sta_indirect_indexed(self):
+        """
+        Store Accumulator - (Indirect, X)
+        """
+        address = self.indirect_indexed()
+        self.rom[address] = self.a
+
+    def stx_absolute(self):
+        """
+        Store X Register - Absolute
+        """
+        address = self.absolute_address()
+        self.rom[address] = self.x
+
+    def stx_zero_page(self):
+        """
+        Store X Register - Zero Page
+        """
+        address = self.get_bytes(1)[0]
+        self.rom[address] = self.x
+
+    def stx_zero_page_y(self):
+        """
+        Store X Register - Zero Page, Y
+        """
+        address = self.get_bytes(1)[0] + self.y
+        self.rom[address] = self.x
+
+    def sty_absolute(self):
+        """
+        Store Y Register - Absolute
+        """
+        address = self.absolute_address()
+        self.rom[address] = self.y
+
+    def sty_zero_page(self):
+        """
+        Store Y Register - Zero Page
+        """
+        address = self.get_bytes(1)[0]
+        self.rom[address] = self.y
+
+    def sty_zero_page_x(self):
+        """
+        Store Y Register - Zero Page, X
+        """
+        address = self.get_bytes(1)[0] + self.x
+        self.rom[address] = self.y
 
     def tax(self):
+        """
+        Transfer Accumulator to X
+        """
         self.x = self.a
-        self.set_carry_and_neg(self.x)
+        self.set_zero_and_neg(self.x)
 
     def tay(self):
+        """
+        Transfer Accumulator to Y
+        """
         self.y = self.a
-        self.set_carry_and_neg(self.y)
+        self.set_zero_and_neg(self.y)
 
     def tsx(self):
+        """
+        Transfer Stack Pointer to X
+        """
         self.x = self.sp
-        self.set_carry_and_neg(self.x)
+        self.set_zero_and_neg(self.x)
 
     def txa(self):
+        """
+        Transfer X to Accumulator
+        """
         self.a = self.x
-        self.set_carry_and_neg(self.a)
+        self.set_zero_and_neg(self.a)
 
     def txs(self):
+        """
+        Transfer X to Stack Pointer
+        """
         self.sp = self.x
 
     def tya(self):
+        """
+        Transfer Y to Accumulator
+        """
         self.a = self.y
-        self.set_carry_and_neg(self.a)
+        self.set_zero_and_neg(self.a)
+    
+    def cld(self):
+        """
+        Clear Decimal mode Flag
+        """
+        self.decimal_mode = 0
+    def cli(self):
+        """
+        Clear interrupt Disable Flag
+        """
+        self.interrupt_disable = 0
+    def clv(self):
+        """
+        Clear Carry Flag
+        """
+        self.overflow = 0
+    def cmp_if(self, a, b):
+        if(a >= b):
+            self.carry = 1
+            self.negative = 0
+            if (a == b):
+                self.zero = 1
+            else:
+                self.zero = 0
+        else:
+            self.carry = 0
+            self.zero = 0
+            self.negative = 1
+    """
+        Compare a and immediate 
+    """
+    def cmp_imediate(self):
+
+        self.cmp_if(self.a, self.get_bytes(1)[0])
+
+    def cmp_zero_page(self):
+        address = self.get_bytes(1)[0]
+        result = self.rom[address]
+        self.cmp_if(self.a, result)
+    def cmp_zero_page_x(self):
+        address = self.get_bytes(1)[0] + self.x
+        self.cmp_if(self.a, self.rom[address])
+    def cmp_absolute(self):
+        address = self.absolute_address()
+        self.cmp_if(self.a, self.rom[address])
+    def cmp_absolute_x(self):
+        address = self.absolute_address() + self.x
+        self.cmp_if(self.a, self.rom[address])
+    def cmp_absolute_y(self):
+        address = self.absolute_address() + self.y
+        self.cmp_if(self.a, self.rom[address])
+    def cmp_indexed_indirect(self):
+        address = self.indexed_indirect()
+        self.cmp_if(self.a, self.rom[address])
+    def cmp_indirect_indexed(self):
+        address = self.indirect_indexed()
+        self.cmp_if(self.a, self.rom[address])
 
     def _hex_format(self, value, leading_zeros):
         format_string = "{0:0%sX}" % leading_zeros
@@ -404,7 +603,7 @@ class CPU:
                self._hex_format(self.sp, 4),
                self._bin_format(self._get_p())))
 
-    def print_state_ls(self):
+    def print_state_ls(self, address):
         print("| pc = %s | a = %s | x = %s | y = %s | sp = %s | p[NV-BDIZC] = %s | MEM[%s] = %s |" % \
               (self._hex_format(self.pc, 4),
                self._hex_format(self.a, 2),
@@ -412,14 +611,15 @@ class CPU:
                self._hex_format(self.y, 2),
                self._hex_format(self.sp, 4),
                self._bin_format(self._get_p()),
-               self._hex_format(self.addr, 4),
-               self._hex_format(self.data, 2)))
+               self._hex_format(address, 4),
+               self._hex_format(self.rom[address], 2)))
 
     def run(self):
         while self.running:
             rom_byte = self.mem[self.pc]
             self.execute(opcode=rom_byte)
             self.print_state()
+
             time.sleep(0.0000002)
 
     def execute(self, opcode):
