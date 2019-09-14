@@ -5,13 +5,11 @@ import time
 
 class CPU:
     def __init__(self, rom_path):
-        self.rom = np.fromfile(rom_path, np.uint8)
-
-        # Internal RAM has 2KB
-        self.ram = np.zeros(2*1024, dtype=np.uint8)
+        self.mem = np.zeros(0x10000, dtype=np.uint8)
+        self.mem[0x4020:] = np.resize(np.fromfile(rom_path, dtype=np.uint8), (49120))
 
         # Counter registers
-        self.pc = np.uint16(0)
+        self.pc = np.uint16(0x4020)
         self.sp = np.uint16(0)
 
         self.addr = None
@@ -84,7 +82,7 @@ class CPU:
 
     def get_bytes(self, size):
         position = self.pc + 1
-        data = self.rom[position:position + size]
+        data = self.mem[position:position + size]
         self.pc += np.uint16(size)
         return data
 
@@ -103,11 +101,11 @@ class CPU:
     def indexed_indirect(self):
         value = self.get_bytes(1)[0]
         location = value + self.x
-        return (self.rom[location] << 8) + self.rom[location + 1]
+        return (self.mem[location] << 8) + self.mem[location + 1]
 
     def indirect_indexed(self):
         location = self.get_bytes(1)[0]
-        return (self.rom[location] << 8) + self.rom[location + 1] + self.y
+        return (self.mem[location] << 8) + self.mem[location + 1] + self.y
 
     # Instructions
     def brk(self):
@@ -115,8 +113,8 @@ class CPU:
         Force Interrupt
         """
         # TODO: implement BRK properly
-        pass
-        # self.running = False
+        # pass
+        self.running = False
 
     def clc(self):
         """
@@ -260,77 +258,77 @@ class CPU:
 
     def lda_zero_page(self):
         address = self.get_bytes(1)[0]
-        self.a = self.rom[address]
+        self.a = self.mem[address]
         self.set_carry_and_neg(self.a)
 
     def ldx_zero_page(self):
         address = self.get_bytes(1)[0]
-        self.x = self.rom[address]
+        self.x = self.mem[address]
         self.set_carry_and_neg(self.x)
 
     def ldy_zero_page(self):
         address = self.get_bytes(1)[0]
-        self.y = self.rom[address]
+        self.y = self.mem[address]
         self.set_carry_and_neg(self.y)
 
     def lda_zero_page_x(self):
         address = self.get_bytes(1)[0] + self.x
-        self.a = self.rom[address]
+        self.a = self.mem[address]
         self.set_carry_and_neg(self.a)
 
     def ldx_zero_page_y(self):
         address = self.get_bytes(1)[0] + self.y
-        self.x = self.rom[address]
+        self.x = self.mem[address]
         self.set_carry_and_neg(self.x)
 
     def ldy_zero_page_x(self):
         address = self.get_bytes(1)[0] + self.x
-        self.y = self.rom[address]
+        self.y = self.mem[address]
         self.set_carry_and_neg(self.y)
 
     def lda_absolute(self):
         address = self.absolute_address()
-        self.a = self.rom[address]
+        self.a = self.mem[address]
         self.set_carry_and_neg(self.a)
 
     def ldx_absolute(self):
         address = self.absolute_address()
-        self.x = self.rom[address]
+        self.x = self.mem[address]
         self.set_carry_and_neg(self.x)
 
     def ldy_absolute(self):
         address = self.absolute_address()
-        self.y = self.rom[address]
+        self.y = self.mem[address]
         self.set_carry_and_neg(self.y)
 
     def lda_absolute_x(self):
         address = self.absolute_address() + self.x
-        self.a = self.rom[address]
+        self.a = self.mem[address]
         self.set_carry_and_neg(self.a)
 
     def lda_absolute_y(self):
         address = self.absolute_address() + self.y
-        self.a = self.rom[address]
+        self.a = self.mem[address]
         self.set_carry_and_neg(self.a)
 
     def ldx_absolute_y(self):
         address = self.absolute_address() + self.y
-        self.x = self.rom[address]
+        self.x = self.mem[address]
         self.set_carry_and_neg(self.x)
 
     def ldy_absolute_x(self):
         address = self.absolute_address() + self.x
-        self.y = self.rom[address]
+        self.y = self.mem[address]
         self.set_carry_and_neg(self.y)
 
     def lda_indexed_indirect(self):
         address = self.indexed_indirect()
-        self.a = self.rom[address]
+        self.a = self.mem[address]
         self.set_carry_and_neg(self.a)
 
     def lda_indirect_indexed(self):
         address = self.indirect_indexed()
-        self.a = self.rom[address]
+        self.a = self.mem[address]
         self.set_carry_and_neg(self.a)
 
     def rts(self):
@@ -419,10 +417,10 @@ class CPU:
 
     def run(self):
         while self.running:
-            rom_byte = self.rom[self.pc]
+            rom_byte = self.mem[self.pc]
             self.execute(opcode=rom_byte)
             self.print_state()
-            time.sleep(0.02)
+            time.sleep(0.0000002)
 
     def execute(self, opcode):
         # Being used in order to ignore invalid opcodes
