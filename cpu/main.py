@@ -102,7 +102,13 @@ class CPU:
             0xEC: self.cpx_absolute,
             0xC0: self.cpy_immediate,
             0xC4: self.cpy_zero_page,
-            0xCC: self.cpy_absolute
+            0xCC: self.cpy_absolute,
+            0xCA: self.dex,
+            0x88: self.dey,
+            0xC6: self.dec_zero_page,
+            0xD6: self.dec_zero_page_x,
+            0xCE: self.dec_absolute,
+            0xDE: self. dec_absolute_x
         }
 
     # Set flags
@@ -604,6 +610,29 @@ class CPU:
     def cpy_absolute(self):
         address = self.absolute_address()
         self.cmp_if(self.y, self.rom[address])
+
+    
+    "Decrement 1 in value held at memory[adress]"
+    def dec_zero_page(self):
+        address = self.get_bytes(1)[0]
+        self.rom[address] -= 1
+    def dec_zero_page_x(self):
+        address = self.get_bytes(1)[0] + self.x
+        self.rom[address] -= 1
+    def dec_absolute(self):
+        address = self.absolute_address()
+        self.rom[address] -= 1
+    def dec_absolute_x(self):
+        address = self.absolute_address() + self.x
+        self.rom[address] -= 1
+    "Decrement x"
+    def dex(self):
+        self.x -= 1
+        self.set_zero_and_neg(self.x)
+    "Decrement y"
+    def dey(self):
+        self.y -= 1
+        self.set_zero_and_neg(self.y)
 
     def _hex_format(self, value, leading_zeros):
         format_string = "{0:0%sX}" % leading_zeros
