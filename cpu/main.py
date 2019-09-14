@@ -87,7 +87,18 @@ class CPU:
             0x98: self.tya,
             0x38: self.sec,
             0xF8: self.sed,
-            0x78: self.sei
+            0x78: self.sei,
+            0xD8: self.cld,
+            0x58: self.cli,
+            0xB8: self.clv,
+            0xC9: self.cmp_imediate,
+            0xC5: self.cmp_zero_page,
+            0xD5: self.cmp_zero_page_x,
+            0xCD: self.cmp_absolute,
+            0xDD: self.cmp_absolute_x,
+            0xD9: self.cmp_absolute_y,
+            0xC1: self.cmp_indexed_indirect,
+            0xD1: self.cmp_indirect_indexed
         }
 
     # Set flags
@@ -510,6 +521,63 @@ class CPU:
         """
         self.a = self.y
         self.set_zero_and_neg(self.a)
+    
+    def cld(self):
+        """
+        Clear Decimal mode Flag
+        """
+        self.decimal_mode = 0
+    def cli(self):
+        """
+        Clear interrupt Disable Flag
+        """
+        self.interrupt_disable = 0
+    def clv(self):
+        """
+        Clear Carry Flag
+        """
+        self.overflow = 0
+    def cmp_if(self, a, b):
+        if(a >= b):
+            self.carry = 1
+            self.negative = 0
+            if (a == b):
+                self.zero = 1
+            else:
+                self.zero = 0
+        else:
+            self.carry = 0
+            self.zero = 0
+            self.negative = 1
+    """
+        Compare a and immediate 
+    """
+    def cmp_imediate(self):
+
+        self.cmp_if(self.a, self.get_bytes(1)[0])
+
+    def cmp_zero_page(self):
+        address = self.get_bytes(1)[0]
+        result = self.rom[address]
+        self.cmp_if(self.a, result)
+    def cmp_zero_page_x(self):
+        address = self.get_bytes(1)[0] + self.x
+        self.cmp_if(self.a, self.rom[address])
+    def cmp_absolute(self):
+        address = self.absolute_address()
+        self.cmp_if(self.a, self.rom[address])
+    def cmp_absolute_x(self):
+        address = self.absolute_address() + self.x
+        self.cmp_if(self.a, self.rom[address])
+    def cmp_absolute_y(self):
+        address = self.absolute_address() + self.y
+        self.cmp_if(self.a, self.rom[address])
+    def cmp_indexed_indirect(self):
+        address = self.indexed_indirect()
+        self.cmp_if(self.a, self.rom[address])
+    def cmp_indirect_indexed(self):
+        address = self.indirect_indexed()
+        self.cmp_if(self.a, self.rom[address])
 
     def _hex_format(self, value, leading_zeros):
         format_string = "{0:0%sX}" % leading_zeros
@@ -553,7 +621,7 @@ class CPU:
             rom_byte = self.rom[self.pc]
             self.execute(opcode=rom_byte)
             self.print_state()
-            time.sleep(0.02)
+            time.sleep(0.000000000001)
 
     def execute(self, opcode):
         # Being used in order to ignore invalid opcodes
