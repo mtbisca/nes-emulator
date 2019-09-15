@@ -180,7 +180,7 @@ class CPU:
         """
         Bit Test
         """
-        memory_value = self.ram[address]
+        memory_value = self.mem[address]
         if (self.a & memory_value) == np.uint8(0):
             self.zero = 1
         else:
@@ -193,7 +193,7 @@ class CPU:
         self.negative = memory_value >> 7
 
     def bit_zero_page(self):
-        address = self.get_bytes(1)[0]
+        address = self.zero_page()
         self.bit(address)
 
     def bit_absolute(self):
@@ -279,111 +279,111 @@ class CPU:
         self.a = self.asl(self.a)
 
     def asl_zero_page(self):
-        address = self.get_bytes(1)[0]
-        value = self.asl(self.ram[address])
-        self.ram[address] = value
+        address = self.zero_page()
+        value = self.asl(self.mem[address])
+        self.mem[address] = value
 
     def asl_zero_page_x(self):
-        address = self.get_bytes(1)[0] + self.x
-        value = self.asl(self.ram[address])
-        self.ram[address] = value
+        address = self.zero_page() + self.x
+        value = self.asl(self.mem[address])
+        self.mem[address] = value
 
     def asl_absolute(self):
         address = self.absolute_address()
-        value = self.asl(self.ram[address])
-        self.ram[address] = value
+        value = self.asl(self.mem[address])
+        self.mem[address] = value
 
     def asl_absolute_x(self):
         address = self.absolute_address() + self.x
-        value = self.asl(self.ram[address])
-        self.ram[address] = value
+        value = self.asl(self.mem[address])
+        self.mem[address] = value
 
     def lda_immediate(self):
-        self.a = self.get_bytes(1)[0]
+        self.a = self.immediate()
         self.set_zero_and_neg(self.a)
 
     def ldx_immediate(self):
-        self.x = self.get_bytes(1)[0]
+        self.x = self.immediate()
         self.set_zero_and_neg(self.x)
 
     def ldy_immediate(self):
-        self.y = self.get_bytes(1)[0]
+        self.y = self.immediate()
         self.set_zero_and_neg(self.y)
 
     def lda_zero_page(self):
-        address = self.get_bytes(1)[0]
+        address = self.zero_page()
         self.a = self.mem[address]
-        self.set_carry_and_neg(self.a)
+        self.set_zero_and_neg(self.a)
 
     def ldx_zero_page(self):
-        address = self.get_bytes(1)[0]
+        address = self.zero_page()
         self.x = self.mem[address]
-        self.set_carry_and_neg(self.x)
+        self.set_zero_and_neg(self.x)
 
     def ldy_zero_page(self):
-        address = self.get_bytes(1)[0]
+        address = self.zero_page()
         self.y = self.mem[address]
-        self.set_carry_and_neg(self.y)
+        self.set_zero_and_neg(self.y)
 
     def lda_zero_page_x(self):
-        address = self.get_bytes(1)[0] + self.x
+        address = self.zero_page() + self.x
         self.a = self.mem[address]
-        self.set_carry_and_neg(self.a)
+        self.set_zero_and_neg(self.a)
 
     def ldx_zero_page_y(self):
-        address = self.get_bytes(1)[0] + self.y
+        address = self.zero_page() + self.y
         self.x = self.mem[address]
-        self.set_carry_and_neg(self.x)
+        self.set_zero_and_neg(self.x)
 
     def ldy_zero_page_x(self):
-        address = self.get_bytes(1)[0] + self.x
+        address = self.zero_page() + self.x
         self.y = self.mem[address]
-        self.set_carry_and_neg(self.y)
+        self.set_zero_and_neg(self.y)
 
     def lda_absolute(self):
         address = self.absolute_address()
         self.a = self.mem[address]
-        self.set_carry_and_neg(self.a)
+        self.set_zero_and_neg(self.a)
 
     def ldx_absolute(self):
         address = self.absolute_address()
         self.x = self.mem[address]
-        self.set_carry_and_neg(self.x)
+        self.set_zero_and_neg(self.x)
 
     def ldy_absolute(self):
         address = self.absolute_address()
         self.y = self.mem[address]
-        self.set_carry_and_neg(self.y)
+        self.set_zero_and_neg(self.y)
 
     def lda_absolute_x(self):
         address = self.absolute_address() + self.x
         self.a = self.mem[address]
-        self.set_carry_and_neg(self.a)
+        self.set_zero_and_neg(self.a)
 
     def lda_absolute_y(self):
         address = self.absolute_address() + self.y
         self.a = self.mem[address]
-        self.set_carry_and_neg(self.a)
+        self.set_zero_and_neg(self.a)
 
     def ldx_absolute_y(self):
         address = self.absolute_address() + self.y
         self.x = self.mem[address]
-        self.set_carry_and_neg(self.x)
+        self.set_zero_and_neg(self.x)
 
     def ldy_absolute_x(self):
         address = self.absolute_address() + self.x
         self.y = self.mem[address]
-        self.set_carry_and_neg(self.y)
+        self.set_zero_and_neg(self.y)
 
     def lda_indexed_indirect(self):
         address = self.indexed_indirect()
         self.a = self.mem[address]
-        self.set_carry_and_neg(self.a)
+        self.set_zero_and_neg(self.a)
 
     def lda_indirect_indexed(self):
         address = self.indirect_indexed()
         self.a = self.mem[address]
-        self.set_carry_and_neg(self.a)
+        self.set_zero_and_neg(self.a)
 
     def rts(self):
         pass
@@ -414,91 +414,91 @@ class CPU:
         Store Accumulator - Absolute
         """
         address = self.absolute_address()
-        self.rom[address] = self.a
+        self.mem[address] = self.a
 
     def sta_absolute_x(self):
         """
         Store Accumulator - Absolute, X
         """
         address = self.absolute_address() + self.x
-        self.rom[address] = self.a
+        self.mem[address] = self.a
 
     def sta_absolute_y(self):
         """
         Store Accumulator - Absolute, Y
         """
         address = self.absolute_address() + self.y
-        self.rom[address] = self.a
+        self.mem[address] = self.a
 
     def sta_zero_page(self):
         """
         Store Accumulator - Zero Page
         """
-        address = self.get_bytes(1)[0]
-        self.rom[address] = self.a
+        address = self.zero_page()
+        self.mem[address] = self.a
 
     def sta_zero_page_x(self):
         """
         Store Accumulator - Zero Page, X
         """
-        address = self.get_bytes(1)[0] + self.x
-        self.rom[address] = self.a
+        address = self.zero_page() + self.x
+        self.mem[address] = self.a
 
     def sta_indexed_indirect(self):
         """
         Store Accumulator - (Indirect, X)
         """
         address = self.indexed_indirect()
-        self.rom[address] = self.a
+        self.mem[address] = self.a
 
     def sta_indirect_indexed(self):
         """
         Store Accumulator - (Indirect, X)
         """
         address = self.indirect_indexed()
-        self.rom[address] = self.a
+        self.mem[address] = self.a
 
     def stx_absolute(self):
         """
         Store X Register - Absolute
         """
         address = self.absolute_address()
-        self.rom[address] = self.x
+        self.mem[address] = self.x
 
     def stx_zero_page(self):
         """
         Store X Register - Zero Page
         """
-        address = self.get_bytes(1)[0]
-        self.rom[address] = self.x
+        address = self.zero_page()
+        self.mem[address] = self.x
 
     def stx_zero_page_y(self):
         """
         Store X Register - Zero Page, Y
         """
-        address = self.get_bytes(1)[0] + self.y
-        self.rom[address] = self.x
+        address = self.zero_page() + self.y
+        self.mem[address] = self.x
 
     def sty_absolute(self):
         """
         Store Y Register - Absolute
         """
         address = self.absolute_address()
-        self.rom[address] = self.y
+        self.mem[address] = self.y
 
     def sty_zero_page(self):
         """
         Store Y Register - Zero Page
         """
-        address = self.get_bytes(1)[0]
-        self.rom[address] = self.y
+        address = self.zero_page()
+        self.mem[address] = self.y
 
     def sty_zero_page_x(self):
         """
         Store Y Register - Zero Page, X
         """
-        address = self.get_bytes(1)[0] + self.x
-        self.rom[address] = self.y
+        address = self.zero_page() + self.x
+        self.mem[address] = self.y
 
     def tax(self):
         """
@@ -573,67 +573,80 @@ class CPU:
     """
     def cmp_imediate(self):
 
-        self.cmp_if(self.a, self.get_bytes(1)[0])
+        self.cmp_if(self.a, self.immediate())
 
     def cmp_zero_page(self):
-        address = self.get_bytes(1)[0]
-        result = self.rom[address]
+        address = self.zero_page()
+        result = self.mem[address]
         self.cmp_if(self.a, result)
+
     def cmp_zero_page_x(self):
-        address = self.get_bytes(1)[0] + self.x
-        self.cmp_if(self.a, self.rom[address])
+        address = self.zero_page() + self.x
+        self.cmp_if(self.a, self.mem[address])
+
     def cmp_absolute(self):
         address = self.absolute_address()
-        self.cmp_if(self.a, self.rom[address])
+        self.cmp_if(self.a, self.mem[address])
+
     def cmp_absolute_x(self):
         address = self.absolute_address() + self.x
-        self.cmp_if(self.a, self.rom[address])
+        self.cmp_if(self.a, self.mem[address])
+
     def cmp_absolute_y(self):
         address = self.absolute_address() + self.y
-        self.cmp_if(self.a, self.rom[address])
+        self.cmp_if(self.a, self.mem[address])
+
     def cmp_indexed_indirect(self):
         address = self.indexed_indirect()
-        self.cmp_if(self.a, self.rom[address])
+        self.cmp_if(self.a, self.mem[address])
+
     def cmp_indirect_indexed(self):
         address = self.indirect_indexed()
-        self.cmp_if(self.a, self.rom[address])
+        self.cmp_if(self.a, self.mem[address])
 
     "Compare x"
     def cpx_immediate(self):
-        self.cmp_if(self.x, self.get_bytes(1)[0])
+        self.cmp_if(self.x, self.immediate())
+
     def cpx_zero_page(self):
-        address = self.get_bytes(1)[0]
-        result = self.x - self.rom[address]
-        self.cmp_if(self.x, self.rom[address])
+        address = self.zero_page()
+        result = self.x - self.mem[address]
+        self.cmp_if(self.x, self.mem[address])
+
     def cpx_absolute(self):
         address = self.absolute_address()
-        self.cmp_if(self.x, self.rom[address])
+        self.cmp_if(self.x, self.mem[address])
 
 
     "Compare y"
     def cpy_immediate(self):
-        self.cmp_if(self.y, self.get_bytes(1)[0])
+        self.cmp_if(self.y, self.immediate())
+
     def cpy_zero_page(self):
-        address = self.get_bytes(1)[0]
-        self.cmp_if(self.y, self.rom[address])
+        address = self.zero_page()
+        self.cmp_if(self.y, self.mem[address])
+
     def cpy_absolute(self):
         address = self.absolute_address()
-        self.cmp_if(self.y, self.rom[address])
+        self.cmp_if(self.y, self.mem[address])
 
     
     "Decrement 1 in value held at memory[adress]"
     def dec_zero_page(self):
-        address = self.get_bytes(1)[0]
-        self.rom[address] -= 1
+        address = self.zero_page()
+        self.mem[address] -= 1
+
     def dec_zero_page_x(self):
-        address = self.get_bytes(1)[0] + self.x
-        self.rom[address] -= 1
+        address = self.zero_page() + self.x
+        self.mem[address] -= 1
+
     def dec_absolute(self):
         address = self.absolute_address()
-        self.rom[address] -= 1
+        self.mem[address] -= 1
+
     def dec_absolute_x(self):
         address = self.absolute_address() + self.x
-        self.rom[address] -= 1
+        self.mem[address] -= 1
     "Decrement x"
     def dex(self):
         self.x -= 1
@@ -645,21 +658,24 @@ class CPU:
     
     "Increment 1 in value held at memory[adress]"
     def inc_zero_page(self):
-        address = self.get_bytes(1)[0]
-        self.rom[address] += 1
-        set_zero_and_neg(self.rom[address])
+        address = self.zero_page()
+        self.mem[address] += 1
+        self.set_zero_and_neg(self.mem[address])
+
     def inc_zero_page_x(self):
-        address = self.get_bytes(1)[0] + self.x
-        self.rom[address] += 1
-        set_zero_and_neg(self.rom[address])
+        address = self.zero_page() + self.x
+        self.mem[address] += 1
+        self.set_zero_and_neg(self.mem[address])
+
     def inc_absolute(self):
         address = self.absolute_address()
-        self.rom[address] += 1
-        set_zero_and_neg(self.rom[address])
+        self.mem[address] += 1
+        self.set_zero_and_neg(self.mem[address])
+
     def inc_absolute_x(self):
         address = self.absolute_address() + self.x
-        self.rom[address] += 1
-        set_zero_and_neg(self.rom[address])
+        self.mem[address] += 1
+        self.set_zero_and_neg(self.mem[address])
     
     "Increment 1 in x"
     def inx(self):
@@ -706,7 +722,7 @@ class CPU:
                self._hex_format(self.sp, 4),
                self._bin_format(self._get_p()),
                self._hex_format(address, 4),
-               self._hex_format(self.rom[address], 2)))
+               self._hex_format(self.mem[address], 2)))
 
     def run(self):
         while self.running:
