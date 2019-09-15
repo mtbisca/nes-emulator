@@ -279,29 +279,31 @@ class CPU:
 
     def and_zero_page(self):
         address = self.zero_page()
-        self.logical_and(address)
+        self.logical_and(self.mem[address])
 
     def and_zero_page_x(self):
         address = self.zero_page() + self.x
-        self.logical_and(address)
+        self.logical_and(self.mem[address])
 
     def and_absolute(self):
         address = self.absolute_address()
-        self.logical_and(address)
+        self.logical_and(self.mem[address])
 
     def and_absolute_x(self):
         address = self.absolute_address() + self.x
-        self.logical_and(address)
+        self.logical_and(self.mem[address])
 
     def and_absolute_y(self):
         address = self.absolute_address() + self.y
-        self.logical_and(address)
+        self.logical_and(self.mem[address])
 
     def and_indirect_x(self):
-        pass
+        address = self.indexed_indirect()
+        self.logical_and(self.mem[address])
 
     def and_indirect_y(self):
-        pass
+        address = self.indirect_indexed()
+        self.logical_and(self.mem[address])
 
     def asl(self, value_to_shift):
         """
