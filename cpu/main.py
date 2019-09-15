@@ -233,9 +233,7 @@ class CPU:
 
         # Set V to bit 6 of the memory value
         self.overflow = (memory_value >> 6) & 1
-
-        # Set N to bit 7 of the memory value
-        self.negative = memory_value >> 7
+        self.set_negative_to_bit_7(memory_value)
 
     def bit_zero_page(self):
         address = self.zero_page()
@@ -388,8 +386,7 @@ class CPU:
         self.carry = value_to_shift >> np.uint8(7)
         # Shift all the bits one bit left
         result = value_to_shift << np.uint8(1)
-        # Set N if bit 7 of the result is set
-        self.negative = value_to_shift >> 7
+        self.set_negative_to_bit_7(result)
 
         return result
 
