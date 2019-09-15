@@ -138,6 +138,9 @@ class CPU:
     def immediate(self):
         return self.get_bytes(1)[0]
 
+    def zero_page(self):
+        return self.get_bytes(1)[0]
+
     def absolute_address(self):
         data = self.get_bytes(2)
         return (data[0] << 8) + data[1]
