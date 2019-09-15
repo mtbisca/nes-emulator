@@ -10,7 +10,7 @@ class CPU:
 
         # Counter registers
         self.pc = np.uint16(0x4020)
-        self.sp = np.uint16(0)
+        self.sp = np.uint16(0x0200)
 
         # Data registers
         self.a = np.uint8(0)
@@ -122,7 +122,18 @@ class CPU:
             0xEE: self.inc_absolute,
             0xFE: self.inc_absolute_x,
             0xE8: self.inx,
-            0xC8: self.iny
+            0xC8: self.iny,
+            0x48: self.pha,
+            0x08: self.php,
+            0x68: self.pla,
+            0x28: self.plp,
+            0x20: self.jsr,
+            0xEA: self.nop,
+            0x4A: self.lsr_accumulator,
+            0x46: self.lsr_zero_page,
+            0x56: self.lsr_zero_page_x,
+            0x4E: self.lsr_absolute,
+            0x5E: self.lsr_absolute_x
         }
 
     # Set flags
@@ -425,6 +436,64 @@ class CPU:
         address = self.indirect_indexed()
         self.a = self.mem[address]
         self.set_zero_and_neg(self.a)
+
+    def push_to_stack(self, value):
+        self.sp -= np.unint16(1)
+        self.mem[self.sp] = value
+
+    def pull_from_stack(self):
+        value = self.mem[self.sp]
+        self.sp += np.unint16(1)
+        return value
+
+    def pha(self):
+        self.push_to_stack(self.a)
+
+    def php(self):
+        self.push_to_stack(self.get_p())
+
+    def pla(self):
+        self.a = self.pull_from_stack()
+
+    def plp(self):
+        self.set_p(self.pull_from_stack())
+
+    def jsr(self):
+        address = self.absolute_address()
+        self.push_to_stack(self.pc)
+        self.pc = np.unint16(address - 1)
+
+    def nop(self):
+        pass
+
+    def lsr(self, value):
+        self.carry = value & 1
+        shift_value = value >> 1
+        if(shift_value == 0):
+            self.zero = 1
+        if (shift_value & 1):
+            self.negative = 1
+
+        return shift_value
+
+    def lsr_accumulator(self):
+        self.a = self.lsr(self.a)
+
+    def lsr_zero_page(self):
+        address = self.zero_page()
+        self.mem[address] = self.lsr(self.mem[address])
+
+    def lsr_zero_page_x(self):
+        address = self.zero_page() + self.x
+        self.mem[address] = self.lsr(self.mem[address])
+
+    def lsr_absolute(self):
+        address = self.absolute_address()
+        self.mem[address] = self.lsr(self.mem[address])
+
+    def lsr_absolute_x(self):
+        address = self.absolute_address() + self.x
+        self.mem[address] = self.lsr(self.mem[address])
 
     def rts(self):
         pass
@@ -735,7 +804,7 @@ class CPU:
     def _bin_format(self, value):
         return "{0:08b}".format(value)
 
-    def _get_p(self):
+    def get_p(self):
         return (self.negative << 7 |
                 self.overflow << 6 |
                 1 << 5 |  # assumes bit 5 is always set TODO check if this is correct
@@ -745,6 +814,15 @@ class CPU:
                 self.zero << 1 |
                 self.carry)
 
+    def set_p(self, value):
+        self.negative = value >> 7 & 1
+        self.overflow = value >> 6 & 1
+        self.break_cmd = value >> 4 & 1
+        self.decimal_mode = value >> 3 & 1
+        self.interrupt_disable = value >> 2 & 1
+        self.zero = value >> 1 & 1
+        self.carry = value & 1
+
     def print_state(self):
         print("| pc = %s | a = %s | x = %s | y = %s | sp = %s | p[NV-BDIZC] = %s |" % \
               (self._hex_format(self.pc, 4),
@@ -752,7 +830,7 @@ class CPU:
                self._hex_format(self.x, 2),
                self._hex_format(self.y, 2),
                self._hex_format(self.sp, 4),
-               self._bin_format(self._get_p())))
+               self._bin_format(self.get_p())))
 
     def print_state_ls(self, address):
         print("| pc = %s | a = %s | x = %s | y = %s | sp = %s | p[NV-BDIZC] = %s | MEM[%s] = %s |" % \
@@ -761,7 +839,7 @@ class CPU:
                self._hex_format(self.x, 2),
                self._hex_format(self.y, 2),
                self._hex_format(self.sp, 4),
-               self._bin_format(self._get_p()),
+               self._bin_format(self.get_p()),
                self._hex_format(address, 4),
                self._hex_format(self.mem[address], 2)))
 
