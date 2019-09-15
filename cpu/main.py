@@ -41,6 +41,14 @@ class CPU:
             0x30: self.bmi,
             0x50: self.bvc,
             0x70: self.bvs,
+            0x29: self.and_immediate,
+            0x25: self.and_zero_page,
+            0x35: self.and_zero_page_x,
+            0x2D: self.and_absolute,
+            0x3D: self.and_absolute_x,
+            0x39: self.and_absolute_y,
+            0x21: self.and_indirect_x,
+            0x31: self.and_indirect_y,
             0x0A: self.asl_accumulator,
             0x06: self.asl_zero_page,
             0x16: self.asl_zero_page_x,
@@ -167,7 +175,6 @@ class CPU:
         Force Interrupt
         """
         # TODO: implement BRK properly
-        # pass
         self.running = False
 
     def clc(self):
@@ -260,6 +267,40 @@ class CPU:
         """
         Add with Carry
         """
+        pass
+
+    def logical_and(self, value):
+        self.a = self.a & value
+        self.set_zero_and_neg(self.a)
+
+    def and_immediate(self):
+        value = self.immediate()
+        self.logical_and(value)
+
+    def and_zero_page(self):
+        address = self.zero_page()
+        self.logical_and(address)
+
+    def and_zero_page_x(self):
+        address = self.zero_page() + self.x
+        self.logical_and(address)
+
+    def and_absolute(self):
+        address = self.absolute_address()
+        self.logical_and(address)
+
+    def and_absolute_x(self):
+        address = self.absolute_address() + self.x
+        self.logical_and(address)
+
+    def and_absolute_y(self):
+        address = self.absolute_address() + self.y
+        self.logical_and(address)
+
+    def and_indirect_x(self):
+        pass
+
+    def and_indirect_y(self):
         pass
 
     def asl(self, value_to_shift):
