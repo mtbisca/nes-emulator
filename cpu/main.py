@@ -18,7 +18,7 @@ class CPU:
         self.y = np.uint8(0)
 
         # Flags (p register equivalent)
-        self.carry = 0
+        self.carry = np.uint8(0)
         self.zero = 0
         self.interrupt_disable = 0
         self.decimal_mode = 0
@@ -41,6 +41,14 @@ class CPU:
             0x30: self.bmi,
             0x50: self.bvc,
             0x70: self.bvs,
+            0x69: self.adc_immediate,
+            0x65: self.adc_zero_page,
+            0x75: self.adc_zero_page_x,
+            0x6D: self.adc_absolute,
+            0x7D: self.adc_absolute_x,
+            0x79: self.adc_absolute_y,
+            0x61: self.adc_indirect_x,
+            0x71: self.adc_indirect_y,
             0x29: self.and_immediate,
             0x25: self.and_zero_page,
             0x35: self.and_zero_page_x,
@@ -125,7 +133,20 @@ class CPU:
             0xC8: self.iny
         }
 
+    def get_bytes(self, size):
+        position = self.pc + 1
+        data = self.mem[position:position + size]
+        self.pc += np.uint16(size)
+        return data
+
     # Set flags
+    def error_handler(self, error_type, flag):
+        if error_type == 'overflow':
+            self.overflow = 1
+            self.carry = np.uint8(1)
+        else:
+            print("Floating point error (%s), with flag %s" % (error_type, flag))
+
     def set_zero_and_neg(self, register):
         if register == 0:
             self.zero = 1
@@ -135,12 +156,6 @@ class CPU:
 
     def set_negative_to_bit_7(self, value):
         self.negative = value >> 7
-
-    def get_bytes(self, size):
-        position = self.pc + 1
-        data = self.mem[position:position + size]
-        self.pc += np.uint16(size)
-        return data
 
     # Addressing Modes
     def immediate(self):
@@ -181,7 +196,7 @@ class CPU:
         """
         Clear Carry Flag
         """
-        self.carry = 0
+        self.carry = np.uint8(0)
 
     def bit(self, address):
         """
@@ -211,14 +226,14 @@ class CPU:
         """
         Branch if Carry Clear
         """
-        if self.carry == 0:
+        if self.carry == np.uint8(0):
             self.relative_address()
 
     def bcs(self):
         """
         Branch if Carry Set
         """
-        if self.carry == 1:
+        if self.carry == np.uint8(1):
             self.relative_address()
 
     def beq(self):
@@ -263,13 +278,50 @@ class CPU:
         if self.overflow == 1:
             self.relative_address()
 
-    def adc(self):
+    def adc(self, value):
         """
         Add with Carry
         """
-        pass
+        self.a += value + self.carry
+        self.set_zero_and_neg(self.a)
+
+    def adc_immediate(self):
+        value = self.immediate()
+        self.adc(value)
+
+    def adc_zero_page(self):
+        address = self.zero_page()
+        self.adc(self.mem[address])
+
+    def adc_zero_page_x(self):
+        address = self.zero_page()
+        self.adc(self.mem[address])
+
+    def adc_absolute(self):
+        address = self.absolute_address()
+        self.adc(self.mem[address])
+
+    def adc_absolute_x(self):
+        address = self.absolute_address() + self.x
+        self.adc(self.mem[address])
+
+    def adc_absolute_y(self):
+        address = self.absolute_address() + self.y
+        self.adc(self.mem[address])
+
+    def adc_indirect_x(self):
+        address = self.indexed_indirect()
+        self.adc(self.mem[address])
+
+    def adc_indirect_y(self):
+        address = self.indirect_indexed()
+        self.adc(self.mem[address])
 
     def logical_and(self, value):
+        """
+        Bitwise AND of the operand with the accumulator
+        :param value: operand of one byte
+        """
         self.a = self.a & value
         self.set_zero_and_neg(self.a)
 
@@ -310,9 +362,9 @@ class CPU:
         Arithmetic Shift Left
         """
         # Set C to contents of old bit 7
-        self.carry = value_to_shift >> 7
+        self.carry = value_to_shift >> np.uint8(7)
         # Shift all the bits one bit left
-        result = value_to_shift << 1
+        result = value_to_shift << np.uint8(1)
         # Set N if bit 7 of the result is set
         self.negative = value_to_shift >> 7
 
@@ -438,7 +490,7 @@ class CPU:
         """
         Set Carry Flag
         """
-        self.carry = 1
+        self.carry = np.uint8(1)
 
     def sed(self):
         """
@@ -601,14 +653,14 @@ class CPU:
         self.overflow = 0
     def cmp_if(self, a, b):
         if(a >= b):
-            self.carry = 1
+            self.carry = np.uint8(1)
             self.negative = 0
             if (a == b):
                 self.zero = 1
             else:
                 self.zero = 0
         else:
-            self.carry = 0
+            self.carry = np.uint8(0)
             self.zero = 0
             self.negative = 1
     """
@@ -788,6 +840,8 @@ class CPU:
 
 def main(rom_path):
     cpu = CPU(rom_path)
+    np.seterrcall(cpu.error_handler)
+    np.seterr(over='call')
     cpu.run()
 
 
