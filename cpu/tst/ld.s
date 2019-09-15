@@ -1,18 +1,13 @@
 .org $4020
-LDA #$02
+LDA #$03
 PHA
-LSR
+ROR
+ROR
 PHA
-LDA clrmem
-JSR clrmem
-NOP
-NOP
-NOP
-
-.org $C000
-clrmem:
-    PLA
-    PLA
-    PLA
-    PLA
-    brk
+PHP
+ROL
+LDA #$FF
+PLP
+PLA
+PLA
+brk

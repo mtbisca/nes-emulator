@@ -2,6 +2,8 @@ import numpy as np
 import sys
 import time
 
+from scipy.special._ufuncs import shichi
+
 
 class CPU:
     def __init__(self, rom_path):
@@ -141,7 +143,17 @@ class CPU:
             0x46: self.lsr_zero_page,
             0x56: self.lsr_zero_page_x,
             0x4E: self.lsr_absolute,
-            0x5E: self.lsr_absolute_x
+            0x5E: self.lsr_absolute_x,
+            0x2A: self.rol_accumulator,
+            0x26: self.rol_zero_page,
+            0x36: self.rol_zero_page_x,
+            0x2E: self.rol_absolute,
+            0x3E: self.rol_absolute_x,
+            0x6A: self.ror_accumulator,
+            0x66: self.ror_zero_page,
+            0x76: self.ror_zero_page_x,
+            0x6E: self.ror_absolute,
+            0x7E: self.ror_absolute_x
         }
 
     def get_bytes(self, size):
@@ -526,12 +538,8 @@ class CPU:
     def lsr(self, value):
         self.carry = value & 1
         shift_value = value >> 1
-        if(shift_value == 0):
-            self.zero = 1
-        if (shift_value & 1):
-            self.negative = 1
-
-        return shift_value
+        self.set_zero_and_neg(shift_value)
+        return np.uint8(shift_value)
 
     def lsr_accumulator(self):
         self.a = self.lsr(self.a)
@@ -551,6 +559,60 @@ class CPU:
     def lsr_absolute_x(self):
         address = self.absolute_address() + self.x
         self.mem[address] = self.lsr(self.mem[address])
+
+    def rol(self, value):
+        temp_carry = (value & 10000000) >> 7
+        shift_value = value << 1
+        shift_value = np.uint8(shift_value | self.carry)
+        self.carry = temp_carry
+        self.set_zero_and_neg(shift_value)
+        return shift_value
+
+    def ror(self, value):
+        temp_carry = value & 1
+        shift_value = value >> 1
+        shift_value = np.uint8(shift_value | (self.carry << 7))
+        self.carry = temp_carry
+        self.set_zero_and_neg(shift_value)
+        return shift_value
+
+    def rol_accumulator(self):
+        self.a = self.rol(self.a)
+
+    def rol_zero_page(self):
+        address = self.zero_page()
+        self.mem[address] = self.rol(self.mem[address])
+
+    def rol_zero_page_x(self):
+        address = self.zero_page() + self.x
+        self.mem[address] = self.rol(self.mem[address])
+
+    def rol_absolute(self):
+        address = self.absolute_address()
+        self.mem[address] = self.rol(self.mem[address])
+
+    def rol_absolute_x(self):
+        address = self.absolute_address() + self.x
+        self.mem[address] = self.rol(self.mem[address])
+
+    def ror_accumulator(self):
+        self.a = self.ror(self.a)
+
+    def ror_zero_page(self):
+        address = self.zero_page()
+        self.mem[address] = self.ror(self.mem[address])
+
+    def ror_zero_page_x(self):
+        address = self.zero_page() + self.x
+        self.mem[address] = self.ror(self.mem[address])
+
+    def ror_absolute(self):
+        address = self.absolute_address()
+        self.mem[address] = self.ror(self.mem[address])
+
+    def ror_absolute_x(self):
+        address = self.absolute_address() + self.x
+        self.mem[address] = self.ror(self.mem[address])
 
     def rts(self):
         pass
