@@ -123,10 +123,10 @@ class CPU:
             self.zero = 1
         else:
             self.zero = 0
-        if register & 10000000:
-            self.negative = 1
-        else:
-            self.negative = 0
+        self.set_negative_to_bit_7(register)
+
+    def set_negative_to_bit_7(self, value):
+        self.negative = value >> 7
 
     def get_bytes(self, size):
         position = self.pc + 1
