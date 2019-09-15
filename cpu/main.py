@@ -162,7 +162,7 @@ class CPU:
 
     def absolute_address(self):
         data = self.get_bytes(2)
-        return (data[0] << 8) + data[1]
+        return (data[1] << 8) + data[0]
 
     def relative_address(self):
         """
@@ -438,12 +438,12 @@ class CPU:
         self.set_zero_and_neg(self.a)
 
     def push_to_stack(self, value):
-        self.sp -= np.unint16(1)
+        self.sp -= np.uint16(1)
         self.mem[self.sp] = value
 
     def pull_from_stack(self):
         value = self.mem[self.sp]
-        self.sp += np.unint16(1)
+        self.sp += np.uint16(1)
         return value
 
     def pha(self):
@@ -460,8 +460,11 @@ class CPU:
 
     def jsr(self):
         address = self.absolute_address()
-        self.push_to_stack(self.pc)
-        self.pc = np.unint16(address - 1)
+        low = self.pc & 0x00FF
+        big = self.pc >> 8
+        self.push_to_stack(big)
+        self.push_to_stack(low)
+        self.pc = np.uint16(address - 1)
 
     def nop(self):
         pass

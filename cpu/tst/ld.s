@@ -1,7 +1,18 @@
-LDA #$01
-LDX #$02
-LDY #$03
-LDA $06
-LDX $06
-LDY $06
-brk
+.org $4020
+LDA #$02
+PHA
+LSR
+PHA
+LDA clrmem
+JSR clrmem
+NOP
+NOP
+NOP
+
+.org $C000
+clrmem:
+    PLA
+    PLA
+    PLA
+    PLA
+    brk
