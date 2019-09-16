@@ -161,7 +161,8 @@ class CPU:
             0x5D: self.eor_absolute_x,
             0x59: self.eor_absolute_y,
             0x41: self.eor_indirect_x,
-            0x51: self.eor_indirect_y
+            0x51: self.eor_indirect_y,
+            0x4C: self.jmp_absolute
         }
 
     def get_bytes(self, size):
@@ -214,6 +215,8 @@ class CPU:
     def indirect_indexed(self):
         location = self.get_bytes(1)[0]
         return (self.mem[location] << 8) + self.mem[location + 1] + self.y
+    def indirect(self):
+        location = self.get_bytes(1)[0]
 
     # Instructions
     def brk(self):
@@ -793,11 +796,7 @@ class CPU:
     def cmp_if(self, a, b):
         if(a >= b):
             self.carry = np.uint8(1)
-            self.negative = 0
-            if (a == b):
-                self.zero = 1
-            else:
-                self.zero = 0
+            set_zero_and_neg(a-b)
         else:
             self.carry = np.uint8(0)
             self.zero = 0
@@ -960,6 +959,10 @@ class CPU:
     def eor_indirect_y(self):
         address = self.indirect_indexed()
         self.logical_eor(self.mem[address])
+
+    def jmp_absolute(self):
+        address = self.absolute_address()
+        self.pc = np.uint16(address - 1)
     
 
 
