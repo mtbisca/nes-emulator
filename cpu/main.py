@@ -153,7 +153,15 @@ class CPU:
             0x66: self.ror_zero_page,
             0x76: self.ror_zero_page_x,
             0x6E: self.ror_absolute,
-            0x7E: self.ror_absolute_x
+            0x7E: self.ror_absolute_x,
+            0x49: self.eor_immediate,
+            0x45: self.eor_zero_page,
+            0x55: self.eor_zero_page_x,
+            0x4D: self.eor_absolute,
+            0x5D: self.eor_absolute_x,
+            0x59: self.eor_absolute_y,
+            0x41: self.eor_indirect_x,
+            0x51: self.eor_indirect_y
         }
 
     def get_bytes(self, size):
@@ -912,6 +920,49 @@ class CPU:
     def iny(self):
         self.y += 1
         self.set_zero_and_neg(self.y)
+
+    def logical_eor(self, value):
+        """
+        Bitwise XOR of the operand with the accumulator
+        :param value: operand of one byte
+        """
+        self.a = self.a ^ value
+        self.set_zero_and_neg(self.a)
+
+    def eor_immediate(self):
+        value = self.immediate()
+        self.logical_eor(value)
+
+    def eor_zero_page(self):
+        address = self.zero_page()
+        self.logical_eor(self.mem[address])
+
+    def eor_zero_page_x(self):
+        address = self.zero_page() + self.x
+        self.logical_eor(self.mem[address])
+
+    def eor_absolute(self):
+        address = self.absolute_address()
+        self.logical_eor(self.mem[address])
+
+    def eor_absolute_x(self):
+        address = self.absolute_address() + self.x
+        self.logical_eor(self.mem[address])
+
+    def eor_absolute_y(self):
+        address = self.absolute_address() + self.y
+        self.logical_eor(self.mem[address])
+
+    def eor_indirect_x(self):
+        address = self.indexed_indirect()
+        self.logical_eor(self.mem[address])
+
+    def eor_indirect_y(self):
+        address = self.indirect_indexed()
+        self.logical_eor(self.mem[address])
+    
+
+
 
     def _hex_format(self, value, leading_zeros):
         format_string = "{0:0%sX}" % leading_zeros
