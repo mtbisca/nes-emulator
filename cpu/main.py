@@ -95,6 +95,14 @@ class CPU:
             0x84: self.sty_zero_page,
             0x94: self.sty_zero_page_x,
             0x8C: self.sty_absolute,
+            0xE9: self.sbc_immediate,
+            0xE5: self.sbc_zero_page,
+            0xF5: self.sbc_zero_page_x,
+            0xED: self.sbc_absolute,
+            0xFD: self.sbc_absolute_x,
+            0xF9: self.sbc_absolute_y,
+            0xE1: self.sbc_indirect_x,
+            0xF1: self.sbc_indirect_y,
             0xAA: self.tax,
             0xA8: self.tay,
             0xBA: self.tsx,
@@ -625,8 +633,43 @@ class CPU:
     def rts(self):
         pass
 
-    def sbc(self):
-        pass
+    def sbc(self, value):
+        """
+        Subtract with Carry
+        """
+        return adc(self, value ^ 0xFF)
+
+    def sbc_immediate(self):
+        value = self.immediate()
+        self.sbc(value)
+
+    def sbc_zero_page(self):
+        address = self.zero_page()
+        self.sbc(self.mem[address])
+
+    def sbc_zero_page_x(self):
+        address = self.zero_page()
+        self.sbc(self.mem[address])
+
+    def sbc_absolute(self):
+        address = self.absolute_address()
+        self.sbc(self.mem[address])
+
+    def sbc_absolute_x(self):
+        address = self.absolute_address() + self.x
+        self.sbc(self.mem[address])
+
+    def sbc_absolute_y(self):
+        address = self.absolute_address() + self.y
+        self.sbc(self.mem[address])
+
+    def sbc_indirect_x(self):
+        address = self.indexed_indirect()
+        self.sbc(self.mem[address])
+
+    def sbc_indirect_y(self):
+        address = self.indirect_indexed()
+        self.sbc(self.mem[address])
 
     def sec(self):
         """
@@ -777,7 +820,7 @@ class CPU:
         """
         self.a = self.y
         self.set_zero_and_neg(self.a)
-    
+
     def cld(self):
         """
         Clear Decimal mode Flag
@@ -802,7 +845,7 @@ class CPU:
             self.zero = 0
             self.negative = 1
     """
-        Compare a and immediate 
+        Compare a and immediate
     """
     def cmp_imediate(self):
 
@@ -863,7 +906,7 @@ class CPU:
         address = self.absolute_address()
         self.cmp_if(self.y, self.mem[address])
 
-    
+
     "Decrement 1 in value held at memory[adress]"
     def dec_zero_page(self):
         address = self.zero_page()
@@ -888,7 +931,7 @@ class CPU:
     def dey(self):
         self.y -= 1
         self.set_zero_and_neg(self.y)
-    
+
     "Increment 1 in value held at memory[adress]"
     def inc_zero_page(self):
         address = self.zero_page()
@@ -909,7 +952,7 @@ class CPU:
         address = self.absolute_address() + self.x
         self.mem[address] += 1
         self.set_zero_and_neg(self.mem[address])
-    
+
     "Increment 1 in x"
     def inx(self):
         self.x += 1
@@ -963,7 +1006,7 @@ class CPU:
     def jmp_absolute(self):
         address = self.absolute_address()
         self.pc = np.uint16(address - 1)
-    
+
 
 
 
