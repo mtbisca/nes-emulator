@@ -631,7 +631,12 @@ class CPU:
         self.mem[address] = self.ror(self.mem[address])
 
     def rts(self):
-        pass
+        """
+        Return from Subroutine
+        """
+        low = self.pull_from_stack()
+        big = self.pull_from_stack()
+        self.pc = (low | (big << 8)) + 1
 
     def sbc(self, value):
         """
