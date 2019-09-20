@@ -2,8 +2,6 @@ import numpy as np
 import sys
 import time
 
-# from scipy.special._ufuncs import shichi
-
 
 class CPU:
     def __init__(self, rom_path):
