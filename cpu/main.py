@@ -2,7 +2,7 @@ import numpy as np
 import sys
 import time
 
-from scipy.special._ufuncs import shichi
+# from scipy.special._ufuncs import shichi
 
 
 class CPU:
@@ -261,10 +261,12 @@ class CPU:
     def bit_zero_page(self):
         address = self.zero_page()
         self.bit(address)
+        return address
 
     def bit_absolute(self):
         address = self.absolute_address()
         self.bit(address)
+        return address
 
     def bcc(self):
         """
@@ -452,6 +454,7 @@ class CPU:
         address = self.zero_page()
         self.a = self.mem[address]
         self.set_zero_and_neg(self.a)
+        return address
 
     def ldx_zero_page(self):
         address = self.zero_page()
@@ -467,6 +470,7 @@ class CPU:
         address = self.zero_page() + self.x
         self.a = self.mem[address]
         self.set_zero_and_neg(self.a)
+        return address
 
     def ldx_zero_page_y(self):
         address = self.zero_page() + self.y
@@ -497,11 +501,13 @@ class CPU:
         address = self.absolute_address() + self.x
         self.a = self.mem[address]
         self.set_zero_and_neg(self.a)
+        return address
 
     def lda_absolute_y(self):
         address = self.absolute_address() + self.y
         self.a = self.mem[address]
         self.set_zero_and_neg(self.a)
+        return address
 
     def ldx_absolute_y(self):
         address = self.absolute_address() + self.y
@@ -517,11 +523,13 @@ class CPU:
         address = self.indexed_indirect()
         self.a = self.mem[address]
         self.set_zero_and_neg(self.a)
+        return address
 
     def lda_indirect_indexed(self):
         address = self.indirect_indexed()
         self.a = self.mem[address]
         self.set_zero_and_neg(self.a)
+        return address
 
     def push_to_stack(self, value):
         self.sp -= np.uint16(1)
@@ -646,7 +654,7 @@ class CPU:
         """
         Subtract with Carry
         """
-        return adc(self, value ^ 0xFF)
+        return self.adc(self, value ^ 0xFF)
 
     def sbc_immediate(self):
         value = self.immediate()
@@ -704,6 +712,7 @@ class CPU:
         """
         address = self.absolute_address()
         self.mem[address] = self.a
+        return address
 
     def sta_absolute_x(self):
         """
@@ -711,6 +720,7 @@ class CPU:
         """
         address = self.absolute_address() + self.x
         self.mem[address] = self.a
+        return address
 
     def sta_absolute_y(self):
         """
@@ -718,6 +728,7 @@ class CPU:
         """
         address = self.absolute_address() + self.y
         self.mem[address] = self.a
+        return address
 
     def sta_zero_page(self):
         """
@@ -725,6 +736,7 @@ class CPU:
         """
         address = self.zero_page()
         self.mem[address] = self.a
+        return address
 
     def sta_zero_page_x(self):
         """
@@ -732,6 +744,7 @@ class CPU:
         """
         address = self.zero_page() + self.x
         self.mem[address] = self.a
+        return address
 
     def sta_indexed_indirect(self):
         """
@@ -739,6 +752,7 @@ class CPU:
         """
         address = self.indexed_indirect()
         self.mem[address] = self.a
+        return address
 
     def sta_indirect_indexed(self):
         """
@@ -746,6 +760,7 @@ class CPU:
         """
         address = self.indirect_indexed()
         self.mem[address] = self.a
+        return address
 
     def stx_absolute(self):
         """
@@ -1081,9 +1096,8 @@ class CPU:
 
     def run(self):
         while self.running:
-            rom_byte = self.mem[self.pc]
-            self.execute(opcode=rom_byte)
-            self.print_state()
+            mem_byte = self.mem[self.pc]
+            self.execute(opcode=mem_byte)
 
             time.sleep(0.0000002)
 
@@ -1094,7 +1108,11 @@ class CPU:
 
         # TODO: switch does_nothing for None when only valid opcodes are being read
         instruction = self.instructions.get(opcode, does_nothing)
-        instruction()
+        address = instruction()
+        if address is None:
+            self.print_state()
+        else:
+            self.print_state_ls(address)
         self.pc += np.uint16(1)
 
 
