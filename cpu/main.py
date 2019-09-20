@@ -336,30 +336,37 @@ class CPU:
     def adc_zero_page(self):
         address = self.zero_page()
         self.adc(self.mem[address])
+        return address
 
     def adc_zero_page_x(self):
         address = self.zero_page()
         self.adc(self.mem[address])
+        return address
 
     def adc_absolute(self):
         address = self.absolute_address()
         self.adc(self.mem[address])
+        return address
 
     def adc_absolute_x(self):
         address = self.absolute_address() + self.x
         self.adc(self.mem[address])
+        return address
 
     def adc_absolute_y(self):
         address = self.absolute_address() + self.y
         self.adc(self.mem[address])
+        return address
 
     def adc_indirect_x(self):
         address = self.indexed_indirect()
         self.adc(self.mem[address])
+        return address
 
     def adc_indirect_y(self):
         address = self.indirect_indexed()
         self.adc(self.mem[address])
+        return address
 
     def logical_and(self, value):
         """
@@ -376,30 +383,37 @@ class CPU:
     def and_zero_page(self):
         address = self.zero_page()
         self.logical_and(self.mem[address])
+        return address
 
     def and_zero_page_x(self):
         address = self.zero_page() + self.x
         self.logical_and(self.mem[address])
+        return address
 
     def and_absolute(self):
         address = self.absolute_address()
         self.logical_and(self.mem[address])
+        return address
 
     def and_absolute_x(self):
         address = self.absolute_address() + self.x
         self.logical_and(self.mem[address])
+        return address
 
     def and_absolute_y(self):
         address = self.absolute_address() + self.y
         self.logical_and(self.mem[address])
+        return address
 
     def and_indirect_x(self):
         address = self.indexed_indirect()
         self.logical_and(self.mem[address])
+        return address
 
     def and_indirect_y(self):
         address = self.indirect_indexed()
         self.logical_and(self.mem[address])
+        return address
 
     def asl(self, value_to_shift):
         """
@@ -420,21 +434,25 @@ class CPU:
         address = self.zero_page()
         value = self.asl(self.mem[address])
         self.mem[address] = value
+        return address
 
     def asl_zero_page_x(self):
         address = self.zero_page() + self.x
         value = self.asl(self.mem[address])
         self.mem[address] = value
+        return address
 
     def asl_absolute(self):
         address = self.absolute_address()
         value = self.asl(self.mem[address])
         self.mem[address] = value
+        return address
 
     def asl_absolute_x(self):
         address = self.absolute_address() + self.x
         value = self.asl(self.mem[address])
         self.mem[address] = value
+        return address
 
     def lda_immediate(self):
         self.a = self.immediate()
