@@ -864,7 +864,7 @@ class CPU:
     def cmp_if(self, a, b):
         if (a >= b):
             self.carry = np.uint8(1)
-            set_zero_and_neg(a - b)
+            self.set_zero_and_neg(a - b)
         else:
             self.carry = np.uint8(0)
             self.zero = 0
@@ -1094,10 +1094,14 @@ class CPU:
 
     def run(self):
         while self.running:
+            start = time.time()
             mem_byte = self.mem[self.pc]
-            self.execute(opcode=mem_byte)
 
-            time.sleep(0.0000002)
+            cycles = self.execute(opcode=mem_byte)
+            end = time.time()
+
+
+            time.sleep(0.0000000559*cycles - (end - start))
 
     def execute(self, opcode):
         # Being used in order to ignore invalid opcodes
