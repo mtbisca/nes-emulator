@@ -134,7 +134,7 @@ class CPU:
             0xC6: self.dec_zero_page,
             0xD6: self.dec_zero_page_x,
             0xCE: self.dec_absolute,
-            0xDE: self. dec_absolute_x,
+            0xDE: self.dec_absolute_x,
             0xE6: self.inc_zero_page,
             0xF6: self.inc_zero_page_x,
             0xEE: self.inc_absolute,
@@ -170,7 +170,8 @@ class CPU:
             0x59: self.eor_absolute_y,
             0x41: self.eor_indirect_x,
             0x51: self.eor_indirect_y,
-            0x4C: self.jmp_absolute
+            0x4C: self.jmp_absolute,
+            0x6C: self.jmp_indirect
         }
 
     def get_bytes(self, size):
@@ -223,8 +224,11 @@ class CPU:
     def indirect_indexed(self):
         location = self.get_bytes(1)[0]
         return (self.mem[location] << 8) + self.mem[location + 1] + self.y
+
     def indirect(self):
-        location = self.get_bytes(1)[0]
+        data = self.get_bytes(2)
+        location = data[1] << 8 + data[0]
+        return (self.mem[location] << 8) + self.mem[location + 1]
 
     # Instructions
     def brk(self):
@@ -831,27 +835,32 @@ class CPU:
         Clear Decimal mode Flag
         """
         self.decimal_mode = 0
+
     def cli(self):
         """
         Clear interrupt Disable Flag
         """
         self.interrupt_disable = 0
+
     def clv(self):
         """
         Clear Carry Flag
         """
         self.overflow = 0
+
     def cmp_if(self, a, b):
-        if(a >= b):
+        if (a >= b):
             self.carry = np.uint8(1)
-            set_zero_and_neg(a-b)
+            set_zero_and_neg(a - b)
         else:
             self.carry = np.uint8(0)
             self.zero = 0
             self.negative = 1
+
     """
         Compare a and immediate
     """
+
     def cmp_imediate(self):
 
         self.cmp_if(self.a, self.immediate())
@@ -886,6 +895,7 @@ class CPU:
         self.cmp_if(self.a, self.mem[address])
 
     "Compare x"
+
     def cpx_immediate(self):
         self.cmp_if(self.x, self.immediate())
 
@@ -898,8 +908,8 @@ class CPU:
         address = self.absolute_address()
         self.cmp_if(self.x, self.mem[address])
 
-
     "Compare y"
+
     def cpy_immediate(self):
         self.cmp_if(self.y, self.immediate())
 
@@ -911,8 +921,8 @@ class CPU:
         address = self.absolute_address()
         self.cmp_if(self.y, self.mem[address])
 
-
     "Decrement 1 in value held at memory[adress]"
+
     def dec_zero_page(self):
         address = self.zero_page()
         self.mem[address] -= 1
@@ -928,16 +938,21 @@ class CPU:
     def dec_absolute_x(self):
         address = self.absolute_address() + self.x
         self.mem[address] -= 1
+
     "Decrement x"
+
     def dex(self):
         self.x -= 1
         self.set_zero_and_neg(self.x)
+
     "Decrement y"
+
     def dey(self):
         self.y -= 1
         self.set_zero_and_neg(self.y)
 
     "Increment 1 in value held at memory[adress]"
+
     def inc_zero_page(self):
         address = self.zero_page()
         self.mem[address] += 1
@@ -959,11 +974,13 @@ class CPU:
         self.set_zero_and_neg(self.mem[address])
 
     "Increment 1 in x"
+
     def inx(self):
         self.x += 1
         self.set_zero_and_neg(self.x)
 
     "Increment 1 in y"
+
     def iny(self):
         self.y += 1
         self.set_zero_and_neg(self.y)
@@ -1012,8 +1029,9 @@ class CPU:
         address = self.absolute_address()
         self.pc = np.uint16(address - 1)
 
-
-
+    def jmp_indirect(self):
+        address = self.indirect()
+        self.pc = np.uint16(address)
 
     def _hex_format(self, value, leading_zeros):
         format_string = "{0:0%sX}" % leading_zeros
