@@ -6,10 +6,12 @@ import time
 class CPU:
     def __init__(self, rom_path):
         self.mem = np.zeros(0x10000, dtype=np.uint8)
-        self.mem[0x4020:] = np.resize(np.fromfile(rom_path, dtype=np.uint8), (49120))
+        rom = np.fromfile(rom_path, dtype=np.uint8)
+        rom = rom[0x10:]
+        self.mem[0xC000:] = np.resize(rom, (16384))
 
         # Counter registers
-        self.pc = np.uint16(0x4020)
+        self.pc = np.uint16(0xC000)
         self.sp = np.uint16(0x0200)
 
         # Data registers
