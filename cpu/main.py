@@ -741,7 +741,7 @@ class CPU:
         """
         address = self.absolute_address()
         self.mem[address] = self.a
-        return address
+        return address, 4
 
     def sta_absolute_x(self):
         """
@@ -749,7 +749,7 @@ class CPU:
         """
         address = self.absolute_address() + self.x
         self.mem[address] = self.a
-        return address
+        return address, 5
 
     def sta_absolute_y(self):
         """
@@ -757,7 +757,7 @@ class CPU:
         """
         address = self.absolute_address() + self.y
         self.mem[address] = self.a
-        return address
+        return address, 5
 
     def sta_zero_page(self):
         """
@@ -765,7 +765,7 @@ class CPU:
         """
         address = self.zero_page()
         self.mem[address] = self.a
-        return address
+        return address, 3
 
     def sta_zero_page_x(self):
         """
@@ -773,7 +773,7 @@ class CPU:
         """
         address = self.zero_page() + self.x
         self.mem[address] = self.a
-        return address
+        return address, 4
 
     def sta_indexed_indirect(self):
         """
@@ -781,7 +781,7 @@ class CPU:
         """
         address = self.indexed_indirect()
         self.mem[address] = self.a
-        return address
+        return address, 6
 
     def sta_indirect_indexed(self):
         """
@@ -789,7 +789,7 @@ class CPU:
         """
         address = self.indirect_indexed()
         self.mem[address] = self.a
-        return address
+        return address, 6
 
     def stx_absolute(self):
         """
@@ -797,6 +797,7 @@ class CPU:
         """
         address = self.absolute_address()
         self.mem[address] = self.x
+        return address, 4
 
     def stx_zero_page(self):
         """
@@ -804,6 +805,7 @@ class CPU:
         """
         address = self.zero_page()
         self.mem[address] = self.x
+        return address, 3
 
     def stx_zero_page_y(self):
         """
@@ -811,6 +813,7 @@ class CPU:
         """
         address = self.zero_page() + self.y
         self.mem[address] = self.x
+        return address, 4
 
     def sty_absolute(self):
         """
@@ -818,6 +821,7 @@ class CPU:
         """
         address = self.absolute_address()
         self.mem[address] = self.y
+        return address, 4
 
     def sty_zero_page(self):
         """
@@ -825,6 +829,7 @@ class CPU:
         """
         address = self.zero_page()
         self.mem[address] = self.y
+        return address, 3
 
     def sty_zero_page_x(self):
         """
@@ -832,6 +837,7 @@ class CPU:
         """
         address = self.zero_page() + self.x
         self.mem[address] = self.y
+        return address, 4
 
     def tax(self):
         """
@@ -839,6 +845,7 @@ class CPU:
         """
         self.x = self.a
         self.set_zero_and_neg(self.x)
+        return None, 2
 
     def tay(self):
         """
@@ -846,6 +853,7 @@ class CPU:
         """
         self.y = self.a
         self.set_zero_and_neg(self.y)
+        return None, 2
 
     def tsx(self):
         """
@@ -853,6 +861,7 @@ class CPU:
         """
         self.x = self.sp
         self.set_zero_and_neg(self.x)
+        return None, 2
 
     def txa(self):
         """
@@ -860,12 +869,14 @@ class CPU:
         """
         self.a = self.x
         self.set_zero_and_neg(self.a)
+        return None, 2
 
     def txs(self):
         """
         Transfer X to Stack Pointer
         """
         self.sp = self.x
+        return None, 2
 
     def tya(self):
         """
@@ -873,24 +884,28 @@ class CPU:
         """
         self.a = self.y
         self.set_zero_and_neg(self.a)
+        return None, 2
 
     def cld(self):
         """
         Clear Decimal mode Flag
         """
         self.decimal_mode = 0
+        return None, 2
 
     def cli(self):
         """
         Clear interrupt Disable Flag
         """
         self.interrupt_disable = 0
+        return None, 2
 
     def clv(self):
         """
         Clear Carry Flag
         """
         self.overflow = 0
+        return None, 2
 
     def cmp_if(self, a, b):
         if (a >= b):
@@ -906,94 +921,113 @@ class CPU:
     """
 
     def cmp_imediate(self):
-
         self.cmp_if(self.a, self.immediate())
+        return None, 2
 
     def cmp_zero_page(self):
         address = self.zero_page()
         result = self.mem[address]
         self.cmp_if(self.a, result)
+        return address, 3
 
     def cmp_zero_page_x(self):
         address = self.zero_page() + self.x
         self.cmp_if(self.a, self.mem[address])
+        return address, 4
 
     def cmp_absolute(self):
         address = self.absolute_address()
         self.cmp_if(self.a, self.mem[address])
+        return address, 4
 
     def cmp_absolute_x(self):
         address = self.absolute_address() + self.x
         self.cmp_if(self.a, self.mem[address])
+        return address, 0
 
     def cmp_absolute_y(self):
         address = self.absolute_address() + self.y
         self.cmp_if(self.a, self.mem[address])
+        return address, 0
 
     def cmp_indexed_indirect(self):
         address = self.indexed_indirect()
         self.cmp_if(self.a, self.mem[address])
+        return address, 6
 
     def cmp_indirect_indexed(self):
         address = self.indirect_indexed()
         self.cmp_if(self.a, self.mem[address])
+        return address, 0
 
     "Compare x"
 
     def cpx_immediate(self):
         self.cmp_if(self.x, self.immediate())
+        return None, 2
 
     def cpx_zero_page(self):
         address = self.zero_page()
         result = self.x - self.mem[address]
         self.cmp_if(self.x, self.mem[address])
+        return address, 3
 
     def cpx_absolute(self):
         address = self.absolute_address()
         self.cmp_if(self.x, self.mem[address])
+        return address, 4
 
     "Compare y"
 
     def cpy_immediate(self):
         self.cmp_if(self.y, self.immediate())
+        return None, 2
 
     def cpy_zero_page(self):
         address = self.zero_page()
         self.cmp_if(self.y, self.mem[address])
+        return address, 3
 
     def cpy_absolute(self):
         address = self.absolute_address()
         self.cmp_if(self.y, self.mem[address])
+        return address, 4
 
     "Decrement 1 in value held at memory[adress]"
 
     def dec_zero_page(self):
         address = self.zero_page()
         self.mem[address] -= 1
+        return address, 5
 
     def dec_zero_page_x(self):
         address = self.zero_page() + self.x
         self.mem[address] -= 1
+        return address, 6
 
     def dec_absolute(self):
         address = self.absolute_address()
         self.mem[address] -= 1
+        return address, 6
 
     def dec_absolute_x(self):
         address = self.absolute_address() + self.x
         self.mem[address] -= 1
+        return address, 7
 
     "Decrement x"
 
     def dex(self):
         self.x -= 1
         self.set_zero_and_neg(self.x)
+        return None, 2
 
     "Decrement y"
 
     def dey(self):
         self.y -= 1
         self.set_zero_and_neg(self.y)
+        return None, 2
 
     "Increment 1 in value held at memory[adress]"
 
@@ -1001,33 +1035,39 @@ class CPU:
         address = self.zero_page()
         self.mem[address] += 1
         self.set_zero_and_neg(self.mem[address])
+        return address, 5
 
     def inc_zero_page_x(self):
         address = self.zero_page() + self.x
         self.mem[address] += 1
         self.set_zero_and_neg(self.mem[address])
+        return address, 6
 
     def inc_absolute(self):
         address = self.absolute_address()
         self.mem[address] += 1
         self.set_zero_and_neg(self.mem[address])
+        return address, 6
 
     def inc_absolute_x(self):
         address = self.absolute_address() + self.x
         self.mem[address] += 1
         self.set_zero_and_neg(self.mem[address])
+        return address, 7
 
     "Increment 1 in x"
 
     def inx(self):
         self.x += 1
         self.set_zero_and_neg(self.x)
+        return None, 2
 
     "Increment 1 in y"
 
     def iny(self):
         self.y += 1
         self.set_zero_and_neg(self.y)
+        return None, 2
 
     def logical_eor(self, value):
         """
@@ -1040,42 +1080,52 @@ class CPU:
     def eor_immediate(self):
         value = self.immediate()
         self.logical_eor(value)
+        return None, 2
 
     def eor_zero_page(self):
         address = self.zero_page()
         self.logical_eor(self.mem[address])
+        return address, 3
 
     def eor_zero_page_x(self):
         address = self.zero_page() + self.x
         self.logical_eor(self.mem[address])
+        return address, 4
 
     def eor_absolute(self):
         address = self.absolute_address()
         self.logical_eor(self.mem[address])
+        return address, 4
 
     def eor_absolute_x(self):
         address = self.absolute_address() + self.x
         self.logical_eor(self.mem[address])
+        return address, 0
 
     def eor_absolute_y(self):
         address = self.absolute_address() + self.y
         self.logical_eor(self.mem[address])
+        return address, 0
 
     def eor_indirect_x(self):
         address = self.indexed_indirect()
         self.logical_eor(self.mem[address])
+        return address, 6
 
     def eor_indirect_y(self):
         address = self.indirect_indexed()
         self.logical_eor(self.mem[address])
+        return address, 0
 
     def jmp_absolute(self):
         address = self.absolute_address()
         self.pc = np.uint16(address - 1)
+        return address, 3
 
     def jmp_indirect(self):
         address = self.indirect()
         self.pc = np.uint16(address)
+        return address, 5
 
     def trigger_interruption(self, read_address):
         """
@@ -1157,7 +1207,11 @@ class CPU:
             cycles = self.execute(opcode=mem_byte)
             self.print_state()
             end = time.time()
-            time.sleep(0.0000000559*cycles - (end - start))
+            sleep_time += 0.0000000559*cycles - (end - start)
+
+            if (sleep_time > 0.001):
+                time.sleep(sleep_time)
+                sleep_time = 0
 
     def execute(self, opcode):
         # Being used in order to ignore invalid opcodes
@@ -1166,12 +1220,13 @@ class CPU:
 
         # TODO: switch does_nothing for None when only valid opcodes are being read
         instruction = self.instructions.get(opcode, does_nothing)
-        address = instruction()
+        address, cycle = instruction()
         if address is None:
             self.print_state()
         else:
             self.print_state_ls(address)
         self.pc += np.uint16(1)
+        return cycle
 
 
 def main(rom_path):
