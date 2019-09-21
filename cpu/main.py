@@ -242,9 +242,11 @@ class CPU:
         """
         Force Interrupt
         """
-        self.break_cmd = True
-        self.pc += 1
-        self.trigger_irq = True
+        # self.break_cmd = True
+        # self.pc += 1
+        # self.trigger_irq = True
+        self.running = False
+        return None, 2
 
     def clc(self):
         """
@@ -1259,6 +1261,7 @@ class CPU:
                self.hex_format(self.mem[address], 2)))
 
     def run(self):
+        sleep_time = 0
         while self.running:
             start = time.time()
             if(self.trigger_irq):
@@ -1270,7 +1273,6 @@ class CPU:
                 self.trigger_nmi = False
             mem_byte = self.mem[self.pc]
             cycles = self.execute(opcode=mem_byte)
-            self.print_state()
             end = time.time()
             sleep_time += 0.0000000559*cycles - (end - start)
 
