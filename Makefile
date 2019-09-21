@@ -49,6 +49,8 @@ test: ${BIN} ${LOG} ${TESTS}
 setup:
 	sudo apt-get install python3.6 python3-pip;
 	pip3 install -r ./cpu/requirements.txt;
+	cd asm6f; make all; cd ..;
 
 clean:
 	rm -rf ${BIN}/* ${LOG}/*
+	cd asm6f; make clean; cd ..;
