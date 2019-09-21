@@ -30,6 +30,13 @@ class CPU:
 
         self.running = True
 
+        # Interruption Trigger Flags
+        self.trigger_irq = False
+        self.trigger_nmi = False
+
+        self.IRQ_HANDLER_ADDRESS = 0xFFFE
+        self.NMI_HANDLER_ADDRESS = 0XFFFA
+
         self.instructions = {
             0x00: self.brk,
             0x18: self.clc,
@@ -134,7 +141,7 @@ class CPU:
             0xC6: self.dec_zero_page,
             0xD6: self.dec_zero_page_x,
             0xCE: self.dec_absolute,
-            0xDE: self. dec_absolute_x,
+            0xDE: self.dec_absolute_x,
             0xE6: self.inc_zero_page,
             0xF6: self.inc_zero_page_x,
             0xEE: self.inc_absolute,
@@ -170,7 +177,9 @@ class CPU:
             0x59: self.eor_absolute_y,
             0x41: self.eor_indirect_x,
             0x51: self.eor_indirect_y,
-            0x4C: self.jmp_absolute
+            0x4C: self.jmp_absolute,
+            0x60: self.rts,
+            0x40: self.rti
         }
 
     def get_bytes(self, size):
@@ -231,8 +240,9 @@ class CPU:
         """
         Force Interrupt
         """
-        # TODO: implement BRK properly
-        self.running = False
+        self.break_cmd = True
+        self.pc += 1
+        self.trigger_irq = True
 
     def clc(self):
         """
@@ -542,10 +552,7 @@ class CPU:
 
     def jsr(self):
         address = self.absolute_address()
-        low = self.pc & 0x00FF
-        big = self.pc >> 8
-        self.push_to_stack(big)
-        self.push_to_stack(low)
+        self.push_pc_to_stack()
         self.pc = np.uint16(address - 1)
 
     def nop(self):
@@ -630,19 +637,25 @@ class CPU:
         address = self.absolute_address() + self.x
         self.mem[address] = self.ror(self.mem[address])
 
+    def rti(self):
+        """
+        Return from Interrupt
+        """
+        self.plp() 
+        self.pull_pc_from_stack()
+
     def rts(self):
         """
         Return from Subroutine
         """
-        low = self.pull_from_stack()
-        big = self.pull_from_stack()
-        self.pc = (low | (big << 8)) + 1
+        self.pull_pc_from_stack()
+        self.pc += 1
 
     def sbc(self, value):
         """
         Subtract with Carry
         """
-        return adc(self, value ^ 0xFF)
+        return self.adc(value ^ 0xFF)
 
     def sbc_immediate(self):
         value = self.immediate()
@@ -1012,14 +1025,31 @@ class CPU:
         address = self.absolute_address()
         self.pc = np.uint16(address - 1)
 
+    def trigger_interruption(self, read_address):
+        """
+        Triggers Interruption by pushing PC and P to the stack and
+        transfering control flow to given address
+        """
+        self.push_pc_to_stack()
+        self.php()
+        self.pc = (self.mem[read_address] << 8) + self.mem[read_address + 1]
+    
+    def push_pc_to_stack(self):
+        low = self.pc & 0x00FF
+        big = self.pc >> 8
+        self.push_to_stack(big)
+        self.push_to_stack(low)
+    
+    def pull_pc_from_stack(self):
+        low = self.pull_from_stack()
+        big = self.pull_from_stack()
+        self.pc = low | (big << 8)
 
-
-
-    def _hex_format(self, value, leading_zeros):
+    def hex_format(self, value, leading_zeros):
         format_string = "{0:0%sX}" % leading_zeros
         return ("0x" + format_string.format(int(value))).lower()
 
-    def _bin_format(self, value):
+    def bin_format(self, value):
         return "{0:08b}".format(value)
 
     def get_p(self):
@@ -1043,26 +1073,33 @@ class CPU:
 
     def print_state(self):
         print("| pc = %s | a = %s | x = %s | y = %s | sp = %s | p[NV-BDIZC] = %s |" % \
-              (self._hex_format(self.pc, 4),
-               self._hex_format(self.a, 2),
-               self._hex_format(self.x, 2),
-               self._hex_format(self.y, 2),
-               self._hex_format(self.sp, 4),
-               self._bin_format(self.get_p())))
+              (self.hex_format(self.pc, 4),
+               self.hex_format(self.a, 2),
+               self.hex_format(self.x, 2),
+               self.hex_format(self.y, 2),
+               self.hex_format(self.sp, 4),
+               self.bin_format(self.get_p())))
 
     def print_state_ls(self, address):
         print("| pc = %s | a = %s | x = %s | y = %s | sp = %s | p[NV-BDIZC] = %s | MEM[%s] = %s |" % \
-              (self._hex_format(self.pc, 4),
-               self._hex_format(self.a, 2),
-               self._hex_format(self.x, 2),
-               self._hex_format(self.y, 2),
-               self._hex_format(self.sp, 4),
-               self._bin_format(self.get_p()),
-               self._hex_format(address, 4),
-               self._hex_format(self.mem[address], 2)))
+              (self.hex_format(self.pc, 4),
+               self.hex_format(self.a, 2),
+               self.hex_format(self.x, 2),
+               self.hex_format(self.y, 2),
+               self.hex_format(self.sp, 4),
+               self.bin_format(self.get_p()),
+               self.hex_format(address, 4),
+               self.hex_format(self.mem[address], 2)))
 
     def run(self):
         while self.running:
+            if(self.trigger_irq):
+                self.trigger_interruption(self.IRQ_HANDLER_ADDRESS)
+                self.interrupt_disable = True
+                self.trigger_irq = False
+            elif(self.trigger_nmi):
+                self.trigger_interruption(self.NMI_HANDLER_ADDRESS)
+                self.trigger_nmi = False
             rom_byte = self.mem[self.pc]
             self.execute(opcode=rom_byte)
             self.print_state()
