@@ -251,6 +251,7 @@ class CPU:
         Clear Carry Flag
         """
         self.carry = np.uint8(0)
+        return None, 2
 
     def bit(self, address):
         """
@@ -269,12 +270,12 @@ class CPU:
     def bit_zero_page(self):
         address = self.zero_page()
         self.bit(address)
-        return address
+        return address, 3
 
     def bit_absolute(self):
         address = self.absolute_address()
         self.bit(address)
-        return address
+        return address, 4
 
     def bcc(self):
         """
@@ -282,6 +283,8 @@ class CPU:
         """
         if self.carry == np.uint8(0):
             self.relative_address()
+            return None, 3
+        return None, 2
 
     def bcs(self):
         """
@@ -289,6 +292,8 @@ class CPU:
         """
         if self.carry == np.uint8(1):
             self.relative_address()
+            return None, 3
+        return None, 2
 
     def beq(self):
         """
@@ -296,6 +301,8 @@ class CPU:
         """
         if self.zero == 1:
             self.relative_address()
+            return None, 3
+        return None, 2
 
     def bne(self):
         """
@@ -303,6 +310,8 @@ class CPU:
         """
         if self.zero == 0:
             self.relative_address()
+            return None, 3
+        return None, 2
 
     def bpl(self):
         """
@@ -310,6 +319,8 @@ class CPU:
         """
         if self.negative == 0:
             self.relative_address()
+            return None, 3
+        return None, 2
 
     def bmi(self):
         """
@@ -317,6 +328,8 @@ class CPU:
         """
         if self.negative == 1:
             self.relative_address()
+            return None, 3
+        return None, 2
 
     def bvc(self):
         """
@@ -324,6 +337,8 @@ class CPU:
         """
         if self.overflow == 0:
             self.relative_address()
+            return None, 3
+        return None, 2
 
     def bvs(self):
         """
@@ -331,6 +346,8 @@ class CPU:
         """
         if self.overflow == 1:
             self.relative_address()
+            return None, 3
+        return None, 2
 
     def adc(self, value):
         """
@@ -342,41 +359,42 @@ class CPU:
     def adc_immediate(self):
         value = self.immediate()
         self.adc(value)
+        return None, 2
 
     def adc_zero_page(self):
         address = self.zero_page()
         self.adc(self.mem[address])
-        return address
+        return address, 3
 
     def adc_zero_page_x(self):
         address = self.zero_page()
         self.adc(self.mem[address])
-        return address
+        return address, 4
 
     def adc_absolute(self):
         address = self.absolute_address()
         self.adc(self.mem[address])
-        return address
+        return address, 4
 
     def adc_absolute_x(self):
         address = self.absolute_address() + self.x
         self.adc(self.mem[address])
-        return address
+        return address, 4
 
     def adc_absolute_y(self):
         address = self.absolute_address() + self.y
         self.adc(self.mem[address])
-        return address
+        return address, 4
 
     def adc_indirect_x(self):
         address = self.indexed_indirect()
         self.adc(self.mem[address])
-        return address
+        return address, 6
 
     def adc_indirect_y(self):
         address = self.indirect_indexed()
         self.adc(self.mem[address])
-        return address
+        return address, 5
 
     def logical_and(self, value):
         """
@@ -389,41 +407,42 @@ class CPU:
     def and_immediate(self):
         value = self.immediate()
         self.logical_and(value)
+        return None, 2
 
     def and_zero_page(self):
         address = self.zero_page()
         self.logical_and(self.mem[address])
-        return address
+        return address, 3
 
     def and_zero_page_x(self):
         address = self.zero_page() + self.x
         self.logical_and(self.mem[address])
-        return address
+        return address, 4
 
     def and_absolute(self):
         address = self.absolute_address()
         self.logical_and(self.mem[address])
-        return address
+        return address, 4
 
     def and_absolute_x(self):
         address = self.absolute_address() + self.x
         self.logical_and(self.mem[address])
-        return address
+        return address, 4
 
     def and_absolute_y(self):
         address = self.absolute_address() + self.y
         self.logical_and(self.mem[address])
-        return address
+        return address, 4
 
     def and_indirect_x(self):
         address = self.indexed_indirect()
         self.logical_and(self.mem[address])
-        return address
+        return address, 6
 
     def and_indirect_y(self):
         address = self.indirect_indexed()
         self.logical_and(self.mem[address])
-        return address
+        return address, 5
 
     def asl(self, value_to_shift):
         """
@@ -439,123 +458,136 @@ class CPU:
 
     def asl_accumulator(self):
         self.a = self.asl(self.a)
+        return None, 2
 
     def asl_zero_page(self):
         address = self.zero_page()
         value = self.asl(self.mem[address])
         self.mem[address] = value
-        return address
+        return address, 5
 
     def asl_zero_page_x(self):
         address = self.zero_page() + self.x
         value = self.asl(self.mem[address])
         self.mem[address] = value
-        return address
+        return address, 6
 
     def asl_absolute(self):
         address = self.absolute_address()
         value = self.asl(self.mem[address])
         self.mem[address] = value
-        return address
+        return address, 6
 
     def asl_absolute_x(self):
         address = self.absolute_address() + self.x
         value = self.asl(self.mem[address])
         self.mem[address] = value
-        return address
+        return address, 7
 
     def lda_immediate(self):
         self.a = self.immediate()
         self.set_zero_and_neg(self.a)
+        return None, 2
 
     def ldx_immediate(self):
         self.x = self.immediate()
         self.set_zero_and_neg(self.x)
+        return None, 2
 
     def ldy_immediate(self):
         self.y = self.immediate()
         self.set_zero_and_neg(self.y)
+        return None, 2
 
     def lda_zero_page(self):
         address = self.zero_page()
         self.a = self.mem[address]
         self.set_zero_and_neg(self.a)
-        return address
+        return address, 3
 
     def ldx_zero_page(self):
         address = self.zero_page()
         self.x = self.mem[address]
         self.set_zero_and_neg(self.x)
+        return address, 3
 
     def ldy_zero_page(self):
         address = self.zero_page()
         self.y = self.mem[address]
         self.set_zero_and_neg(self.y)
+        return address, 3
 
     def lda_zero_page_x(self):
         address = self.zero_page() + self.x
         self.a = self.mem[address]
         self.set_zero_and_neg(self.a)
-        return address
+        return address, 4
 
     def ldx_zero_page_y(self):
         address = self.zero_page() + self.y
         self.x = self.mem[address]
         self.set_zero_and_neg(self.x)
+        return address, 4
 
     def ldy_zero_page_x(self):
         address = self.zero_page() + self.x
         self.y = self.mem[address]
         self.set_zero_and_neg(self.y)
+        return address, 4
 
     def lda_absolute(self):
         address = self.absolute_address()
         self.a = self.mem[address]
         self.set_zero_and_neg(self.a)
+        return address, 4
 
     def ldx_absolute(self):
         address = self.absolute_address()
         self.x = self.mem[address]
         self.set_zero_and_neg(self.x)
+        return address, 4
 
     def ldy_absolute(self):
         address = self.absolute_address()
         self.y = self.mem[address]
         self.set_zero_and_neg(self.y)
+        return address, 4
 
     def lda_absolute_x(self):
         address = self.absolute_address() + self.x
         self.a = self.mem[address]
         self.set_zero_and_neg(self.a)
-        return address
+        return address, 4
 
     def lda_absolute_y(self):
         address = self.absolute_address() + self.y
         self.a = self.mem[address]
         self.set_zero_and_neg(self.a)
-        return address
+        return address, 4
 
     def ldx_absolute_y(self):
         address = self.absolute_address() + self.y
         self.x = self.mem[address]
         self.set_zero_and_neg(self.x)
+        return address, 4
 
     def ldy_absolute_x(self):
         address = self.absolute_address() + self.x
         self.y = self.mem[address]
         self.set_zero_and_neg(self.y)
+        return address, 4
 
     def lda_indexed_indirect(self):
         address = self.indexed_indirect()
         self.a = self.mem[address]
         self.set_zero_and_neg(self.a)
-        return address
+        return address, 6
 
     def lda_indirect_indexed(self):
         address = self.indirect_indexed()
         self.a = self.mem[address]
         self.set_zero_and_neg(self.a)
-        return address
+        return address, 5
 
     def push_to_stack(self, value):
         self.sp -= np.uint16(1)
@@ -568,20 +600,25 @@ class CPU:
 
     def pha(self):
         self.push_to_stack(self.a)
+        return self.sp, 3
 
     def php(self):
         self.push_to_stack(self.get_p())
+        return self.sp, 3
 
     def pla(self):
         self.a = self.pull_from_stack()
+        return self.sp, 4
 
     def plp(self):
         self.set_p(self.pull_from_stack())
+        return self.sp, 4
 
     def jsr(self):
         address = self.absolute_address()
         self.push_pc_to_stack()
         self.pc = np.uint16(address - 1)
+        return None, 6
 
     def nop(self):
         pass
@@ -594,22 +631,27 @@ class CPU:
 
     def lsr_accumulator(self):
         self.a = self.lsr(self.a)
+        return None, 2
 
     def lsr_zero_page(self):
         address = self.zero_page()
         self.mem[address] = self.lsr(self.mem[address])
+        return address, 5
 
     def lsr_zero_page_x(self):
         address = self.zero_page() + self.x
         self.mem[address] = self.lsr(self.mem[address])
+        return address, 6
 
     def lsr_absolute(self):
         address = self.absolute_address()
         self.mem[address] = self.lsr(self.mem[address])
+        return address, 6
 
     def lsr_absolute_x(self):
         address = self.absolute_address() + self.x
         self.mem[address] = self.lsr(self.mem[address])
+        return address, 7
 
     def rol(self, value):
         temp_carry = (value & 10000000) >> 7
@@ -629,41 +671,51 @@ class CPU:
 
     def rol_accumulator(self):
         self.a = self.rol(self.a)
+        return None, 2
 
     def rol_zero_page(self):
         address = self.zero_page()
         self.mem[address] = self.rol(self.mem[address])
+        return address, 5
 
     def rol_zero_page_x(self):
         address = self.zero_page() + self.x
         self.mem[address] = self.rol(self.mem[address])
+        return address, 6
 
     def rol_absolute(self):
         address = self.absolute_address()
         self.mem[address] = self.rol(self.mem[address])
+        return address, 6
 
     def rol_absolute_x(self):
         address = self.absolute_address() + self.x
         self.mem[address] = self.rol(self.mem[address])
+        return address, 7
 
     def ror_accumulator(self):
         self.a = self.ror(self.a)
+        return None, 2
 
     def ror_zero_page(self):
         address = self.zero_page()
         self.mem[address] = self.ror(self.mem[address])
+        return address, 5
 
     def ror_zero_page_x(self):
         address = self.zero_page() + self.x
         self.mem[address] = self.ror(self.mem[address])
+        return address, 6
 
     def ror_absolute(self):
         address = self.absolute_address()
         self.mem[address] = self.ror(self.mem[address])
+        return address, 6
 
     def ror_absolute_x(self):
         address = self.absolute_address() + self.x
         self.mem[address] = self.ror(self.mem[address])
+        return address, 7
 
     def rti(self):
         """
@@ -677,7 +729,8 @@ class CPU:
         Return from Subroutine
         """
         self.pull_pc_from_stack()
-        self.pc += 1
+        self.pc += np.uint16(1)
+        return None, 6
 
     def sbc(self, value):
         """
