@@ -723,6 +723,7 @@ class CPU:
         """
         self.plp() 
         self.pull_pc_from_stack()
+        return None, 6
 
     def rts(self):
         """
@@ -741,52 +742,63 @@ class CPU:
     def sbc_immediate(self):
         value = self.immediate()
         self.sbc(value)
+        return None, 2
 
     def sbc_zero_page(self):
         address = self.zero_page()
         self.sbc(self.mem[address])
+        return address, 3
 
     def sbc_zero_page_x(self):
         address = self.zero_page()
         self.sbc(self.mem[address])
+        return address, 4
 
     def sbc_absolute(self):
         address = self.absolute_address()
         self.sbc(self.mem[address])
+        return address, 4
 
     def sbc_absolute_x(self):
         address = self.absolute_address() + self.x
         self.sbc(self.mem[address])
+        return address, 4
 
     def sbc_absolute_y(self):
         address = self.absolute_address() + self.y
         self.sbc(self.mem[address])
+        return address, 4
 
     def sbc_indirect_x(self):
         address = self.indexed_indirect()
         self.sbc(self.mem[address])
+        return address, 6
 
     def sbc_indirect_y(self):
         address = self.indirect_indexed()
         self.sbc(self.mem[address])
+        return address, 5
 
     def sec(self):
         """
         Set Carry Flag
         """
         self.carry = np.uint8(1)
+        return None, 2
 
     def sed(self):
         """
         Set Decimal Flag
         """
         self.decimal_mode = 1
+        return None, 2
 
     def sei(self):
         """
         Set Interrupt Disable
         """
         self.interrupt_disable = 1
+        return None, 2
 
     def sta_absolute(self):
         """
@@ -996,12 +1008,12 @@ class CPU:
     def cmp_absolute_x(self):
         address = self.absolute_address() + self.x
         self.cmp_if(self.a, self.mem[address])
-        return address, 0
+        return address, 4
 
     def cmp_absolute_y(self):
         address = self.absolute_address() + self.y
         self.cmp_if(self.a, self.mem[address])
-        return address, 0
+        return address, 4
 
     def cmp_indexed_indirect(self):
         address = self.indexed_indirect()
@@ -1011,7 +1023,7 @@ class CPU:
     def cmp_indirect_indexed(self):
         address = self.indirect_indexed()
         self.cmp_if(self.a, self.mem[address])
-        return address, 0
+        return address, 5
 
     "Compare x"
 
@@ -1153,12 +1165,12 @@ class CPU:
     def eor_absolute_x(self):
         address = self.absolute_address() + self.x
         self.logical_eor(self.mem[address])
-        return address, 0
+        return address, 4
 
     def eor_absolute_y(self):
         address = self.absolute_address() + self.y
         self.logical_eor(self.mem[address])
-        return address, 0
+        return address, 4
 
     def eor_indirect_x(self):
         address = self.indexed_indirect()
@@ -1168,7 +1180,7 @@ class CPU:
     def eor_indirect_y(self):
         address = self.indirect_indexed()
         self.logical_eor(self.mem[address])
-        return address, 0
+        return address, 5
 
     def jmp_absolute(self):
         address = self.absolute_address()
