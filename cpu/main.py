@@ -1207,7 +1207,7 @@ class CPU:
             cycles = self.execute(opcode=mem_byte)
             self.print_state()
             end = time.time()
-            sleep_time = 0.0000000559*cycles - (end - start)
+            sleep_time += 0.0000000559*cycles - (end - start)
 
             if (sleep_time > 0.001):
                 time.sleep(sleep_time)
@@ -1220,12 +1220,13 @@ class CPU:
 
         # TODO: switch does_nothing for None when only valid opcodes are being read
         instruction = self.instructions.get(opcode, does_nothing)
-        address = instruction()
+        address, cycle = instruction()
         if address is None:
             self.print_state()
         else:
             self.print_state_ls(address)
         self.pc += np.uint16(1)
+        return cycle
 
 
 def main(rom_path):
