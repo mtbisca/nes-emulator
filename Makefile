@@ -10,6 +10,7 @@ NES=python3 ./cpu/main.py
 
 TESTS=$(addprefix ${BIN}/, $(notdir $(patsubst %.s,%,$(sort $(wildcard ${TST}/*.s)))))
 CROSS_AS=${EXT}/asm6/asm6
+ASM6=${EXT}/asm6/
 
 all: ${BIN} ${LOG}
 
@@ -22,7 +23,10 @@ ${BIN}/%: ${TST}/%.s
 ${LOG}:
 	@mkdir -p ${LOG}
 
-test: ${BIN} ${LOG} ${TESTS}
+${CROSS_AS}:
+	cd ./cpu/ext/asm6; make all
+
+test: ${CROSS_AS} ${BIN} ${LOG} ${TESTS} 
 	@{  echo "************************* Tests ******************************"; \
 		test_failed=0; \
 		test_passed=0; \
@@ -47,10 +51,8 @@ test: ${BIN} ${LOG} ${TESTS}
 	}
 
 setup:
-	sudo apt-get install python3.6 python3-pip;
 	pip3 install -r ./cpu/requirements.txt;
-	cd asm6f; make all; cd ..;
 
 clean:
 	rm -rf ${BIN}/* ${LOG}/*
-	cd asm6f; make clean; cd ..;
+	rm ./cpu/ext/asm6/asm6
