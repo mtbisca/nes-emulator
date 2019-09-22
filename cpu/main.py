@@ -221,11 +221,8 @@ class CPU:
         return (data[1] << 8) + data[0]
 
     def relative_address(self):
-        """
-        Add offset to PC to cause a branch to a new location
-        """
         offset = self.get_bytes(1)[0]
-        self.pc += offset
+        return offset
 
     def indexed_indirect(self):
         value = self.get_bytes(1)[0]
@@ -287,8 +284,9 @@ class CPU:
         """
         Branch if Carry Clear
         """
+        offset = self.relative_address()
         if self.carry == 0:
-            self.relative_address()
+            self.pc += offset
             return None, 3
         return None, 2
 
@@ -296,8 +294,9 @@ class CPU:
         """
         Branch if Carry Set
         """
+        offset = self.relative_address()
         if self.carry == 1:
-            self.relative_address()
+            self.pc += offset
             return None, 3
         return None, 2
 
@@ -305,8 +304,9 @@ class CPU:
         """
         Branch if Equal
         """
+        offset = self.relative_address()
         if self.zero == 1:
-            self.relative_address()
+            self.pc += offset
             return None, 3
         return None, 2
 
@@ -314,8 +314,9 @@ class CPU:
         """
         Branch if Not Equal
         """
+        offset = self.relative_address()
         if self.zero == 0:
-            self.relative_address()
+            self.pc += offset
             return None, 3
         return None, 2
 
@@ -323,8 +324,9 @@ class CPU:
         """
         Branch if Positive
         """
+        offset = self.relative_address()
         if self.negative == 0:
-            self.relative_address()
+            self.pc += offset
             return None, 3
         return None, 2
 
@@ -332,8 +334,9 @@ class CPU:
         """
         Branch if Minus
         """
+        offset = self.relative_address()
         if self.negative == 1:
-            self.relative_address()
+            self.pc += offset
             return None, 3
         return None, 2
 
@@ -341,8 +344,9 @@ class CPU:
         """
         Branch if Overflow Clear
         """
+        offset = self.relative_address()
         if self.overflow == 0:
-            self.relative_address()
+            self.pc += offset
             return None, 3
         return None, 2
 
@@ -350,8 +354,9 @@ class CPU:
         """
         Branch if Overflow Set
         """
+        offset = self.relative_address()
         if self.overflow == 1:
-            self.relative_address()
+            self.pc += offset
             return None, 3
         return None, 2
 
