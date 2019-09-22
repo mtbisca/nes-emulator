@@ -20,13 +20,15 @@ class CPU:
         self.y = np.uint8(0)
 
         # Flags (p register equivalent)
-        self.carry = 0
-        self.zero = 0
-        self.interrupt_disable = 0
-        self.decimal_mode = 0
-        self.break_cmd = 0
-        self.overflow = 0
+        # NV-BDIZC
+        # 00110100
         self.negative = 0
+        self.overflow = 0
+        self.break_cmd = 1
+        self.decimal_mode = 0
+        self.interrupt_disable = 1
+        self.zero = 0
+        self.carry = 0
 
         self.running = True
 
