@@ -20,7 +20,7 @@ class CPU:
         self.y = np.uint8(0)
 
         # Flags (p register equivalent)
-        self.carry = np.uint8(0)
+        self.carry = 0
         self.zero = 0
         self.interrupt_disable = 0
         self.decimal_mode = 0
@@ -254,7 +254,7 @@ class CPU:
         """
         Clear Carry Flag
         """
-        self.carry = np.uint8(0)
+        self.carry = 0
         return None, 2
 
     def bit(self, address):
@@ -285,7 +285,7 @@ class CPU:
         """
         Branch if Carry Clear
         """
-        if self.carry == np.uint8(0):
+        if self.carry == 0:
             self.relative_address()
             return None, 3
         return None, 2
@@ -294,7 +294,7 @@ class CPU:
         """
         Branch if Carry Set
         """
-        if self.carry == np.uint8(1):
+        if self.carry == 1:
             self.relative_address()
             return None, 3
         return None, 2
@@ -358,6 +358,10 @@ class CPU:
         Add with Carry
         """
         self.a += value + self.carry
+        if self.a > np.iinfo(np.uint8).max:
+            self.a = np.uint8(self.a - np.iinfo(np.uint8).max - 1)
+            self.overflow = 1
+            self.carry = 1
         self.set_zero_and_neg(self.a)
 
     def adc_immediate(self):
@@ -453,7 +457,7 @@ class CPU:
         Arithmetic Shift Left
         """
         # Set C to contents of old bit 7
-        self.carry = value_to_shift >> np.uint8(7)
+        self.carry = value_to_shift >> 7
         # Shift all the bits one bit left
         result = value_to_shift << np.uint8(1)
         self.set_negative_to_bit_7(result)
@@ -787,7 +791,7 @@ class CPU:
         """
         Set Carry Flag
         """
-        self.carry = np.uint8(1)
+        self.carry = 1
         return None, 2
 
     def sed(self):
@@ -977,11 +981,11 @@ class CPU:
         return None, 2
 
     def cmp_if(self, a, b):
-        if (a >= b):
-            self.carry = np.uint8(1)
+        if a >= b:
+            self.carry = 1
             self.set_zero_and_neg(a - b)
         else:
-            self.carry = np.uint8(0)
+            self.carry = 0
             self.zero = 0
             self.negative = 1
 
@@ -1084,17 +1088,19 @@ class CPU:
         self.mem[address] -= 1
         return address, 7
 
-    "Decrement x"
-
     def dex(self):
-        self.x -= 1
+        """
+        Decrement x
+        """
+        self.x -= np.uint8(1)
         self.set_zero_and_neg(self.x)
         return None, 2
 
-    "Decrement y"
-
     def dey(self):
-        self.y -= 1
+        """
+        Decrement y
+        """
+        self.y -= np.uint8(1)
         self.set_zero_and_neg(self.y)
         return None, 2
 
@@ -1124,17 +1130,19 @@ class CPU:
         self.set_zero_and_neg(self.mem[address])
         return address, 7
 
-    "Increment 1 in x"
-
     def inx(self):
-        self.x += 1
+        """
+        Increment 1 in x
+        """
+        self.x += np.uint8(1)
         self.set_zero_and_neg(self.x)
         return None, 2
 
-    "Increment 1 in y"
-
     def iny(self):
-        self.y += 1
+        """
+        Increment 1 in y
+        """
+        self.y += np.uint8(1)
         self.set_zero_and_neg(self.y)
         return None, 2
 
@@ -1266,11 +1274,11 @@ class CPU:
         sleep_time = 0
         while self.running:
             start = time.time()
-            if(self.trigger_irq):
+            if self.trigger_irq:
                 self.trigger_interruption(self.IRQ_HANDLER_ADDRESS)
                 self.interrupt_disable = True
                 self.trigger_irq = False
-            elif(self.trigger_nmi):
+            elif self.trigger_nmi:
                 self.trigger_interruption(self.NMI_HANDLER_ADDRESS)
                 self.trigger_nmi = False
             mem_byte = self.mem[self.pc]
@@ -1278,7 +1286,7 @@ class CPU:
             end = time.time()
             sleep_time += 0.0000000559*cycles - (end - start)
 
-            if (sleep_time > 0.001):
+            if sleep_time > 0.001:
                 time.sleep(sleep_time)
                 sleep_time = 0
 
@@ -1300,8 +1308,8 @@ class CPU:
 
 def main(rom_path):
     cpu = CPU(rom_path)
-    np.seterrcall(cpu.error_handler)
-    np.seterr(over='call')
+    # np.seterrcall(cpu.error_handler)
+    np.seterr(over='ignore')
     cpu.run()
 
 
