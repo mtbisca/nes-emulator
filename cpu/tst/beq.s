@@ -38,7 +38,7 @@ Reset:
   LDX  #$00
   LDA  $20
   CMP  $21
-  BNE  Done
+  BEQ  Done
   INX
 Done:
   STX  $22
