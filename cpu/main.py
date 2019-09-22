@@ -631,7 +631,7 @@ class CPU:
         return None, 6
 
     def nop(self):
-        pass
+        return None, 2
 
     def lsr(self, value):
         self.carry = value & 1
