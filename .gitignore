@@ -1,1 +1,4 @@
 .idea
+cpu/log/*
+cpu/bin/*
+cpu/ext/asm6/asm6
