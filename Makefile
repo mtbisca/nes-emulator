@@ -1,11 +1,11 @@
 CC=g++
 CCFLAGS=-std=gnu++11 -O3
 
-TST=./cpu/tst
-RES=./cpu/res
-BIN=./cpu/bin
-LOG=./cpu/log
-EXT=./cpu/ext
+TST=./tst
+RES=./res
+BIN=./bin
+LOG=./log
+EXT=./ext
 NES=python3 ./cpu/main.py
 
 TESTS=$(addprefix ${BIN}/, $(notdir $(patsubst %.s,%,$(sort $(wildcard ${TST}/*.s)))))
@@ -24,7 +24,7 @@ ${LOG}:
 	@mkdir -p ${LOG}
 
 ${CROSS_AS}:
-	cd ./cpu/ext/asm6; make all
+	cd ./ext/asm6; make all
 
 test: ${CROSS_AS} ${BIN} ${LOG} ${TESTS} 
 	@{  echo "************************* Tests ******************************"; \
@@ -55,4 +55,4 @@ setup:
 
 clean:
 	rm -rf ${BIN}/* ${LOG}/*
-	rm ./cpu/ext/asm6/asm6
+	rm -rf ./ext/asm6/asm6
