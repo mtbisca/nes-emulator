@@ -369,6 +369,8 @@ class CPU:
             self.a = np.uint8(self.a - np.iinfo(np.uint8).max - 1)
             self.overflow = 1
             self.carry = 1
+        else:
+            self.a = np.uint8(self.a)
         self.set_zero_and_neg(self.a)
 
     def adc_immediate(self):
