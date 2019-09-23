@@ -50,17 +50,12 @@ MIRRORING = %0001 ;%0000 = horizontal, %0001 = vertical, %1000 = four-screen
 
 
 Reset:
-    LDA #$03
-    PHA
-    ROR
-ROR
-PHA
-PHP
-ROL
-LDA #$FF
-PLP
-PLA
-PLA
+   LDA #$03
+   STA $01
+   LDX $01
+   LDY #$01
+   STA ($00), Y 
+   LDY $0004
    brk ; Abort execution
 
 NMI:

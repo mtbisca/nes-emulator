@@ -20,13 +20,15 @@ class CPU:
         self.y = np.uint8(0)
 
         # Flags (p register equivalent)
-        self.carry = np.uint8(0)
-        self.zero = 0
-        self.interrupt_disable = 0
-        self.decimal_mode = 0
-        self.break_cmd = 0
-        self.overflow = 0
+        # NV-BDIZC
+        # 00110100
         self.negative = 0
+        self.overflow = 0
+        self.break_cmd = 1
+        self.decimal_mode = 0
+        self.interrupt_disable = 1
+        self.zero = 0
+        self.carry = 0
 
         self.running = True
 
@@ -219,11 +221,8 @@ class CPU:
         return (data[1] << 8) + data[0]
 
     def relative_address(self):
-        """
-        Add offset to PC to cause a branch to a new location
-        """
         offset = self.get_bytes(1)[0]
-        self.pc += offset
+        return offset
 
     def indexed_indirect(self):
         value = self.get_bytes(1)[0]
@@ -254,7 +253,7 @@ class CPU:
         """
         Clear Carry Flag
         """
-        self.carry = np.uint8(0)
+        self.carry = 0
         return None, 2
 
     def bit(self, address):
@@ -285,8 +284,9 @@ class CPU:
         """
         Branch if Carry Clear
         """
-        if self.carry == np.uint8(0):
-            self.relative_address()
+        offset = self.relative_address()
+        if self.carry == 0:
+            self.pc += offset
             return None, 3
         return None, 2
 
@@ -294,8 +294,9 @@ class CPU:
         """
         Branch if Carry Set
         """
-        if self.carry == np.uint8(1):
-            self.relative_address()
+        offset = self.relative_address()
+        if self.carry == 1:
+            self.pc += offset
             return None, 3
         return None, 2
 
@@ -303,8 +304,9 @@ class CPU:
         """
         Branch if Equal
         """
+        offset = self.relative_address()
         if self.zero == 1:
-            self.relative_address()
+            self.pc += offset
             return None, 3
         return None, 2
 
@@ -312,8 +314,9 @@ class CPU:
         """
         Branch if Not Equal
         """
+        offset = self.relative_address()
         if self.zero == 0:
-            self.relative_address()
+            self.pc += offset
             return None, 3
         return None, 2
 
@@ -321,8 +324,9 @@ class CPU:
         """
         Branch if Positive
         """
+        offset = self.relative_address()
         if self.negative == 0:
-            self.relative_address()
+            self.pc += offset
             return None, 3
         return None, 2
 
@@ -330,8 +334,9 @@ class CPU:
         """
         Branch if Minus
         """
+        offset = self.relative_address()
         if self.negative == 1:
-            self.relative_address()
+            self.pc += offset
             return None, 3
         return None, 2
 
@@ -339,8 +344,9 @@ class CPU:
         """
         Branch if Overflow Clear
         """
+        offset = self.relative_address()
         if self.overflow == 0:
-            self.relative_address()
+            self.pc += offset
             return None, 3
         return None, 2
 
@@ -348,8 +354,9 @@ class CPU:
         """
         Branch if Overflow Set
         """
+        offset = self.relative_address()
         if self.overflow == 1:
-            self.relative_address()
+            self.pc += offset
             return None, 3
         return None, 2
 
@@ -358,6 +365,12 @@ class CPU:
         Add with Carry
         """
         self.a += value + self.carry
+        if self.a > np.iinfo(np.uint8).max:
+            self.a = np.uint8(self.a - np.iinfo(np.uint8).max - 1)
+            self.overflow = 1
+            self.carry = 1
+        else:
+            self.a = np.uint8(self.a)
         self.set_zero_and_neg(self.a)
 
     def adc_immediate(self):
@@ -453,7 +466,7 @@ class CPU:
         Arithmetic Shift Left
         """
         # Set C to contents of old bit 7
-        self.carry = value_to_shift >> np.uint8(7)
+        self.carry = value_to_shift >> 7
         # Shift all the bits one bit left
         result = value_to_shift << np.uint8(1)
         self.set_negative_to_bit_7(result)
@@ -625,7 +638,7 @@ class CPU:
         return None, 6
 
     def nop(self):
-        pass
+        return None, 2
 
     def lsr(self, value):
         self.carry = value & 1
@@ -787,7 +800,7 @@ class CPU:
         """
         Set Carry Flag
         """
-        self.carry = np.uint8(1)
+        self.carry = 1
         return None, 2
 
     def sed(self):
@@ -977,11 +990,11 @@ class CPU:
         return None, 2
 
     def cmp_if(self, a, b):
-        if (a >= b):
-            self.carry = np.uint8(1)
+        if a >= b:
+            self.carry = 1
             self.set_zero_and_neg(a - b)
         else:
-            self.carry = np.uint8(0)
+            self.carry = 0
             self.zero = 0
             self.negative = 1
 
@@ -1066,35 +1079,37 @@ class CPU:
 
     def dec_zero_page(self):
         address = self.zero_page()
-        self.mem[address] -= 1
+        self.mem[address] -= np.uint8(1)
         return address, 5
 
     def dec_zero_page_x(self):
         address = self.zero_page() + self.x
-        self.mem[address] -= 1
+        self.mem[address] -= np.uint8(1)
         return address, 6
 
     def dec_absolute(self):
         address = self.absolute_address()
-        self.mem[address] -= 1
+        self.mem[address] -= np.uint8(1)
         return address, 6
 
     def dec_absolute_x(self):
         address = self.absolute_address() + self.x
-        self.mem[address] -= 1
+        self.mem[address] -= np.uint8(1)
         return address, 7
 
-    "Decrement x"
-
     def dex(self):
-        self.x -= 1
+        """
+        Decrement x
+        """
+        self.x -= np.uint8(1)
         self.set_zero_and_neg(self.x)
         return None, 2
 
-    "Decrement y"
-
     def dey(self):
-        self.y -= 1
+        """
+        Decrement y
+        """
+        self.y -= np.uint8(1)
         self.set_zero_and_neg(self.y)
         return None, 2
 
@@ -1102,39 +1117,41 @@ class CPU:
 
     def inc_zero_page(self):
         address = self.zero_page()
-        self.mem[address] += 1
+        self.mem[address] += np.uint8(1)
         self.set_zero_and_neg(self.mem[address])
         return address, 5
 
     def inc_zero_page_x(self):
         address = self.zero_page() + self.x
-        self.mem[address] += 1
+        self.mem[address] += np.uint8(1)
         self.set_zero_and_neg(self.mem[address])
         return address, 6
 
     def inc_absolute(self):
         address = self.absolute_address()
-        self.mem[address] += 1
+        self.mem[address] += np.uint8(1)
         self.set_zero_and_neg(self.mem[address])
         return address, 6
 
     def inc_absolute_x(self):
         address = self.absolute_address() + self.x
-        self.mem[address] += 1
+        self.mem[address] += np.uint8(1)
         self.set_zero_and_neg(self.mem[address])
         return address, 7
 
-    "Increment 1 in x"
-
     def inx(self):
-        self.x += 1
+        """
+        Increment 1 in x
+        """
+        self.x += np.uint8(1)
         self.set_zero_and_neg(self.x)
         return None, 2
 
-    "Increment 1 in y"
-
     def iny(self):
-        self.y += 1
+        """
+        Increment 1 in y
+        """
+        self.y += np.uint8(1)
         self.set_zero_and_neg(self.y)
         return None, 2
 
@@ -1266,11 +1283,11 @@ class CPU:
         sleep_time = 0
         while self.running:
             start = time.time()
-            if(self.trigger_irq):
+            if self.trigger_irq:
                 self.trigger_interruption(self.IRQ_HANDLER_ADDRESS)
                 self.interrupt_disable = True
                 self.trigger_irq = False
-            elif(self.trigger_nmi):
+            elif self.trigger_nmi:
                 self.trigger_interruption(self.NMI_HANDLER_ADDRESS)
                 self.trigger_nmi = False
             mem_byte = self.mem[self.pc]
@@ -1278,7 +1295,7 @@ class CPU:
             end = time.time()
             sleep_time += 0.0000000559*cycles - (end - start)
 
-            if (sleep_time > 0.001):
+            if sleep_time > 0.001:
                 time.sleep(sleep_time)
                 sleep_time = 0
 
@@ -1300,8 +1317,8 @@ class CPU:
 
 def main(rom_path):
     cpu = CPU(rom_path)
-    np.seterrcall(cpu.error_handler)
-    np.seterr(over='call')
+    # np.seterrcall(cpu.error_handler)
+    np.seterr(over='ignore')
     cpu.run()
 
 

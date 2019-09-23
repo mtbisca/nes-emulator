@@ -3,3 +3,6 @@ cpu/ENV/*
 .DS_Store
 .vscode/
 cpu/.DS_Store
+log/*
+bin/*
+ext/asm6/asm6
