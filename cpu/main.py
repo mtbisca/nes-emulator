@@ -12,7 +12,7 @@ class CPU:
 
         # Counter registers
         self.pc = np.uint16(0xC000)
-        self.sp = np.uint16(0x0200)
+        self.sp = np.uint16(0x01FF)
 
         # Data registers
         self.a = np.uint8(0)
@@ -607,29 +607,29 @@ class CPU:
         return address, 5
 
     def push_to_stack(self, value):
-        self.sp -= np.uint16(1)
         self.mem[self.sp] = value
+        self.sp -= np.uint16(1)
 
     def pull_from_stack(self):
-        value = self.mem[self.sp]
         self.sp += np.uint16(1)
+        value = self.mem[self.sp]
         return value
 
     def pha(self):
         self.push_to_stack(self.a)
-        return self.sp, 3
+        return self.sp+1, 3
 
     def php(self):
         self.push_to_stack(self.get_p())
-        return self.sp, 3
+        return self.sp+1, 3
 
     def pla(self):
         self.a = self.pull_from_stack()
-        return self.sp, 4
+        return None, 4
 
     def plp(self):
         self.set_p(self.pull_from_stack())
-        return self.sp, 4
+        return None, 4
 
     def jsr(self):
         address = self.absolute_address()
