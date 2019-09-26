@@ -216,6 +216,12 @@ class CPU:
     def zero_page(self):
         return self.get_bytes(1)[0]
 
+    def zero_page_x(self):
+        return np.uint8(self.zero_page() + self.x)
+    
+    def zero_page_y(self):
+        return np.uint8(self.zero_page() + self.y)
+
     def absolute_address(self):
         data = self.get_bytes(2)
         return (data[1] << 8) + data[0]
@@ -226,7 +232,7 @@ class CPU:
 
     def indexed_indirect(self):
         value = self.get_bytes(1)[0]
-        location = value + self.x
+        location = np.uint8(value + self.x)
         return (self.mem[location] << 8) + self.mem[location + 1]
 
     def indirect_indexed(self):
@@ -432,7 +438,7 @@ class CPU:
         return address, 3
 
     def and_zero_page_x(self):
-        address = self.zero_page() + self.x
+        address = self.zero_page_x()
         self.logical_and(self.mem[address])
         return address, 4
 
@@ -484,7 +490,7 @@ class CPU:
         return address, 5
 
     def asl_zero_page_x(self):
-        address = self.zero_page() + self.x
+        address = self.zero_page_x()
         value = self.asl(self.mem[address])
         self.mem[address] = value
         return address, 6
@@ -535,19 +541,19 @@ class CPU:
         return address, 3
 
     def lda_zero_page_x(self):
-        address = self.zero_page() + self.x
+        address = self.zero_page_x()
         self.a = self.mem[address]
         self.set_zero_and_neg(self.a)
         return address, 4
 
     def ldx_zero_page_y(self):
-        address = self.zero_page() + self.y
+        address = self.zero_page_y()
         self.x = self.mem[address]
         self.set_zero_and_neg(self.x)
         return address, 4
 
     def ldy_zero_page_x(self):
-        address = self.zero_page() + self.x
+        address = self.zero_page_x()
         self.y = self.mem[address]
         self.set_zero_and_neg(self.y)
         return address, 4
@@ -656,7 +662,7 @@ class CPU:
         return address, 5
 
     def lsr_zero_page_x(self):
-        address = self.zero_page() + self.x
+        address = self.zero_page_x()
         self.mem[address] = self.lsr(self.mem[address])
         return address, 6
 
@@ -696,7 +702,7 @@ class CPU:
         return address, 5
 
     def rol_zero_page_x(self):
-        address = self.zero_page() + self.x
+        address = self.zero_page_x()
         self.mem[address] = self.rol(self.mem[address])
         return address, 6
 
@@ -720,7 +726,7 @@ class CPU:
         return address, 5
 
     def ror_zero_page_x(self):
-        address = self.zero_page() + self.x
+        address = self.zero_page_x()
         self.mem[address] = self.ror(self.mem[address])
         return address, 6
 
@@ -853,7 +859,7 @@ class CPU:
         """
         Store Accumulator - Zero Page, X
         """
-        address = self.zero_page() + self.x
+        address = self.zero_page_x()
         self.mem[address] = self.a
         return address, 4
 
@@ -893,7 +899,7 @@ class CPU:
         """
         Store X Register - Zero Page, Y
         """
-        address = self.zero_page() + self.y
+        address = self.zero_page_y()
         self.mem[address] = self.x
         return address, 4
 
@@ -917,7 +923,7 @@ class CPU:
         """
         Store Y Register - Zero Page, X
         """
-        address = self.zero_page() + self.x
+        address = self.zero_page_x()
         self.mem[address] = self.y
         return address, 4
 
@@ -1013,7 +1019,7 @@ class CPU:
         return address, 3
 
     def cmp_zero_page_x(self):
-        address = self.zero_page() + self.x
+        address = self.zero_page_x()
         self.cmp_if(self.a, self.mem[address])
         return address, 4
 
@@ -1083,7 +1089,7 @@ class CPU:
         return address, 5
 
     def dec_zero_page_x(self):
-        address = self.zero_page() + self.x
+        address = self.zero_page_x()
         self.mem[address] -= np.uint8(1)
         return address, 6
 
@@ -1122,7 +1128,7 @@ class CPU:
         return address, 5
 
     def inc_zero_page_x(self):
-        address = self.zero_page() + self.x
+        address = self.zero_page_x()
         self.mem[address] += np.uint8(1)
         self.set_zero_and_neg(self.mem[address])
         return address, 6
@@ -1174,7 +1180,7 @@ class CPU:
         return address, 3
 
     def eor_zero_page_x(self):
-        address = self.zero_page() + self.x
+        address = self.zero_page_x()
         self.logical_eor(self.mem[address])
         return address, 4
 
