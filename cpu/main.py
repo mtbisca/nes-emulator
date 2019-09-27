@@ -1263,18 +1263,18 @@ class CPU:
         self.zero = value >> 1 & 1
         self.carry = value & 1
 
-    def print_state(self, pc):
+    def print_state(self):
         print("| pc = %s | a = %s | x = %s | y = %s | sp = %s | p[NV-BDIZC] = %s |" % \
-              (self.hex_format(pc, 4),
+              (self.hex_format(self.pc, 4),
                self.hex_format(self.a, 2),
                self.hex_format(self.x, 2),
                self.hex_format(self.y, 2),
                self.hex_format(self.sp, 4),
                self.bin_format(self.get_p())))
 
-    def print_state_ls(self, pc, address):
+    def print_state_ls(self, address):
         print("| pc = %s | a = %s | x = %s | y = %s | sp = %s | p[NV-BDIZC] = %s | MEM[%s] = %s |" % \
-              (self.hex_format(pc, 4),
+              (self.hex_format(self.pc, 4),
                self.hex_format(self.a, 2),
                self.hex_format(self.x, 2),
                self.hex_format(self.y, 2),
@@ -1308,15 +1308,14 @@ class CPU:
         def does_nothing():
             return "nothing"
 
-        initial_pc = self.pc
         instruction = self.instructions.get(opcode, does_nothing)
         address, cycle = instruction()
-        if address is None and opcode != 0:
-            self.print_state(initial_pc)
-        elif opcode != 0:
-            self.print_state_ls(initial_pc, address)
         if opcode != 0x40:  # do not add 1 to pc when running an RTI
             self.pc += np.uint16(1)
+        if address is None and opcode != 0:
+            self.print_state()
+        elif opcode != 0:
+            self.print_state_ls(address)
         return cycle
 
 
