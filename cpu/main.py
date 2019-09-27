@@ -626,11 +626,11 @@ class CPU:
 
     def pla(self):
         self.a = self.pull_from_stack()
-        return None, 4
+        return self.sp, 4
 
     def plp(self):
         self.set_p(self.pull_from_stack())
-        return None, 4
+        return self.sp, 4
 
     def jsr(self):
         address = self.absolute_address()
