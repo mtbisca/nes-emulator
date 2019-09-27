@@ -1292,7 +1292,7 @@ class CPU:
             start = time.time()
             if self.trigger_irq:
                 self.trigger_interruption(self.IRQ_HANDLER_ADDRESS)
-                self.interrupt_disable = True
+                self.interrupt_disable = 1
                 self.trigger_irq = False
             elif self.trigger_nmi:
                 self.trigger_interruption(self.NMI_HANDLER_ADDRESS)
