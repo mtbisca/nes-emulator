@@ -192,13 +192,6 @@ class CPU:
         return data
 
     # Set flags
-    def error_handler(self, error_type, flag):
-        if error_type == 'overflow':
-            self.overflow = 1
-            self.carry = np.uint8(1)
-        else:
-            print("Floating point error (%s), with flag %s" % (error_type, flag))
-
     def set_zero_and_neg(self, register):
         if register == 0:
             self.zero = 1
