@@ -234,8 +234,9 @@ class CPU:
 
     def indirect(self):
         data = self.get_bytes(2)
-        location = data[1] << 8 + data[0]
-        return (self.mem[location] << 8) + self.mem[location + 1]
+        location = np.uint16((data[1] << 8) + data[0])
+        address = self.mem[location] + (self.mem[np.uint16(location + 1)] << 8)
+        return address
 
     # Instructions
     def brk(self):
@@ -1213,7 +1214,7 @@ class CPU:
 
     def jmp_indirect(self):
         address = self.indirect()
-        self.pc = np.uint16(address)
+        self.pc = np.uint16(address)-1
         return address, 5
 
     def trigger_interruption(self, read_address):
