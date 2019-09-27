@@ -228,7 +228,7 @@ class CPU:
 
     def relative_address(self):
         offset = self.get_bytes(1)[0]
-        return offset
+        return np.int8(offset)
 
     def indexed_indirect(self):
         value = self.get_bytes(1)[0]
