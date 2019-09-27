@@ -12,7 +12,7 @@ class CPU:
 
         # Counter registers
         self.pc = np.uint16(0xC000)
-        self.sp = np.uint16(0x01FF)
+        self.sp = np.uint16(0x00FD)
 
         # Data registers
         self.a = np.uint8(0)
