@@ -1314,9 +1314,9 @@ class CPU:
         initial_pc = self.pc
         instruction = self.instructions.get(opcode, does_nothing)
         address, cycle = instruction()
-        if address is None:
+        if address is None and opcode != 0:
             self.print_state(initial_pc)
-        else:
+        elif opcode != 0:
             self.print_state_ls(initial_pc, address)
         self.pc += np.uint16(1)
         return cycle
