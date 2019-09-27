@@ -12,11 +12,6 @@ MIRRORING = %0001 ;%0000 = horizontal, %0001 = vertical, %1000 = four-screen
 
    .enum $0000
 
-   carLeft                 .dsw 1
-  carRight                .dsw 1
-  carTop                  .dsw 1
-  carBottom               .dsw 1
-
    ;NOTE: declare variables using the DSB and DSW directives, like this:
 
    ;MyVariable0 .dsb 1
@@ -48,15 +43,16 @@ MIRRORING = %0001 ;%0000 = horizontal, %0001 = vertical, %1000 = four-screen
 
    .base $10000-(PRG_COUNT*$4000)
 
-
 Reset:
-   LDA #$03
-   STA $00
-   LDX $01
-   LDY #$01
-   STA ($00), Y 
-   LDY $0004
-   brk ; Abort execution
+   lda #$79
+   adc #$10
+BeginLoop:
+   bvs End
+   inx
+   jmp BeginLoop
+   lda #20
+End:
+   lda #22
 
 NMI:
 
