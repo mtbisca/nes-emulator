@@ -12,7 +12,7 @@ class CPU:
 
         # Counter registers
         self.pc = np.uint16(0xC000)
-        self.sp = np.uint16(0x01FF)
+        self.sp = np.uint16(0x00FD)
 
         # Data registers
         self.a = np.uint8(0)
@@ -234,8 +234,9 @@ class CPU:
 
     def indirect(self):
         data = self.get_bytes(2)
-        location = data[1] << 8 + data[0]
-        return (self.mem[location] << 8) + self.mem[location + 1]
+        location = np.uint16((data[1] << 8) + data[0])
+        
+        return location
 
     # Instructions
     def brk(self):
@@ -625,11 +626,11 @@ class CPU:
 
     def pla(self):
         self.a = self.pull_from_stack()
-        return None, 4
+        return self.sp, 4
 
     def plp(self):
         self.set_p(self.pull_from_stack())
-        return None, 4
+        return self.sp, 4
 
     def jsr(self):
         address = self.absolute_address()
@@ -1209,12 +1210,12 @@ class CPU:
     def jmp_absolute(self):
         address = self.absolute_address()
         self.pc = np.uint16(address - 1)
-        return address, 3
+        return None, 3
 
     def jmp_indirect(self):
         address = self.indirect()
-        self.pc = np.uint16(address)
-        return address, 5
+        self.pc = np.uint16(self.mem[address] + (self.mem[np.uint16(address + 1)] << 8))-1
+        return None, 5
 
     def trigger_interruption(self, read_address):
         """
