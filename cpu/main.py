@@ -1086,21 +1086,25 @@ class CPU:
     def dec_zero_page(self):
         address = self.zero_page()
         self.mem[address] -= np.uint8(1)
+        self.set_zero_and_neg(self.mem[address])
         return address, 5
 
     def dec_zero_page_x(self):
         address = self.zero_page_x()
         self.mem[address] -= np.uint8(1)
+        self.set_zero_and_neg(self.mem[address])
         return address, 6
 
     def dec_absolute(self):
         address = self.absolute_address()
         self.mem[address] -= np.uint8(1)
+        self.set_zero_and_neg(self.mem[address])
         return address, 6
 
     def dec_absolute_x(self):
         address = self.absolute_address() + self.x
         self.mem[address] -= np.uint8(1)
+        self.set_zero_and_neg(self.mem[address])
         return address, 7
 
     def dex(self):
