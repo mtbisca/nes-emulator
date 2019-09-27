@@ -370,13 +370,14 @@ class CPU:
         """
         Add with Carry
         """
-        self.a += value + self.carry
-        if self.a > np.iinfo(np.uint8).max:
-            self.a = np.uint8(self.a - np.iinfo(np.uint8).max - 1)
-            self.overflow = 1
+        total = np.uint32(self.a) + value + self.carry
+        self.overflow = 1 if ~(self.a ^ value) & (self.a ^ total) & 0x80 > 0 else 0
+        if total > np.iinfo(np.uint8).max:
+            self.a = np.uint8(total - np.iinfo(np.uint8).max - 1)
             self.carry = 1
         else:
-            self.a = np.uint8(self.a)
+            self.carry = 0
+            self.a = np.uint8(total)
         self.set_zero_and_neg(self.a)
 
     def adc_immediate(self):
