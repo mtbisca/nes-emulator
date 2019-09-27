@@ -754,7 +754,6 @@ class CPU:
         Return from Subroutine
         """
         self.pull_pc_from_stack()
-        self.pc += np.uint16(1)
         return None, 6
 
     def sbc(self, value):
@@ -1318,7 +1317,8 @@ class CPU:
             self.print_state(initial_pc)
         elif opcode != 0:
             self.print_state_ls(initial_pc, address)
-        self.pc += np.uint16(1)
+        if opcode != 0x40:  # do not add 1 to pc when running an RTI
+            self.pc += np.uint16(1)
         return cycle
 
 
