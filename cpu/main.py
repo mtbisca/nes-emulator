@@ -233,11 +233,11 @@ class CPU:
     def indexed_indirect(self):
         value = self.get_bytes(1)[0]
         location = np.uint8(value + self.x)
-        return (self.mem[location] << 8) + self.mem[location + 1]
+        return self.mem[location] + (self.mem[np.uint8(location + 1)] << 8)
 
     def indirect_indexed(self):
         location = self.get_bytes(1)[0]
-        return (self.mem[location] << 8) + self.mem[location + 1] + self.y
+        return self.mem[location] + (self.mem[np.uint8(location + 1)] << 8) + self.y
 
     def indirect(self):
         data = self.get_bytes(2)
