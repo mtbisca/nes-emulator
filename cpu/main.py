@@ -385,7 +385,7 @@ class CPU:
         return address, 3
 
     def adc_zero_page_x(self):
-        address = self.zero_page() + self.x
+        address = self.zero_page_x()
         self.adc(self.mem[address])
         return address, 4
 
@@ -767,7 +767,7 @@ class CPU:
         return address, 3
 
     def sbc_zero_page_x(self):
-        address = self.zero_page()
+        address = self.zero_page_x()
         self.sbc(self.mem[address])
         return address, 4
 
