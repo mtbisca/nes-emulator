@@ -6,3 +6,4 @@ cpu/.DS_Store
 log/*
 bin/*
 ext/asm6/asm6
+other/*
