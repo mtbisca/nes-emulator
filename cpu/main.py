@@ -470,7 +470,7 @@ class CPU:
         self.carry = value_to_shift >> 7
         # Shift all the bits one bit left
         result = value_to_shift << np.uint8(1)
-        self.set_negative_to_bit_7(result)
+        self.set_zero_and_neg(result)
 
         return result
 
