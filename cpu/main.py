@@ -1000,11 +1000,9 @@ class CPU:
     def cmp_if(self, a, b):
         if a >= b:
             self.carry = 1
-            self.set_zero_and_neg(a - b)
         else:
             self.carry = 0
-            self.zero = 0
-            self.negative = 1
+        self.set_zero_and_neg(a - b)
 
     """
         Compare a and immediate
