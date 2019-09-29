@@ -949,7 +949,7 @@ class CPU:
         """
         Transfer Stack Pointer to X
         """
-        self.x = self.sp
+        self.x = self.sp & 0xFF
         self.set_zero_and_neg(self.x)
         return None, 2
 
@@ -965,7 +965,7 @@ class CPU:
         """
         Transfer X to Stack Pointer
         """
-        self.sp = self.x
+        self.sp = 0x0100 + self.x 
         return None, 2
 
     def tya(self):
