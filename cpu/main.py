@@ -634,6 +634,7 @@ class CPU:
 
     def pla(self):
         self.a = self.pull_from_stack()
+        self.set_zero_and_neg(self.a)
         return self.sp, 4
 
     def plp(self):
