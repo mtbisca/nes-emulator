@@ -182,7 +182,15 @@ class CPU:
             0x4C: self.jmp_absolute,
             0x6C: self.jmp_indirect,
             0x60: self.rts,
-            0x40: self.rti
+            0x40: self.rti, 
+            0x09: self.ora_immediate, 
+            0x05: self.ora_zero_page,
+            0x15: self.ora_zero_page_x,
+            0x0D: self.ora_absolute,
+            0x1D: self.ora_absolute_x,
+            0x19: self.ora_absolute_y,
+            0x01: self.ora_indexed_indirect,
+            0x11: self.ora_indirect_indexed
         }
 
     def get_bytes(self, size):
@@ -1205,6 +1213,50 @@ class CPU:
     def eor_indirect_y(self):
         address = self.indirect_indexed()
         self.logical_eor(self.mem[address])
+        return address, 5
+
+    def ora(self, value):
+        self.a = np.uint8(value | self.a)
+        self.set_zero_and_neg(self.a)
+
+    def ora_immediate(self):
+        value = self.immediate()
+        self.ora(value)
+        return None, 2
+
+    def ora_zero_page(self):
+        address = self.zero_page()
+        self.ora(self.mem[address])
+        return address, 3
+    
+    def ora_zero_page_x(self):
+        address = self.zero_page_x()
+        self.ora(self.mem[address])
+        return address, 4
+    
+    def ora_absolute(self):
+        address = self.absolute_address()
+        self.ora(self.mem[address])
+        return address, 4
+
+    def ora_absolute_x(self):
+        address = self.absolute_address() + self.x
+        self.ora(self.mem[address])
+        return address, 4
+    
+    def ora_absolute_y(self):
+        address = self.absolute_address() + self.y
+        self.ora(self.mem[address])
+        return address, 4
+    
+    def ora_indexed_indirect(self):
+        address = self.indexed_indirect()
+        self.ora(self.mem[address])
+        return address, 6
+
+    def ora_indirect_indexed(self):
+        address = self.indirect_indexed()
+        self.ora(self.mem[address])
         return address, 5
 
     def jmp_absolute(self):
