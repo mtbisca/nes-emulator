@@ -243,8 +243,11 @@ class CPU:
     def indirect(self):
         data = self.get_bytes(2)
         location = np.uint16((data[1] << 8) + data[0])
-        
         return location
+    def verify_mirror(self, value):
+        if(value <= 0x2000):
+            return value % 0x800
+        return value
 
     # Instructions
     def brk(self):
@@ -389,37 +392,44 @@ class CPU:
 
     def adc_zero_page(self):
         address = self.zero_page()
-        self.adc(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.adc(self.mem[address_mirror])
         return address, 3
 
     def adc_zero_page_x(self):
         address = self.zero_page_x()
-        self.adc(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.adc(self.mem[address_mirror])
         return address, 4
 
     def adc_absolute(self):
         address = self.absolute_address()
-        self.adc(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.adc(self.mem[address_mirror])
         return address, 4
 
     def adc_absolute_x(self):
         address = self.absolute_address() + self.x
-        self.adc(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.adc(self.mem[address_mirror])
         return address, 4
 
     def adc_absolute_y(self):
         address = self.absolute_address() + self.y
-        self.adc(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.adc(self.mem[address_mirror])
         return address, 4
 
     def adc_indirect_x(self):
         address = self.indexed_indirect()
-        self.adc(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.adc(self.mem[address_mirror])
         return address, 6
 
     def adc_indirect_y(self):
         address = self.indirect_indexed()
-        self.adc(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.adc(self.mem[address_mirror])
         return address, 5
 
     def logical_and(self, value):
@@ -437,37 +447,44 @@ class CPU:
 
     def and_zero_page(self):
         address = self.zero_page()
-        self.logical_and(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.logical_and(self.mem[address_mirror])
         return address, 3
 
     def and_zero_page_x(self):
         address = self.zero_page_x()
-        self.logical_and(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.logical_and(self.mem[address_mirror])
         return address, 4
 
     def and_absolute(self):
         address = self.absolute_address()
-        self.logical_and(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.logical_and(self.mem[address_mirror])
         return address, 4
 
     def and_absolute_x(self):
         address = self.absolute_address() + self.x
-        self.logical_and(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.logical_and(self.mem[address_mirror])
         return address, 4
 
     def and_absolute_y(self):
         address = self.absolute_address() + self.y
-        self.logical_and(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.logical_and(self.mem[address_mirror])
         return address, 4
 
     def and_indirect_x(self):
         address = self.indexed_indirect()
-        self.logical_and(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.logical_and(self.mem[address_mirror])
         return address, 6
 
     def and_indirect_y(self):
         address = self.indirect_indexed()
-        self.logical_and(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.logical_and(self.mem[address_mirror])
         return address, 5
 
     def asl(self, value_to_shift):
@@ -488,26 +505,30 @@ class CPU:
 
     def asl_zero_page(self):
         address = self.zero_page()
-        value = self.asl(self.mem[address])
-        self.mem[address] = value
+        address_mirror = self.verify_mirror(address)
+        value = self.asl(self.mem[address_mirror])
+        self.mem[address_mirror] = value
         return address, 5
 
     def asl_zero_page_x(self):
         address = self.zero_page_x()
-        value = self.asl(self.mem[address])
-        self.mem[address] = value
+        address_mirror = self.verify_mirror(address)
+        value = self.asl(self.mem[address_mirror])
+        self.mem[address_mirror] = value
         return address, 6
 
     def asl_absolute(self):
         address = self.absolute_address()
-        value = self.asl(self.mem[address])
-        self.mem[address] = value
+        address_mirror = self.verify_mirror(address)
+        value = self.asl(self.mem[address_mirror])
+        self.mem[address_mirror] = value
         return address, 6
 
     def asl_absolute_x(self):
         address = self.absolute_address() + self.x
-        value = self.asl(self.mem[address])
-        self.mem[address] = value
+        address_mirror = self.verify_mirror(address)
+        value = self.asl(self.mem[address_mirror])
+        self.mem[address_mirror] = value
         return address, 7
 
     def lda_immediate(self):
@@ -527,91 +548,106 @@ class CPU:
 
     def lda_zero_page(self):
         address = self.zero_page()
-        self.a = self.mem[address]
+        address_mirror = self.verify_mirror(address)
+        self.a = self.mem[address_mirror]
         self.set_zero_and_neg(self.a)
         return address, 3
 
     def ldx_zero_page(self):
         address = self.zero_page()
-        self.x = self.mem[address]
+        address_mirror = self.verify_mirror(address)
+        self.x = self.mem[address_mirror]
         self.set_zero_and_neg(self.x)
         return address, 3
 
     def ldy_zero_page(self):
         address = self.zero_page()
-        self.y = self.mem[address]
+        address_mirror = self.verify_mirror(address)
+        self.y = self.mem[address_mirror]
         self.set_zero_and_neg(self.y)
         return address, 3
 
     def lda_zero_page_x(self):
         address = self.zero_page_x()
-        self.a = self.mem[address]
+        address_mirror = self.verify_mirror(address)
+        self.a = self.mem[address_mirror]
         self.set_zero_and_neg(self.a)
         return address, 4
 
     def ldx_zero_page_y(self):
         address = self.zero_page_y()
-        self.x = self.mem[address]
+        address_mirror = self.verify_mirror(address)
+        self.x = self.mem[address_mirror]
         self.set_zero_and_neg(self.x)
         return address, 4
 
     def ldy_zero_page_x(self):
         address = self.zero_page_x()
-        self.y = self.mem[address]
+        address_mirror = self.verify_mirror(address)
+        self.y = self.mem[address_mirror]
         self.set_zero_and_neg(self.y)
         return address, 4
 
     def lda_absolute(self):
         address = self.absolute_address()
-        self.a = self.mem[address]
+        address_mirror = self.verify_mirror(address)
+        self.a = self.mem[address_mirror]
         self.set_zero_and_neg(self.a)
         return address, 4
 
     def ldx_absolute(self):
         address = self.absolute_address()
-        self.x = self.mem[address]
+        address_mirror = self.verify_mirror(address)
+        self.x = self.mem[address_mirror]
         self.set_zero_and_neg(self.x)
         return address, 4
 
     def ldy_absolute(self):
         address = self.absolute_address()
-        self.y = self.mem[address]
+        address_mirror = self.verify_mirror(address)
+        self.y = self.mem[address_mirror]
         self.set_zero_and_neg(self.y)
         return address, 4
 
     def lda_absolute_x(self):
         address = self.absolute_address() + self.x
-        self.a = self.mem[address]
+        address_mirror = self.verify_mirror(address)
+        self.a = self.mem[address_mirror]
         self.set_zero_and_neg(self.a)
         return address, 4
 
     def lda_absolute_y(self):
         address = self.absolute_address() + self.y
-        self.a = self.mem[address]
+        address_mirror = self.verify_mirror(address)
+        self.a = self.mem[address_mirror]
         self.set_zero_and_neg(self.a)
         return address, 4
 
     def ldx_absolute_y(self):
         address = self.absolute_address() + self.y
-        self.x = self.mem[address]
+        address_mirror = self.verify_mirror(address)
+        self.x = self.mem[address_mirror]
         self.set_zero_and_neg(self.x)
         return address, 4
 
     def ldy_absolute_x(self):
         address = self.absolute_address() + self.x
-        self.y = self.mem[address]
+        address_mirror = self.verify_mirror(address)
+        self.y = self.mem[address_mirror]
         self.set_zero_and_neg(self.y)
         return address, 4
 
     def lda_indexed_indirect(self):
         address = self.indexed_indirect()
-        self.a = self.mem[address]
+        address_mirror = self.verify_mirror(address)
+        self.a = self.mem[address_mirror]
         self.set_zero_and_neg(self.a)
         return address, 6
 
     def lda_indirect_indexed(self):
         address = self.indirect_indexed()
-        self.a = self.mem[address]
+        address_mirror = self.verify_mirror(address)
+        self.a = self.mem[address_mirror]
         self.set_zero_and_neg(self.a)
         return address, 5
 
@@ -662,22 +698,26 @@ class CPU:
 
     def lsr_zero_page(self):
         address = self.zero_page()
-        self.mem[address] = self.lsr(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] = self.lsr(self.mem[address_mirror])
         return address, 5
 
     def lsr_zero_page_x(self):
         address = self.zero_page_x()
-        self.mem[address] = self.lsr(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] = self.lsr(self.mem[address_mirror])
         return address, 6
 
     def lsr_absolute(self):
         address = self.absolute_address()
-        self.mem[address] = self.lsr(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] = self.lsr(self.mem[address_mirror])
         return address, 6
 
     def lsr_absolute_x(self):
         address = self.absolute_address() + self.x
-        self.mem[address] = self.lsr(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] = self.lsr(self.mem[address_mirror])
         return address, 7
 
     def rol(self, value):
@@ -702,22 +742,26 @@ class CPU:
 
     def rol_zero_page(self):
         address = self.zero_page()
-        self.mem[address] = self.rol(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] = self.rol(self.mem[address_mirror])
         return address, 5
 
     def rol_zero_page_x(self):
         address = self.zero_page_x()
-        self.mem[address] = self.rol(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] = self.rol(self.mem[address_mirror])
         return address, 6
 
     def rol_absolute(self):
         address = self.absolute_address()
-        self.mem[address] = self.rol(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] = self.rol(self.mem[address_mirror])
         return address, 6
 
     def rol_absolute_x(self):
         address = self.absolute_address() + self.x
-        self.mem[address] = self.rol(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] = self.rol(self.mem[address_mirror])
         return address, 7
 
     def ror_accumulator(self):
@@ -726,22 +770,26 @@ class CPU:
 
     def ror_zero_page(self):
         address = self.zero_page()
-        self.mem[address] = self.ror(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] = self.ror(self.mem[address_mirror])
         return address, 5
 
     def ror_zero_page_x(self):
         address = self.zero_page_x()
-        self.mem[address] = self.ror(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] = self.ror(self.mem[address_mirror])
         return address, 6
 
     def ror_absolute(self):
         address = self.absolute_address()
-        self.mem[address] = self.ror(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] = self.ror(self.mem[address_mirror])
         return address, 6
 
     def ror_absolute_x(self):
         address = self.absolute_address() + self.x
-        self.mem[address] = self.ror(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] = self.ror(self.mem[address_mirror])
         return address, 7
 
     def rti(self):
@@ -772,37 +820,44 @@ class CPU:
 
     def sbc_zero_page(self):
         address = self.zero_page()
-        self.sbc(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.sbc(self.mem[address_mirror])
         return address, 3
 
     def sbc_zero_page_x(self):
         address = self.zero_page_x()
-        self.sbc(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.sbc(self.mem[address_mirror])
         return address, 4
 
     def sbc_absolute(self):
         address = self.absolute_address()
-        self.sbc(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.sbc(self.mem[address_mirror])
         return address, 4
 
     def sbc_absolute_x(self):
         address = self.absolute_address() + self.x
-        self.sbc(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.sbc(self.mem[address_mirror])
         return address, 4
 
     def sbc_absolute_y(self):
         address = self.absolute_address() + self.y
-        self.sbc(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.sbc(self.mem[address_mirror])
         return address, 4
 
     def sbc_indirect_x(self):
         address = self.indexed_indirect()
-        self.sbc(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.sbc(self.mem[address_mirror])
         return address, 6
 
     def sbc_indirect_y(self):
         address = self.indirect_indexed()
-        self.sbc(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.sbc(self.mem[address_mirror])
         return address, 5
 
     def sec(self):
@@ -831,7 +886,8 @@ class CPU:
         Store Accumulator - Absolute
         """
         address = self.absolute_address()
-        self.mem[address] = self.a
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] = self.a
         return address, 4
 
     def sta_absolute_x(self):
@@ -839,7 +895,8 @@ class CPU:
         Store Accumulator - Absolute, X
         """
         address = self.absolute_address() + self.x
-        self.mem[address] = self.a
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] = self.a
         return address, 5
 
     def sta_absolute_y(self):
@@ -847,7 +904,8 @@ class CPU:
         Store Accumulator - Absolute, Y
         """
         address = self.absolute_address() + self.y
-        self.mem[address] = self.a
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] = self.a
         return address, 5
 
     def sta_zero_page(self):
@@ -855,7 +913,8 @@ class CPU:
         Store Accumulator - Zero Page
         """
         address = self.zero_page()
-        self.mem[address] = self.a
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] = self.a
         return address, 3
 
     def sta_zero_page_x(self):
@@ -863,7 +922,8 @@ class CPU:
         Store Accumulator - Zero Page, X
         """
         address = self.zero_page_x()
-        self.mem[address] = self.a
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] = self.a
         return address, 4
 
     def sta_indexed_indirect(self):
@@ -871,7 +931,8 @@ class CPU:
         Store Accumulator - (Indirect, X)
         """
         address = self.indexed_indirect()
-        self.mem[address] = self.a
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] = self.a
         return address, 6
 
     def sta_indirect_indexed(self):
@@ -879,7 +940,8 @@ class CPU:
         Store Accumulator - (Indirect, X)
         """
         address = self.indirect_indexed()
-        self.mem[address] = self.a
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] = self.a
         return address, 6
 
     def stx_absolute(self):
@@ -887,7 +949,8 @@ class CPU:
         Store X Register - Absolute
         """
         address = self.absolute_address()
-        self.mem[address] = self.x
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] = self.x
         return address, 4
 
     def stx_zero_page(self):
@@ -895,7 +958,8 @@ class CPU:
         Store X Register - Zero Page
         """
         address = self.zero_page()
-        self.mem[address] = self.x
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] = self.x
         return address, 3
 
     def stx_zero_page_y(self):
@@ -903,7 +967,8 @@ class CPU:
         Store X Register - Zero Page, Y
         """
         address = self.zero_page_y()
-        self.mem[address] = self.x
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] = self.x
         return address, 4
 
     def sty_absolute(self):
@@ -911,7 +976,8 @@ class CPU:
         Store Y Register - Absolute
         """
         address = self.absolute_address()
-        self.mem[address] = self.y
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] = self.y
         return address, 4
 
     def sty_zero_page(self):
@@ -919,7 +985,8 @@ class CPU:
         Store Y Register - Zero Page
         """
         address = self.zero_page()
-        self.mem[address] = self.y
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] = self.y
         return address, 3
 
     def sty_zero_page_x(self):
@@ -927,7 +994,8 @@ class CPU:
         Store Y Register - Zero Page, X
         """
         address = self.zero_page_x()
-        self.mem[address] = self.y
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] = self.y
         return address, 4
 
     def tax(self):
@@ -1015,55 +1083,63 @@ class CPU:
 
     def cmp_zero_page(self):
         address = self.zero_page()
-        result = self.mem[address]
-        self.cmp_if(self.a, result)
+        address_mirror = self.verify_mirror(address) 
+        self.cmp_if(self.a, self.mem[address_mirror])
         return address, 3
 
     def cmp_zero_page_x(self):
         address = self.zero_page_x()
-        self.cmp_if(self.a, self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.cmp_if(self.a, self.mem[address_mirror])
         return address, 4
 
     def cmp_absolute(self):
         address = self.absolute_address()
-        self.cmp_if(self.a, self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.cmp_if(self.a, self.mem[address_mirror])
         return address, 4
 
     def cmp_absolute_x(self):
         address = self.absolute_address() + self.x
-        self.cmp_if(self.a, self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.cmp_if(self.a, self.mem[address_mirror])
         return address, 4
 
     def cmp_absolute_y(self):
         address = self.absolute_address() + self.y
-        self.cmp_if(self.a, self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.cmp_if(self.a, self.mem[address_mirror])
         return address, 4
 
     def cmp_indexed_indirect(self):
         address = self.indexed_indirect()
-        self.cmp_if(self.a, self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.cmp_if(self.a, self.mem[address_mirror])
         return address, 6
 
     def cmp_indirect_indexed(self):
         address = self.indirect_indexed()
-        self.cmp_if(self.a, self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.cmp_if(self.a, self.mem[address_mirror])
         return address, 5
 
     "Compare x"
 
     def cpx_immediate(self):
         self.cmp_if(self.x, self.immediate())
+        
         return None, 2
 
     def cpx_zero_page(self):
         address = self.zero_page()
-        result = self.x - self.mem[address]
-        self.cmp_if(self.x, self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.cmp_if(self.x, self.mem[address_mirror])
         return address, 3
 
     def cpx_absolute(self):
         address = self.absolute_address()
-        self.cmp_if(self.x, self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.cmp_if(self.x, self.mem[address_mirror])
         return address, 4
 
     "Compare y"
@@ -1074,38 +1150,44 @@ class CPU:
 
     def cpy_zero_page(self):
         address = self.zero_page()
-        self.cmp_if(self.y, self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.cmp_if(self.y, self.mem[address_mirror])
         return address, 3
 
     def cpy_absolute(self):
         address = self.absolute_address()
-        self.cmp_if(self.y, self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.cmp_if(self.y, self.mem[address_mirror])
         return address, 4
 
     "Decrement 1 in value held at memory[adress]"
 
     def dec_zero_page(self):
         address = self.zero_page()
-        self.mem[address] -= np.uint8(1)
-        self.set_zero_and_neg(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] -= np.uint8(1)
+        self.set_zero_and_neg(self.mem[address_mirror])
         return address, 5
 
     def dec_zero_page_x(self):
         address = self.zero_page_x()
-        self.mem[address] -= np.uint8(1)
-        self.set_zero_and_neg(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] -= np.uint8(1)
+        self.set_zero_and_neg(self.mem[address_mirror])
         return address, 6
 
     def dec_absolute(self):
         address = self.absolute_address()
-        self.mem[address] -= np.uint8(1)
-        self.set_zero_and_neg(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] -= np.uint8(1)
+        self.set_zero_and_neg(self.mem[address_mirror])
         return address, 6
 
     def dec_absolute_x(self):
         address = self.absolute_address() + self.x
-        self.mem[address] -= np.uint8(1)
-        self.set_zero_and_neg(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] -= np.uint8(1)
+        self.set_zero_and_neg(self.mem[address_mirror])
         return address, 7
 
     def dex(self):
@@ -1128,26 +1210,30 @@ class CPU:
 
     def inc_zero_page(self):
         address = self.zero_page()
-        self.mem[address] += np.uint8(1)
-        self.set_zero_and_neg(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] += np.uint8(1)
+        self.set_zero_and_neg(self.mem[address_mirror])
         return address, 5
 
     def inc_zero_page_x(self):
         address = self.zero_page_x()
-        self.mem[address] += np.uint8(1)
-        self.set_zero_and_neg(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] += np.uint8(1)
+        self.set_zero_and_neg(self.mem[address_mirror])
         return address, 6
 
     def inc_absolute(self):
         address = self.absolute_address()
-        self.mem[address] += np.uint8(1)
-        self.set_zero_and_neg(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] += np.uint8(1)
+        self.set_zero_and_neg(self.mem[address_mirror])
         return address, 6
 
     def inc_absolute_x(self):
         address = self.absolute_address() + self.x
-        self.mem[address] += np.uint8(1)
-        self.set_zero_and_neg(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.mem[address_mirror] += np.uint8(1)
+        self.set_zero_and_neg(self.mem[address_mirror])
         return address, 7
 
     def inx(self):
@@ -1181,37 +1267,44 @@ class CPU:
 
     def eor_zero_page(self):
         address = self.zero_page()
-        self.logical_eor(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.logical_eor(self.mem[address_mirror])
         return address, 3
 
     def eor_zero_page_x(self):
         address = self.zero_page_x()
-        self.logical_eor(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.logical_eor(self.mem[address_mirror])
         return address, 4
 
     def eor_absolute(self):
         address = self.absolute_address()
-        self.logical_eor(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.logical_eor(self.mem[address_mirror])
         return address, 4
 
     def eor_absolute_x(self):
         address = self.absolute_address() + self.x
-        self.logical_eor(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.logical_eor(self.mem[address_mirror])
         return address, 4
 
     def eor_absolute_y(self):
         address = self.absolute_address() + self.y
-        self.logical_eor(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.logical_eor(self.mem[address_mirror])
         return address, 4
 
     def eor_indirect_x(self):
         address = self.indexed_indirect()
-        self.logical_eor(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.logical_eor(self.mem[address_mirror])
         return address, 6
 
     def eor_indirect_y(self):
         address = self.indirect_indexed()
-        self.logical_eor(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.logical_eor(self.mem[address_mirror])
         return address, 5
 
     def ora(self, value):
@@ -1225,47 +1318,56 @@ class CPU:
 
     def ora_zero_page(self):
         address = self.zero_page()
-        self.ora(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.ora(self.mem[address_mirror])
         return address, 3
     
     def ora_zero_page_x(self):
         address = self.zero_page_x()
-        self.ora(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.ora(self.mem[address_mirror])
         return address, 4
     
     def ora_absolute(self):
         address = self.absolute_address()
-        self.ora(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.ora(self.mem[address_mirror])
         return address, 4
 
     def ora_absolute_x(self):
         address = self.absolute_address() + self.x
-        self.ora(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.ora(self.mem[address_mirror])
         return address, 4
     
     def ora_absolute_y(self):
         address = self.absolute_address() + self.y
-        self.ora(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.ora(self.mem[address_mirror])
         return address, 4
     
     def ora_indexed_indirect(self):
         address = self.indexed_indirect()
-        self.ora(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.ora(self.mem[address_mirror])
         return address, 6
 
     def ora_indirect_indexed(self):
         address = self.indirect_indexed()
-        self.ora(self.mem[address])
+        address_mirror = self.verify_mirror(address)
+        self.ora(self.mem[address_mirror])
         return address, 5
 
     def jmp_absolute(self):
         address = self.absolute_address()
+        
         self.pc = np.uint16(address - 1)
         return None, 3
 
     def jmp_indirect(self):
         address = self.indirect()
-        self.pc = np.uint16(self.mem[address] + (self.mem[np.uint16(address + 1)] << 8))-1
+        address_mirror = self.verify_mirror(address)
+        self.pc = np.uint16(self.mem[address_mirror] + (self.mem[np.uint16(address_mirror + 1)] << 8))-1
         return None, 5
 
     def trigger_interruption(self, read_address):
@@ -1324,6 +1426,7 @@ class CPU:
                self.bin_format(self.get_p())))
 
     def print_state_ls(self, address):
+        address_mirror = self.verify_mirror(address)
         print("| pc = %s | a = %s | x = %s | y = %s | sp = %s | p[NV-BDIZC] = %s | MEM[%s] = %s |" % \
               (self.hex_format(self.pc, 4),
                self.hex_format(self.a, 2),
@@ -1332,7 +1435,7 @@ class CPU:
                self.hex_format(self.sp, 4),
                self.bin_format(self.get_p()),
                self.hex_format(address, 4),
-               self.hex_format(self.mem[address], 2)))
+               self.hex_format(self.mem[address_mirror], 2)))
 
     def run(self):
         sleep_time = 0
