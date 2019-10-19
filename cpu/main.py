@@ -4,13 +4,14 @@ import time
 
 
 class CPU:
-    def __init__(self, rom_path):
+    def __init__(self, cpu_mem):
         self.mem = np.zeros(0x10000, dtype=np.uint8)
-        rom = np.fromfile(rom_path, dtype=np.uint8)
-        rom = rom[0x10:]
-        self.mem[0xC000:] = np.resize(rom, (16384))
+        # rom = np.fromfile(rom_path, dtype=np.uint8)
+        # rom = rom[0x10:]
+        self.mem[0x8000:] = cpu_mem
 
         # Counter registers
+        # self.pc = np.uint16(self.get_reset_address())
         self.pc = np.uint16(0xC000)
         self.sp = np.uint16(0x01FD)
 
@@ -192,6 +193,9 @@ class CPU:
             0x01: self.ora_indexed_indirect,
             0x11: self.ora_indirect_indexed
         }
+
+    def get_reset_address(self):
+        return self.mem[0xfffc] | self.mem[0xfffd] << 8
 
     def get_bytes(self, size):
         position = self.pc + 1
@@ -1439,8 +1443,10 @@ class CPU:
 
     def run(self):
         sleep_time = 0
+        run_count = 0 # instructions count
+        start = time.time() # timer start
+        cycles = 0 # cycles accumulated so far
         while self.running:
-            start = time.time()
             if self.trigger_irq:
                 self.trigger_interruption(self.IRQ_HANDLER_ADDRESS)
                 self.interrupt_disable = 1
@@ -1449,10 +1455,16 @@ class CPU:
                 self.trigger_interruption(self.NMI_HANDLER_ADDRESS)
                 self.trigger_nmi = False
             mem_byte = self.mem[self.pc]
-            cycles = self.execute(opcode=mem_byte)
-            end = time.time()
-            sleep_time += 0.0000000559*cycles - (end - start)
+            cycles = cycles + self.execute(opcode=mem_byte)
+            run_count = run_count + 1
 
+            # every some instructions calculate sleep fraction
+            if (run_count == 5):
+                end = time.time()
+                sleep_time += 0.0000000559*cycles - (end - start)
+                start = time.time()
+
+            # if total sleep so far is grater than the minimum required by the system sleep this time
             if sleep_time > 0.001:
                 time.sleep(sleep_time)
                 sleep_time = 0
