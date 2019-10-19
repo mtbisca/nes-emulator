@@ -6,14 +6,16 @@ chrsize = 0
 class ppu:
     
     def __init__(self, chr, mirror):
+
+        #initializing ppu memory
         self.VRAM = [0] * 0x10000
         self.initMemory()
+
+        #chr-rom size
         self.chrsize = len(chr)
 
         #add this address for every write in ppu
         self.address_mirror = 0x400 << mirror
-        print(self.VRAM)
-        print(self.address_mirror)
         self.width = 256
         self.height = 240
         self.color = (1,1,1)
