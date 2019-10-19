@@ -5,14 +5,17 @@ chrsize = 0
         
 class PPU:
     
-    def __init__(self, chr, mirror):
+    def __init__(self, pattern_table, mirror):
 
         #initializing ppu memory
-        self.VRAM = [0] * 0x10000
-        self.initMemory()
+        self.VRAM = np.zeros(0x10000)
+        self.init_memory()
+
+        self.sprite_palettes = []
+        self.bg_palettes = []
 
         #chr-rom size
-        self.chrsize = len(chr)
+        self.chrsize = len(pattern_table)
 
         #add this address for every write in ppu
         self.address_mirror = 0x400 << mirror
@@ -26,8 +29,16 @@ class PPU:
         pygame.display.flip()
 
     
-    def initMemory(self):
+    def init_memory(self):
         for i in range(chrsize):
-            self.VRAM[i] = chr[i]
+            self.VRAM[i] = pattern_table[i]
+
+    def load_palettes(self):
+        self.bg_palettes = np.array_split(self.VRAM[0X3F00:0x3F10], 4)
+        self.sprite_palettes = np.array_split(self.VRAM[0X3F10:0x3F20], 4)
+    
+    def load_attribute_table(self):
+        pass
+    
 
         
