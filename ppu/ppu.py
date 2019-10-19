@@ -1,4 +1,5 @@
 import pygame
+import numpy as np
 
 chrsize = 0
 
@@ -14,6 +15,7 @@ class PPU:
         self.sprite_palettes = []
         self.bg_palettes = []
 
+        self.pattern_table = pattern_table
         #chr-rom size
         self.chrsize = len(pattern_table)
 
@@ -27,11 +29,10 @@ class PPU:
         self.screen = pygame.display.set_mode((self.width, self.height))
         self.screen.fill(self.color)
         pygame.display.flip()
-
     
     def init_memory(self):
         for i in range(chrsize):
-            self.VRAM[i] = pattern_table[i]
+            self.VRAM[i] = self.pattern_table[i]
 
     def load_palettes(self):
         self.bg_palettes = np.array_split(self.VRAM[0X3F00:0x3F10], 4)
@@ -39,6 +40,3 @@ class PPU:
     
     def load_attribute_table(self):
         pass
-    
-
-        
