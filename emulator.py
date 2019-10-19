@@ -14,12 +14,14 @@ def main(rom_path):
         cpu_mem = rom[0x10:0x8010]
 
     ppu_mem = rom[0x8010:0xa010]
-    ppu = PPU(ppu_mem, header[0x6] & 1)
+    ppu = PPU(ppu_mem, header[0x6] & 1, 4)
 
     cpu = CPU(cpu_mem)
     np.seterr(over='ignore')
     cpu.run()
 
+    while (True):
+        ppu.update()
 
 
 if __name__ == "__main__":
