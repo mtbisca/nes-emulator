@@ -7,3 +7,5 @@ log/*
 bin/*
 ext/asm6/asm6
 other/*
+cpu/__pycache__/
+ppu/__pycache__/

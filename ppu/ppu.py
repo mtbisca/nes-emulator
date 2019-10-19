@@ -3,7 +3,7 @@ import pygame
 chrsize = 0
 
         
-class ppu:
+class PPU:
     
     def __init__(self, chr, mirror):
 
