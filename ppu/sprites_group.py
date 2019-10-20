@@ -1,14 +1,14 @@
 from ppu.nes_sprite import NES_Sprite
+import numpy as np
 import pygame
 
 class Sprites_Group():
 
     def __init__(self):
-        self.sprites = {0: NES_Sprite((255,0,0)),
-                        1: NES_Sprite((0,255,0)),
-                        2: NES_Sprite((0,0,255)),
-                        3: NES_Sprite((255,0,255)),
-                        4: NES_Sprite((255,255,0))}
+        self.sprites = {}
+
+        for key in range(64):
+            self.sprites[key] = NES_Sprite((0, 255, 0))
 
         self.group = pygame.sprite.Group()
         for sprite in self.sprites.values():
@@ -25,3 +25,29 @@ class Sprites_Group():
         sprite = self.sprites[key]
         sprite.rect.x = position[0]
         sprite.rect.y = position[1]
+
+    def set_surface(self, key, surface):
+        sprite = self.sprites[key]
+        sprite.image = surface
+
+    # TODO
+    def get_colors(self, tile, palette):
+        image = pygame.Surface((8, 8))
+        image.fill((255, 0, 0))
+        return image
+
+    def update_sprites(self, sprite_tiles, sprite_palettes, sprite_data):
+        tile_map = np.reshape(sprite_tiles, (64, 8, 8))
+        palettes_map = np.reshape(sprite_palettes, (4, 4))
+
+        for key in range(64):
+            data = sprite_data[key]
+            tile = tile_map[data[1]]
+            palette = palettes_map[data[2] & 0b11]
+            self.set_position(key, (data[3], data[0]))
+            # TODO
+            surface = self.get_colors(tile, palette)
+            self.set_surface(key, surface)
+
+
+
