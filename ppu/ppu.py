@@ -6,24 +6,17 @@ chrsize = 0
 
         
 class PPU:
-    
 
-    def __init__(self, pattern_table, mirror, scale_size):
-
-        #initializing ppu memory
+    def __init__(self, pattern_tables, mirror, scale_size):
+        # initializing ppu memory
         self.VRAM = np.zeros(0x10000)
-        self.init_memory()
+        self.VRAM[:0x2000] = pattern_tables
         self.scale_size = scale_size
-
 
         self.sprite_palettes = []
         self.bg_palettes = []
 
-        self.pattern_table = pattern_table
-        #chr-rom size
-        self.chrsize = len(pattern_table)
-
-        #add this address for every write in ppu
+        # add this address for every write in ppu
         self.address_mirror = 0x400 << mirror
         self.width = 256
         self.height = 224
@@ -39,10 +32,6 @@ class PPU:
 
 
         pygame.display.update()
-    
-    def init_memory(self):
-        for i in range(chrsize):
-            self.VRAM[i] = self.pattern_table[i]
 
     def load_palettes(self):
         self.bg_palettes = np.array_split(self.VRAM[0X3F00:0x3F10], 4)
