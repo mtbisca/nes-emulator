@@ -6,26 +6,18 @@ chrsize = 0
 
         
 class PPU:
-    
 
-    def __init__(self, pattern_table, mirror, scale_size):
-
-        #initializing ppu memory
+    def __init__(self, pattern_tables, mirror, scale_size):
+        # initializing ppu memory
         self.VRAM = np.zeros(0x10000, dtype=np.uint8)
-        self.init_memory()
+        self.VRAM[:0x2000] = pattern_tables
         self.SPR_RAM = np.zeros(0x0100, dtype=np.uint8)
         self.scale_size = scale_size
-
-
 
         self.sprite_palettes = []
         self.bg_palettes = []
 
-        self.pattern_table = pattern_table
-        #chr-rom size
-        self.chrsize = len(pattern_table)
-
-        #add this address for every write in ppu
+        # add this address for every write in ppu
         self.address_mirror = 0x400 << mirror
         self.width = 256
         self.height = 224
@@ -39,12 +31,8 @@ class PPU:
         self.all_sprites.draw(self.pic)
         self.screen.blit(pygame.transform.scale(self.pic, (self.scale_size * self.width, self.scale_size * self.height)), (0, 0))
 
-
         self.update()
-    
-    def init_memory(self):
-        for i in range(chrsize):
-            self.VRAM[i] = self.pattern_table[i]
+
 
     def load_palettes(self):
         self.bg_palettes = np.array_split(self.VRAM[0X3F00:0x3F10], 4)
