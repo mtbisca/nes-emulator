@@ -1,5 +1,6 @@
 import pygame
 import numpy as np
+from ppu.sprites_group import Sprites_Group
 
 chrsize = 0
 
@@ -7,11 +8,13 @@ chrsize = 0
 class PPU:
     
 
-    def __init__(self, pattern_table, mirror, size):
+    def __init__(self, pattern_table, mirror, scale_size):
 
         #initializing ppu memory
         self.VRAM = np.zeros(0x10000)
         self.init_memory()
+        self.scale_size = scale_size
+
 
         self.sprite_palettes = []
         self.bg_palettes = []
@@ -27,15 +30,15 @@ class PPU:
         self.color = (1,1,1)
 
         pygame.init()
-        self.screen = pygame.display.set_mode((size*self.width, size*self.height))
-        self.fake_screen = pygame.display.set_mode((self.width, self.height))
-        self.screen.blit(pygame.transform.scale(self.fake_screen, (size*self.width, size*self.height)))
-        self.pic = pygame.surface.Surface((50, 50))
-        self.pic.fill((0, 0, 0))
-        # self.screen = pygame.display.set_mode((self.width, self.height))
-        self.screen.fill(self.color)
-        pygame.draw.rect(self.screen, (255, 0, 0), (0, 0, 50, 50))
-        pygame.display.flip()
+        self.all_sprites = Sprites_Group()
+        self.all_sprites.set_all_positions(((0,0),(50,0), (0,50), (50,50), (25,25)))
+        self.screen = pygame.display.set_mode((self.scale_size*self.width, self.scale_size*self.height))
+        self.pic = pygame.surface.Surface((self.width, self.width))
+        self.all_sprites.draw(self.pic)
+        self.screen.blit(pygame.transform.scale(self.pic, (self.scale_size * self.width, self.scale_size * self.height)), (0, 0))
+
+
+        pygame.display.update()
     
     def init_memory(self):
         for i in range(chrsize):
@@ -53,7 +56,11 @@ class PPU:
         event = pygame.event.wait()
         if event.type == pygame.QUIT:
             pygame.display.quit()
+            return False
 
+        self.screen.blit(pygame.transform.scale(self.pic, (self.scale_size * self.width, self.scale_size * self.height)), (0, 0))
+        pygame.display.update()
 
-        pygame.display.flip()
+    def draw_sprites(self):
+        pass
 

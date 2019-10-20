@@ -20,8 +20,8 @@ def main(rom_path):
     np.seterr(over='ignore')
     cpu.run()
 
-    while (True):
-        ppu.update()
+    # while (True):
+    #     ppu.update()
 
 
 if __name__ == "__main__":
