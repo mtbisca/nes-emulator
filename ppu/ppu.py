@@ -1,7 +1,7 @@
 import pygame
 import numpy as np
 from ppu.sprites_group import Sprites_Group
-
+from ppu.color_handler import ColorHandler
 chrsize = 0
 
         
@@ -47,7 +47,7 @@ class PPU:
         # if event.type == pygame.QUIT:
         #     pygame.display.quit()
         #     return False
-
+        self.color_handler = ColorHandler(self.VRAM)
         self.pic = pygame.surface.Surface((self.width, self.width))
         # Update parts of PPU
         self.update_sprites()
@@ -58,6 +58,6 @@ class PPU:
 
     def update_sprites(self):
         sprites_data = np.reshape(self.SPR_RAM, (64, 4))
-        self.all_sprites.update_sprites(self.VRAM[0x0:0x1000], self.VRAM[0x3f10:0x3f20], sprites_data)
+        self.all_sprites.update_sprites(self.VRAM[0x0:0x1000], sprites_data, self.color_handler)
         self.all_sprites.draw(self.pic)
 

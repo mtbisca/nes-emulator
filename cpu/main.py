@@ -1479,9 +1479,11 @@ class CPU:
         if opcode != 0x40:  # do not add 1 to pc when running an RTI
             self.pc += np.uint16(1)
         if address is None and opcode != 0:
-            self.print_state()
+            # self.print_state()
+            pass
         elif opcode != 0:
-            self.print_state_ls(address)
+            # self.print_state_ls(address)
+            pass
         return cycle
 
 

@@ -4,7 +4,7 @@ import pygame
 
 class Sprites_Group():
 
-    def __init__(self):
+    def __init__(self):        
         self.sprites = {}
 
         for key in range(64):
@@ -36,17 +36,16 @@ class Sprites_Group():
         image.fill((255, 0, 0))
         return image
 
-    def update_sprites(self, sprite_tiles, sprite_palettes, sprite_data):
+    def update_sprites(self, sprite_tiles, sprite_data, color_handler):
         tile_map = np.reshape(sprite_tiles, (64, 8, 8))
-        palettes_map = np.reshape(sprite_palettes, (4, 4))
 
         for key in range(64):
             data = sprite_data[key]
             tile = tile_map[data[1]]
-            palette = palettes_map[data[2] & 0b11]
+            palette = data[2] & 0b11
             self.set_position(key, (data[3], data[0]))
             # TODO
-            surface = self.get_colors(tile, palette)
+            surface = color_handler.set_color_to_sprite(tile, palette)
             self.set_surface(key, surface)
 
 
