@@ -1,6 +1,6 @@
 import pygame
 import numpy as np
-from ppu.sprites_group import Sprites_Group
+from ppu.sprites_group import SpritesGroup
 
 chrsize = 0
 
@@ -23,7 +23,7 @@ class PPU:
         self.increment_address = None
         self.sprite_pattern_table_address = None
         self.background_pattern_table_address = None
-        self.sprite_size = None
+        self.sprite_size = (8, 8)
         self.master_slave = None
         self.nmi_at_vblank = None
 
@@ -46,7 +46,7 @@ class PPU:
         self.color = (1,1,1)
 
         pygame.init()
-        self.all_sprites = Sprites_Group()
+        self.all_sprites = SpritesGroup(self.sprite_size)
         # self.all_sprites.set_all_positions(((0,0),(50,0), (0,50), (50,50), (25,25)))
         self.screen = pygame.display.set_mode((self.scale_size*self.width, self.scale_size*self.height))
         self.pic = pygame.surface.Surface((self.width, self.width))

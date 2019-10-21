@@ -1,12 +1,13 @@
 import pygame
 
-class NES_Sprite(pygame.sprite.Sprite):
 
-    def __init__(self, color):
+class NESSprite(pygame.sprite.Sprite):
+
+    def __init__(self, width, height, color):
         # Call the parent class (Sprite) constructor
         pygame.sprite.Sprite.__init__(self)
-        self.width = 8
-        self.height = 8
+        self.width = width
+        self.height = height
 
         self.image = pygame.Surface((self.width, self.height))
         self.image.fill(color)

@@ -1,14 +1,17 @@
-from ppu.nes_sprite import NES_Sprite
+from ppu.nes_sprite import NESSprite
 import numpy as np
 import pygame
 
-class Sprites_Group():
 
-    def __init__(self):
+class SpritesGroup():
+
+    def __init__(self, sprite_size):
         self.sprites = {}
 
         for key in range(64):
-            self.sprites[key] = NES_Sprite((0, 255, 0))
+            self.sprites[key] = NESSprite(width=sprite_size[0],
+                                          height=sprite_size[1],
+                                          color=(0, 255, 0))
 
         self.group = pygame.sprite.Group()
         for sprite in self.sprites.values():
