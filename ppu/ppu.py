@@ -27,6 +27,18 @@ class PPU:
         self.master_slave = None
         self.nmi_at_vblank = None
 
+        # Flags controlling the rendering of sprites and background, as well as
+        # color effects
+        # TODO: check if there's a default configuration of these flags
+        self.greyscale = None
+        self.clipping_background_on_left = None
+        self.clipping_sprites_on_left = None
+        self.show_background = None
+        self.show_sprites = None
+        self.red_emphasis = None
+        self.green_emphasis = None
+        self.blue_emphasis = None
+
         # add this address for every write in ppu
         self.address_mirror = 0x400 << mirror
         self.width = 256
@@ -104,9 +116,71 @@ class PPU:
 
         remaining_value >>= 1
         if remaining_value & 1:
-            self.nmi_at_vblank = 1
+            self.nmi_at_vblank = True
         else:
-            self.nmi_at_vblank = 0
+            self.nmi_at_vblank = False
+
+    def write_ppumask(self, value):
+        """
+        7  bit  0
+        ---- ----
+        BGRs bMmG
+        |||| ||||
+        |||| |||+- Greyscale (0: normal color, 1: produce a greyscale display)
+        |||| ||+-- 1: Show background in leftmost 8 pixels of screen, 0: Hide
+        |||| |+--- 1: Show sprites in leftmost 8 pixels of screen, 0: Hide
+        |||| +---- 1: Show background
+        |||+------ 1: Show sprites
+        ||+------- Emphasize red
+        |+-------- Emphasize green
+        +--------- Emphasize blue
+        """
+        if value & 1:
+            self.greyscale = True
+        else:
+            self.greyscale = False
+
+        remaining_value = value >> 1
+        if remaining_value & 1:
+            self.clipping_background_on_left = True
+        else:
+            self.clipping_background_on_left = False
+
+        remaining_value >>= 1
+        if remaining_value & 1:
+            self.clipping_sprites_on_left = True
+        else:
+            self.clipping_sprites_on_left = False
+
+        remaining_value >>= 1
+        if remaining_value & 1:
+            self.show_background = True
+        else:
+            self.show_background = False
+
+        remaining_value >>= 1
+        if remaining_value & 1:
+            self.show_sprites = True
+        else:
+            self.show_sprites = False
+
+        remaining_value >>= 1
+        if remaining_value & 1:
+            self.red_emphasis = True
+        else:
+            self.red_emphasis = False
+
+        remaining_value >>= 1
+        if remaining_value & 1:
+            self.green_emphasis = True
+        else:
+            self.green_emphasis = False
+
+        remaining_value >>= 1
+        if remaining_value & 1:
+            self.blue_emphasis = True
+        else:
+            self.blue_emphasis = False
 
     def load_palettes(self):
         self.bg_palettes = np.array_split(self.VRAM[0X3F00:0x3F10], 4)
