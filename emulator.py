@@ -16,7 +16,7 @@ def main(rom_path):
     ppu_mem = rom[0x8010:0xa010]
     ppu = PPU(ppu_mem, header[0x6] & 1, 4)
 
-    cpu = CPU(cpu_mem)
+    cpu = CPU(cpu_mem, ppu)
     np.seterr(over='ignore')
     cpu.run()
 

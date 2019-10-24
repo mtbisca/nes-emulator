@@ -23,7 +23,7 @@ class PPU:
         self.increment_address = None
         self.sprite_pattern_table_address = None
         self.background_pattern_table_address = None
-        self.sprite_size = (8, 8)
+        self.sprite_size_type = 0
         self.master_slave = None
         self.nmi_at_vblank = None
 
@@ -46,7 +46,7 @@ class PPU:
         self.color = (1,1,1)
 
         pygame.init()
-        self.all_sprites = SpritesGroup(self.sprite_size)
+        self.all_sprites = SpritesGroup(self.sprite_size_type)
         # self.all_sprites.set_all_positions(((0,0),(50,0), (0,50), (50,50), (25,25)))
         self.screen = pygame.display.set_mode((self.scale_size*self.width, self.scale_size*self.height))
         self.pic = pygame.surface.Surface((self.width, self.width))
@@ -104,9 +104,9 @@ class PPU:
 
         remaining_value >>= 1
         if remaining_value & 1:
-            self.sprite_size = (8, 16)
+            self.sprite_size_type = 1
         else:
-            self.sprite_size = (8, 8)
+            self.sprite_size_type = 0
 
         remaining_value >>= 1
         if remaining_value & 1:
@@ -247,9 +247,13 @@ class PPU:
         # Rescale screen and update
         self.screen.blit(pygame.transform.scale(self.pic, (self.scale_size * self.width, self.scale_size * self.height)), (0, 0))
         pygame.display.update()
+        return
 
     def update_sprites(self):
         sprites_data = np.reshape(self.SPR_RAM, (64, 4))
-        self.all_sprites.update_sprites(self.VRAM[0x0:0x1000], self.VRAM[0x3f10:0x3f20], sprites_data)
+        self.all_sprites.update_sprites(self.VRAM[0x0:0x2000], self.VRAM[0x3f10:0x3f20], sprites_data)
         self.all_sprites.draw(self.pic)
 
+    def write_spr_ram_dma(self, ram):
+        print(ram)
+        self.SPR_RAM[:] = ram

@@ -4,15 +4,16 @@ import time
 
 
 class CPU:
-    def __init__(self, cpu_mem):
+    def __init__(self, cpu_mem, ppu_ref):
         self.mem = np.zeros(0x10000, dtype=np.uint8)
         # rom = np.fromfile(rom_path, dtype=np.uint8)
         # rom = rom[0x10:]
         self.mem[0x8000:] = cpu_mem
 
+        self.ppu_ref = ppu_ref
+
         # Counter registers
-        # self.pc = np.uint16(self.get_reset_address())
-        self.pc = np.uint16(0xC000)
+        self.pc = np.uint16(self.get_reset_address())
         self.sp = np.uint16(0x01FD)
 
         # Data registers
@@ -800,7 +801,7 @@ class CPU:
         """
         Return from Interrupt
         """
-        self.plp() 
+        self.plp()
         self.pull_pc_from_stack()
         return None, 6
 
@@ -885,6 +886,17 @@ class CPU:
         self.interrupt_disable = 1
         return None, 2
 
+    def spr_ram_dma(self, address):
+        self.ppu_ref.write_spr_ram_dma(self.mem[address : address + 0x0100])
+
+    def IO_out(self, address):
+        if address == 0x4014:
+            value = self.mem[address]
+            print(value)
+            dma_address = np.uint16((value << 8) + self.mem[0x2003])
+            print(dma_address)
+            self.spr_ram_dma(dma_address)
+
     def sta_absolute(self):
         """
         Store Accumulator - Absolute
@@ -892,6 +904,7 @@ class CPU:
         address = self.absolute_address()
         address_mirror = self.verify_mirror(address)
         self.mem[address_mirror] = self.a
+        self.IO_out(address)
         return address, 4
 
     def sta_absolute_x(self):
@@ -901,6 +914,7 @@ class CPU:
         address = self.absolute_address() + self.x
         address_mirror = self.verify_mirror(address)
         self.mem[address_mirror] = self.a
+        self.IO_out(address)
         return address, 5
 
     def sta_absolute_y(self):
@@ -910,6 +924,7 @@ class CPU:
         address = self.absolute_address() + self.y
         address_mirror = self.verify_mirror(address)
         self.mem[address_mirror] = self.a
+        self.IO_out(address)
         return address, 5
 
     def sta_zero_page(self):
@@ -919,6 +934,7 @@ class CPU:
         address = self.zero_page()
         address_mirror = self.verify_mirror(address)
         self.mem[address_mirror] = self.a
+        self.IO_out(address)
         return address, 3
 
     def sta_zero_page_x(self):
@@ -937,6 +953,7 @@ class CPU:
         address = self.indexed_indirect()
         address_mirror = self.verify_mirror(address)
         self.mem[address_mirror] = self.a
+        self.IO_out(address_mirror)
         return address, 6
 
     def sta_indirect_indexed(self):
@@ -946,6 +963,7 @@ class CPU:
         address = self.indirect_indexed()
         address_mirror = self.verify_mirror(address)
         self.mem[address_mirror] = self.a
+        self.IO_out(address_mirror)
         return address, 6
 
     def stx_absolute(self):
@@ -955,6 +973,7 @@ class CPU:
         address = self.absolute_address()
         address_mirror = self.verify_mirror(address)
         self.mem[address_mirror] = self.x
+        self.IO_out(address_mirror)
         return address, 4
 
     def stx_zero_page(self):
@@ -964,6 +983,7 @@ class CPU:
         address = self.zero_page()
         address_mirror = self.verify_mirror(address)
         self.mem[address_mirror] = self.x
+        self.IO_out(address_mirror)
         return address, 3
 
     def stx_zero_page_y(self):
@@ -973,6 +993,7 @@ class CPU:
         address = self.zero_page_y()
         address_mirror = self.verify_mirror(address)
         self.mem[address_mirror] = self.x
+        self.IO_out(address_mirror)
         return address, 4
 
     def sty_absolute(self):
@@ -982,6 +1003,7 @@ class CPU:
         address = self.absolute_address()
         address_mirror = self.verify_mirror(address)
         self.mem[address_mirror] = self.y
+        self.IO_out(address_mirror)
         return address, 4
 
     def sty_zero_page(self):
@@ -991,6 +1013,7 @@ class CPU:
         address = self.zero_page()
         address_mirror = self.verify_mirror(address)
         self.mem[address_mirror] = self.y
+        self.IO_out(address_mirror)
         return address, 3
 
     def sty_zero_page_x(self):
@@ -1000,6 +1023,7 @@ class CPU:
         address = self.zero_page_x()
         address_mirror = self.verify_mirror(address)
         self.mem[address_mirror] = self.y
+        self.IO_out(address_mirror)
         return address, 4
 
     def tax(self):
@@ -1381,7 +1405,7 @@ class CPU:
         """
         self.push_pc_to_stack()
         self.php()
-        self.pc = (self.mem[read_address] << 8) + self.mem[read_address + 1]
+        self.pc = (self.mem[read_address + 1] << 8) + self.mem[read_address]
     
     def push_pc_to_stack(self):
         low = self.pc & 0x00FF
@@ -1454,19 +1478,31 @@ class CPU:
             elif self.trigger_nmi:
                 self.trigger_interruption(self.NMI_HANDLER_ADDRESS)
                 self.trigger_nmi = False
+                print(self.pc)
+                print(self.mem[self.pc])
             mem_byte = self.mem[self.pc]
             cycles = cycles + self.execute(opcode=mem_byte)
             run_count = run_count + 1
 
             # every some instructions calculate sleep fraction
-            if (run_count == 5):
+            if (run_count == 20):
                 end = time.time()
-                sleep_time += 0.0000000559*cycles - (end - start)
+                sleep_time += 0.0000559*cycles - (end - start)
+                print("teste!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                print(sleep_time)
                 start = time.time()
+                run_count = 0
+                cycles = 0
+
 
             # if total sleep so far is grater than the minimum required by the system sleep this time
             if sleep_time > 0.001:
-                time.sleep(sleep_time)
+                print("vai")
+                self.ppu_ref.update()
+                print("foi")
+                self.trigger_nmi = True;
+                # time.sleep(sleep_time)
+                print("sera?")
                 sleep_time = 0
 
     def execute(self, opcode):
