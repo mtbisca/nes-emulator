@@ -44,7 +44,6 @@ class SpritesGroup():
 
     def update_sprites_square(self, sprite_tiles, sprite_palettes, sprite_data, color_handler):
         tile_map = np.reshape(sprite_tiles[:0x1000], (64, 8, 8))
-        palettes_map = np.reshape(sprite_palettes, (4, 4))
 
         for key in range(64):
             data = sprite_data[key]
@@ -56,7 +55,6 @@ class SpritesGroup():
 
     def update_sprites_rect(self, sprite_tiles, sprite_palettes, sprite_data, color_handler):
         tile_map = np.reshape(sprite_tiles, (2, 64, 8, 16))
-        palettes_map = np.reshape(sprite_palettes, (4, 4))
 
         for key in range(64):
             data = sprite_data[key]
@@ -65,7 +63,7 @@ class SpritesGroup():
             tile = tile_map[table][index]
             palette_index = data[2] & 0b11
             self.set_position(key, (data[3], data[0]))
-             surface = color_handler.set_color_to_sprite(tile, palette_index)
+            surface = color_handler.set_color_to_sprite(tile, palette_index)
             self.set_surface(key, surface)
 
 

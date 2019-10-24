@@ -10,6 +10,7 @@ class PPU:
 
     def __init__(self, pattern_tables, mirror, scale_size):
         # initializing ppu memory
+        print(pattern_tables)
         self.VRAM = np.zeros(0x10000, dtype=np.uint8)
         self.VRAM[:0x2000] = pattern_tables
         self.SPR_RAM = np.zeros(0x0100, dtype=np.uint8)
@@ -226,10 +227,6 @@ class PPU:
 
     def write_address(self):
         pass
-
-    def load_palettes(self):
-        self.bg_palettes = np.array_split(self.VRAM[0X3F00:0x3F10], 4)
-        self.sprite_palettes = np.array_split(self.VRAM[0X3F10:0x3F20], 4)
     
     def load_attribute_table(self):
         pass

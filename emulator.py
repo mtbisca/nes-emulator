@@ -10,10 +10,12 @@ def main(rom_path):
     if (header[0x04] == 1):
         cpu_mem[:0x4000] = rom[0x10:0x4010]
         cpu_mem[0x4000:] = rom[0x10:0x4010]
+        final = 0x4010
     elif (header[0x04] == 2):
         cpu_mem = rom[0x10:0x8010]
+        final = 0x8010
 
-    ppu_mem = rom[0x8010:0xa010]
+    ppu_mem = rom[final : final + 0x2000]
     ppu = PPU(ppu_mem, header[0x6] & 1, 4)
 
     cpu = CPU(cpu_mem, ppu)
