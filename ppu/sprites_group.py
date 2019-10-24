@@ -1,14 +1,26 @@
-from ppu.nes_sprite import NES_Sprite
+from ppu.nes_sprite import NESSprite
 import numpy as np
 import pygame
 
-class Sprites_Group():
 
-    def __init__(self):
+class SpritesGroup():
+
+    def __init__(self, sprite_size_type):
+        self.sprite_size_type = sprite_size_type
         self.sprites = {}
 
+
+        if (sprite_size_type == 0):
+            self.sprite_size = [8, 8]
+            self.update_sprites = self.update_sprites_square
+        else:
+            self.sprite_size = [8, 16]
+            self.update_sprites = self.update_sprites_rect
+
         for key in range(64):
-            self.sprites[key] = NES_Sprite((0, 255, 0))
+            self.sprites[key] = NESSprite(width=self.sprite_size[0],
+                                          height=self.sprite_size[1],
+                                          color=(0, 255, 0))
 
         self.group = pygame.sprite.Group()
         for sprite in self.sprites.values():
@@ -30,8 +42,9 @@ class Sprites_Group():
         sprite = self.sprites[key]
         sprite.image = surface
 
-    def update_sprites(self, sprite_tiles, sprite_palettes, sprite_data, color_handler):
-        tile_map = np.reshape(sprite_tiles, (64, 8, 8))
+    def update_sprites_square(self, sprite_tiles, sprite_palettes, sprite_data, color_handler):
+        tile_map = np.reshape(sprite_tiles[:0x1000], (64, 8, 8))
+        palettes_map = np.reshape(sprite_palettes, (4, 4))
 
         for key in range(64):
             data = sprite_data[key]
@@ -40,6 +53,21 @@ class Sprites_Group():
             self.set_position(key, (data[3], data[0]))
             surface = color_handler.set_color_to_sprite(tile, palette_index)
             self.set_surface(key, surface)
+
+    def update_sprites_rect(self, sprite_tiles, sprite_palettes, sprite_data, color_handler):
+        tile_map = np.reshape(sprite_tiles, (2, 64, 8, 16))
+        palettes_map = np.reshape(sprite_palettes, (4, 4))
+
+        for key in range(64):
+            data = sprite_data[key]
+            table = data[1] & 1
+            index = data[1] & 0b11111110
+            tile = tile_map[table][index]
+            palette_index = data[2] & 0b11
+            self.set_position(key, (data[3], data[0]))
+             surface = color_handler.set_color_to_sprite(tile, palette_index)
+            self.set_surface(key, surface)
+
 
 
 
