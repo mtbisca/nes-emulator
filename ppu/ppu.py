@@ -252,7 +252,7 @@ class PPU:
         # Update parts of PPU
         pattern_table_map = np.split(self.VRAM[0x0:0x2000], 2)
         if self.show_sprites:
-            self.update_sprites(pattern_table_map)
+            self.update_sprites(pattern_table_map, self.sprite_pattern_table_1)
 
         # Rescale screen and update
         self.screen.blit(pygame.transform.scale(self.pic, (self.scale_size * self.width, self.scale_size * self.height)), (0, 0))
