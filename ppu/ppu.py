@@ -240,16 +240,17 @@ class PPU:
         self.color_handler = ColorHandler(self.VRAM)
         self.pic = pygame.surface.Surface((self.width, self.width))
         # Update parts of PPU
-        self.update_sprites()
+        pattern_table_map = np.split(self.VRAM[0x0:0x2000], 2)
+        self.update_sprites(pattern_table_map)
 
         # Rescale screen and update
         self.screen.blit(pygame.transform.scale(self.pic, (self.scale_size * self.width, self.scale_size * self.height)), (0, 0))
         pygame.display.update()
         return
 
-    def update_sprites(self):
+    def update_sprites(self, pattern_table_map):
         sprites_data = np.reshape(self.SPR_RAM, (64, 4))
-        self.all_sprites.update_sprites(self.VRAM[0x0:0x2000], sprites_data, self.color_handler)
+        self.all_sprites.update_sprites(pattern_table_map, sprites_data, self.color_handler)
         self.all_sprites.draw(self.pic)
 
     def write_spr_ram_dma(self, ram):

@@ -49,10 +49,10 @@ class SpritesGroup():
         return np.transpose(tile)
 
 
-    def update_sprites_square(self, sprite_tiles, sprite_data, color_handler):
+    def update_sprites_square(self, pattern_table_map, sprite_data, color_handler, pattern_table_flag):
         for key in range(64):
             data = sprite_data[key]
-            tile = self.get_tile(sprite_tiles[data[1]*16:(data[1]+1)*16])
+            tile = self.get_tile(pattern_table_map[pattern_table_flag][data[1] * 16 : (data[1] + 1) * 16])
             palette_index = data[2] & 0b11
             self.set_position(key, (data[3], data[0]))
             boolx = (data[2] & 0b10000000) == 1
@@ -60,14 +60,14 @@ class SpritesGroup():
             surface = pygame.transform.flip(color_handler.set_color_to_sprite(tile, palette_index), boolx, booly)
             self.set_surface(key, surface)
 
-    def update_sprites_rect(self, sprite_tiles, sprite_data, color_handler):
-        tile_map = np.reshape(sprite_tiles, (2, 64, 8, 16))
-
+    def update_sprites_rect(self, pattern_table_map, sprite_data, color_handler, pattern_table_flag):
         for key in range(64):
             data = sprite_data[key]
             table = data[1] & 1
             index = data[1] & 0b11111110
-            tile = tile_map[table][index]
+            tile1 = self.get_tile(pattern_table_map[table][index * 16 : (index + 1) * 16])
+            tile2 = self.get_tile(pattern_table_map[table][(index + 1) * 16 : (index + 2) * 16])
+            tile = np.concatenate((tile1, tile2), axis=1)
             palette_index = data[2] & 0b11
             self.set_position(key, (data[3], data[0]))
             surface = color_handler.set_color_to_sprite(tile, palette_index)
