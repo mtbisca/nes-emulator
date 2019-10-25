@@ -1,6 +1,8 @@
 import numpy as np
 import sys
 import time
+from cpu.controls import CONTROL
+import pygame
 
 
 class CPU:
@@ -11,6 +13,12 @@ class CPU:
         self.mem[0x8000:] = cpu_mem
 
         self.ppu_ref = ppu_ref
+
+
+        self.readControls = 0
+        self.firstWrite = 0
+        self.timeControl = 0
+        self.keys = np.zeros(255, dtype = np.uint8)
 
         # Counter registers
         self.pc = np.uint16(self.get_reset_address())
@@ -249,11 +257,89 @@ class CPU:
         data = self.get_bytes(2)
         location = np.uint16((data[1] << 8) + data[0])
         return location
-    def verify_mirror(self, value):
-        if(value <= 0x2000):
-            return value % 0x800
-        return value
 
+        #write value in mem[address]
+    def write_memory(self, address, value):
+
+        #Write memory in zero page
+        if address < 0x2000:
+            address = address % 0x800
+            self.mem[address] = value
+
+        #Write memory in ppu flags
+        elif address < 0x4000:
+            address = address % 0x2008
+
+            if address == 0x2000:
+                self.ppu.write_ppuctrl(value)
+            elif address == 0x2001:
+                self.ppu.write_ppumask(value)
+            elif address == 0x2003:
+
+            #elif address == 0x2003:
+            #elif address == 0x2004:
+            #elif address == 0x2005:
+            #elif address == 0x2006:
+            #elif address == 0x2007:
+
+                self.mem[address] = value
+
+        elif address == 0x4014:
+            self.mem[address] = value
+            dma_address = np.uint16((value << 8) + self.mem[0x2003])
+            self.ppu_ref.write_spr_ram_dma(self.mem[dma_address : dma_address + 0x0100])
+        #Flag for ordering controls
+        elif address == 0x4016:
+            if self.firstWrite == 0:
+                if value == 1:
+                    self.firstWrite = 1
+            elif self.firstWrite == 1:
+                if value == 0:
+                    self.readControls = 1
+                    self.timeControl = 0
+        else:
+            self.mem[address] = value
+
+            
+    def read_memory(self ,address):
+        value = 0x00
+        if address < 0x2000:
+            address = address % 0x800
+            value = self.mem[address]
+        elif address < 0x4000:
+            address = address % 0x2008
+
+            if address == 0x2002:
+                value = self.ppu.read_ppustatus()
+            value = self.mem[address]
+        if address == 0x4016:
+            if self.readControls == 1:
+                if self.timeControl == 0:
+                    value = self.keys[pygame.K_e]
+                elif self.timeControl == 1:
+                    value = self.keys[pygame.K_r]
+                elif self.timeControl == 2:
+                    value = self.keys[pygame.K_SPACE]
+                elif self.timeControl == 3:
+                    value = self.keys[pygame.K_RETURN]
+                elif self.timeControl == 4:
+                    value = self.keys[pygame.K_w]
+                elif self.timeControl == 5:
+                    value = self.keys[pygame.K_s]
+                elif self.timeControl == 6:
+                    value = self.keys[pygame.K_a]
+                elif self.timeControl == 7:
+                    value = self.keys[pygame.K_d]
+                    
+                
+                self.timeControl += 1
+                if self.timeControl == 8:
+                    self.readControls = 0
+                    self.firstWrite = 0
+        else:
+            value = self.mem[address]
+
+        return value
     # Instructions
     def brk(self):
         """
@@ -276,7 +362,7 @@ class CPU:
         """
         Bit Test
         """
-        memory_value = self.mem[address]
+        memory_value = self.read_memory(address)
         if (self.a & memory_value) == np.uint8(0):
             self.zero = 1
         else:
@@ -397,44 +483,44 @@ class CPU:
 
     def adc_zero_page(self):
         address = self.zero_page()
-        address_mirror = self.verify_mirror(address)
-        self.adc(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.adc(value)
         return address, 3
 
     def adc_zero_page_x(self):
         address = self.zero_page_x()
-        address_mirror = self.verify_mirror(address)
-        self.adc(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.adc(value)
         return address, 4
 
     def adc_absolute(self):
         address = self.absolute_address()
-        address_mirror = self.verify_mirror(address)
-        self.adc(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.adc(value)
         return address, 4
 
     def adc_absolute_x(self):
         address = self.absolute_address() + self.x
-        address_mirror = self.verify_mirror(address)
-        self.adc(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.adc(value)
         return address, 4
 
     def adc_absolute_y(self):
         address = self.absolute_address() + self.y
-        address_mirror = self.verify_mirror(address)
-        self.adc(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.adc(value)
         return address, 4
 
     def adc_indirect_x(self):
         address = self.indexed_indirect()
-        address_mirror = self.verify_mirror(address)
-        self.adc(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.adc(value)
         return address, 6
 
     def adc_indirect_y(self):
         address = self.indirect_indexed()
-        address_mirror = self.verify_mirror(address)
-        self.adc(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.adc(value)
         return address, 5
 
     def logical_and(self, value):
@@ -452,44 +538,44 @@ class CPU:
 
     def and_zero_page(self):
         address = self.zero_page()
-        address_mirror = self.verify_mirror(address)
-        self.logical_and(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.logical_and(value)
         return address, 3
 
     def and_zero_page_x(self):
         address = self.zero_page_x()
-        address_mirror = self.verify_mirror(address)
-        self.logical_and(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.logical_and(value)
         return address, 4
 
     def and_absolute(self):
         address = self.absolute_address()
-        address_mirror = self.verify_mirror(address)
-        self.logical_and(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.logical_and(value)
         return address, 4
 
     def and_absolute_x(self):
         address = self.absolute_address() + self.x
-        address_mirror = self.verify_mirror(address)
-        self.logical_and(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.logical_and(value)
         return address, 4
 
     def and_absolute_y(self):
         address = self.absolute_address() + self.y
-        address_mirror = self.verify_mirror(address)
-        self.logical_and(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.logical_and(value)
         return address, 4
 
     def and_indirect_x(self):
         address = self.indexed_indirect()
-        address_mirror = self.verify_mirror(address)
-        self.logical_and(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.logical_and(value)
         return address, 6
 
     def and_indirect_y(self):
         address = self.indirect_indexed()
-        address_mirror = self.verify_mirror(address)
-        self.logical_and(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.logical_and(value)
         return address, 5
 
     def asl(self, value_to_shift):
@@ -510,30 +596,30 @@ class CPU:
 
     def asl_zero_page(self):
         address = self.zero_page()
-        address_mirror = self.verify_mirror(address)
-        value = self.asl(self.mem[address_mirror])
-        self.mem[address_mirror] = value
+        value_memory = self.read_memory(address)
+        value = self.asl(value_memory)
+        self.write_memory(address, value)
         return address, 5
 
     def asl_zero_page_x(self):
         address = self.zero_page_x()
-        address_mirror = self.verify_mirror(address)
-        value = self.asl(self.mem[address_mirror])
-        self.mem[address_mirror] = value
+        value_memory = self.read_memory(address)
+        value = self.asl(value_memory)
+        self.write_memory(address, value)
         return address, 6
 
     def asl_absolute(self):
         address = self.absolute_address()
-        address_mirror = self.verify_mirror(address)
-        value = self.asl(self.mem[address_mirror])
-        self.mem[address_mirror] = value
+        value_memory = self.read_memory(address)
+        value = self.asl(value_memory)
+        self.write_memory(address, value)
         return address, 6
 
     def asl_absolute_x(self):
         address = self.absolute_address() + self.x
-        address_mirror = self.verify_mirror(address)
-        value = self.asl(self.mem[address_mirror])
-        self.mem[address_mirror] = value
+        value_memory = self.read_memory(address)
+        value = self.asl(value_memory)
+        self.write_memory(address, value)
         return address, 7
 
     def lda_immediate(self):
@@ -553,106 +639,93 @@ class CPU:
 
     def lda_zero_page(self):
         address = self.zero_page()
-        address_mirror = self.verify_mirror(address)
-        self.a = self.mem[address_mirror]
+        self.a = self.read_memory(address)
         self.set_zero_and_neg(self.a)
         return address, 3
 
     def ldx_zero_page(self):
         address = self.zero_page()
-        address_mirror = self.verify_mirror(address)
-        self.x = self.mem[address_mirror]
+        self.x = self.read_memory(address)
         self.set_zero_and_neg(self.x)
         return address, 3
 
     def ldy_zero_page(self):
         address = self.zero_page()
-        address_mirror = self.verify_mirror(address)
-        self.y = self.mem[address_mirror]
+        self.y = self.read_memory(address)
         self.set_zero_and_neg(self.y)
         return address, 3
 
     def lda_zero_page_x(self):
         address = self.zero_page_x()
-        address_mirror = self.verify_mirror(address)
-        self.a = self.mem[address_mirror]
+        self.a = self.read_memory(address)
         self.set_zero_and_neg(self.a)
         return address, 4
 
     def ldx_zero_page_y(self):
         address = self.zero_page_y()
-        address_mirror = self.verify_mirror(address)
-        self.x = self.mem[address_mirror]
+        self.x = self.read_memory(address)
         self.set_zero_and_neg(self.x)
         return address, 4
 
     def ldy_zero_page_x(self):
         address = self.zero_page_x()
-        address_mirror = self.verify_mirror(address)
-        self.y = self.mem[address_mirror]
+        self.y = self.read_memory(address)
         self.set_zero_and_neg(self.y)
         return address, 4
 
     def lda_absolute(self):
         address = self.absolute_address()
-        address_mirror = self.verify_mirror(address)
-        self.a = self.mem[address_mirror]
+        self.a = self.read_memory(address)
         self.set_zero_and_neg(self.a)
         return address, 4
 
     def ldx_absolute(self):
         address = self.absolute_address()
-        address_mirror = self.verify_mirror(address)
-        self.x = self.mem[address_mirror]
+        self.x = self.read_memory(address)
+
         self.set_zero_and_neg(self.x)
         return address, 4
 
     def ldy_absolute(self):
         address = self.absolute_address()
-        address_mirror = self.verify_mirror(address)
-        self.y = self.mem[address_mirror]
+        self.y = self.read_memory(address)
+
         self.set_zero_and_neg(self.y)
         return address, 4
 
     def lda_absolute_x(self):
         address = self.absolute_address() + self.x
-        address_mirror = self.verify_mirror(address)
-        self.a = self.mem[address_mirror]
+        self.a = self.read_memory(address)
         self.set_zero_and_neg(self.a)
         return address, 4
 
     def lda_absolute_y(self):
         address = self.absolute_address() + self.y
-        address_mirror = self.verify_mirror(address)
-        self.a = self.mem[address_mirror]
+        self.a = self.read_memory(address)
         self.set_zero_and_neg(self.a)
         return address, 4
 
     def ldx_absolute_y(self):
         address = self.absolute_address() + self.y
-        address_mirror = self.verify_mirror(address)
-        self.x = self.mem[address_mirror]
+        self.x = self.read_memory(address)
         self.set_zero_and_neg(self.x)
         return address, 4
 
     def ldy_absolute_x(self):
         address = self.absolute_address() + self.x
-        address_mirror = self.verify_mirror(address)
-        self.y = self.mem[address_mirror]
+        self.y = self.read_memory(address)
         self.set_zero_and_neg(self.y)
         return address, 4
 
     def lda_indexed_indirect(self):
         address = self.indexed_indirect()
-        address_mirror = self.verify_mirror(address)
-        self.a = self.mem[address_mirror]
+        self.a = self.read_memory(address)
         self.set_zero_and_neg(self.a)
         return address, 6
 
     def lda_indirect_indexed(self):
         address = self.indirect_indexed()
-        address_mirror = self.verify_mirror(address)
-        self.a = self.mem[address_mirror]
+        self.a = self.read_memory(address)
         self.set_zero_and_neg(self.a)
         return address, 5
 
@@ -703,26 +776,30 @@ class CPU:
 
     def lsr_zero_page(self):
         address = self.zero_page()
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] = self.lsr(self.mem[address_mirror])
+        memory = self.read_memory(address)
+        value = self.lsr(memory)
+        self.write_memory(address, value)
         return address, 5
 
     def lsr_zero_page_x(self):
         address = self.zero_page_x()
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] = self.lsr(self.mem[address_mirror])
+        memory = self.read_memory(address)
+        value = self.lsr(memory)
+        self.write_memory(address, value)
         return address, 6
 
     def lsr_absolute(self):
         address = self.absolute_address()
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] = self.lsr(self.mem[address_mirror])
+        memory = self.read_memory(address)
+        value = self.lsr(memory)
+        self.write_memory(address, value)
         return address, 6
 
     def lsr_absolute_x(self):
         address = self.absolute_address() + self.x
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] = self.lsr(self.mem[address_mirror])
+        memory = self.read_memory(address)
+        value = self.lsr(memory)
+        self.write_memory(address, value)
         return address, 7
 
     def rol(self, value):
@@ -747,26 +824,30 @@ class CPU:
 
     def rol_zero_page(self):
         address = self.zero_page()
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] = self.rol(self.mem[address_mirror])
+        value_memory = self.read_memory((address))
+        value = self.rol(value_memory)
+        self.write_memory(address, value)
         return address, 5
 
     def rol_zero_page_x(self):
         address = self.zero_page_x()
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] = self.rol(self.mem[address_mirror])
+        value_memory = self.read_memory((address))
+        value = self.rol(value_memory)
+        self.write_memory(address, value)
         return address, 6
 
     def rol_absolute(self):
         address = self.absolute_address()
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] = self.rol(self.mem[address_mirror])
+        value_memory = self.read_memory((address))
+        value = self.rol(value_memory)
+        self.write_memory(address, value)
         return address, 6
 
     def rol_absolute_x(self):
         address = self.absolute_address() + self.x
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] = self.rol(self.mem[address_mirror])
+        value_memory = self.read_memory((address))
+        value = self.rol(value_memory)
+        self.write_memory(address, value)
         return address, 7
 
     def ror_accumulator(self):
@@ -775,33 +856,37 @@ class CPU:
 
     def ror_zero_page(self):
         address = self.zero_page()
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] = self.ror(self.mem[address_mirror])
+        value_memory = self.read_memory((address))
+        value = self.ror(value_memory)
+        self.write_memory(address, value)
         return address, 5
 
     def ror_zero_page_x(self):
         address = self.zero_page_x()
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] = self.ror(self.mem[address_mirror])
+        value_memory = self.read_memory((address))
+        value = self.ror(value_memory)
+        self.write_memory(address, value)
         return address, 6
 
     def ror_absolute(self):
         address = self.absolute_address()
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] = self.ror(self.mem[address_mirror])
+        value_memory = self.read_memory((address))
+        value = self.ror(value_memory)
+        self.write_memory(address, value)
         return address, 6
 
     def ror_absolute_x(self):
         address = self.absolute_address() + self.x
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] = self.ror(self.mem[address_mirror])
+        value_memory = self.read_memory((address))
+        value = self.ror(value_memory)
+        self.write_memory(address, value)
         return address, 7
 
     def rti(self):
         """
         Return from Interrupt
         """
-        self.plp()
+        self.plp() 
         self.pull_pc_from_stack()
         return None, 6
 
@@ -825,44 +910,44 @@ class CPU:
 
     def sbc_zero_page(self):
         address = self.zero_page()
-        address_mirror = self.verify_mirror(address)
-        self.sbc(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.sbc(value)
         return address, 3
 
     def sbc_zero_page_x(self):
         address = self.zero_page_x()
-        address_mirror = self.verify_mirror(address)
-        self.sbc(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.sbc(value)
         return address, 4
 
     def sbc_absolute(self):
         address = self.absolute_address()
-        address_mirror = self.verify_mirror(address)
-        self.sbc(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.sbc(value)
         return address, 4
 
     def sbc_absolute_x(self):
         address = self.absolute_address() + self.x
-        address_mirror = self.verify_mirror(address)
-        self.sbc(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.sbc(value)
         return address, 4
 
     def sbc_absolute_y(self):
         address = self.absolute_address() + self.y
-        address_mirror = self.verify_mirror(address)
-        self.sbc(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.sbc(value)
         return address, 4
 
     def sbc_indirect_x(self):
         address = self.indexed_indirect()
-        address_mirror = self.verify_mirror(address)
-        self.sbc(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.sbc(value)
         return address, 6
 
     def sbc_indirect_y(self):
         address = self.indirect_indexed()
-        address_mirror = self.verify_mirror(address)
-        self.sbc(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.sbc(value)
         return address, 5
 
     def sec(self):
@@ -886,23 +971,15 @@ class CPU:
         self.interrupt_disable = 1
         return None, 2
 
-    def spr_ram_dma(self, address):
-        self.ppu_ref.write_spr_ram_dma(self.mem[address : address + 0x0100])
-
-    def IO_out(self, address):
-        if address == 0x4014:
-            value = self.mem[address]
-            dma_address = np.uint16((value << 8) + self.mem[0x2003])
-            self.spr_ram_dma(dma_address)
 
     def sta_absolute(self):
         """
         Store Accumulator - Absolute
         """
         address = self.absolute_address()
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] = self.a
-        self.IO_out(address)
+        self.write_memory(address, self.a)
+        #address_mirror = self.verify_mirror(address)
+        #self.mem[address_mirror] = self.a
         return address, 4
 
     def sta_absolute_x(self):
@@ -910,9 +987,7 @@ class CPU:
         Store Accumulator - Absolute, X
         """
         address = self.absolute_address() + self.x
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] = self.a
-        self.IO_out(address)
+        self.write_memory(address, self.a)
         return address, 5
 
     def sta_absolute_y(self):
@@ -920,9 +995,7 @@ class CPU:
         Store Accumulator - Absolute, Y
         """
         address = self.absolute_address() + self.y
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] = self.a
-        self.IO_out(address)
+        self.write_memory(address, self.a)
         return address, 5
 
     def sta_zero_page(self):
@@ -930,9 +1003,7 @@ class CPU:
         Store Accumulator - Zero Page
         """
         address = self.zero_page()
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] = self.a
-        self.IO_out(address)
+        self.write_memory(address, self.a)
         return address, 3
 
     def sta_zero_page_x(self):
@@ -940,8 +1011,7 @@ class CPU:
         Store Accumulator - Zero Page, X
         """
         address = self.zero_page_x()
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] = self.a
+        self.write_memory(address, self.a)
         return address, 4
 
     def sta_indexed_indirect(self):
@@ -949,9 +1019,7 @@ class CPU:
         Store Accumulator - (Indirect, X)
         """
         address = self.indexed_indirect()
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] = self.a
-        self.IO_out(address_mirror)
+        self.write_memory(address, self.a)
         return address, 6
 
     def sta_indirect_indexed(self):
@@ -959,9 +1027,7 @@ class CPU:
         Store Accumulator - (Indirect, X)
         """
         address = self.indirect_indexed()
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] = self.a
-        self.IO_out(address_mirror)
+        self.write_memory(address, self.a)
         return address, 6
 
     def stx_absolute(self):
@@ -969,9 +1035,7 @@ class CPU:
         Store X Register - Absolute
         """
         address = self.absolute_address()
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] = self.x
-        self.IO_out(address_mirror)
+        self.write_memory(address, self.x)
         return address, 4
 
     def stx_zero_page(self):
@@ -979,9 +1043,7 @@ class CPU:
         Store X Register - Zero Page
         """
         address = self.zero_page()
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] = self.x
-        self.IO_out(address_mirror)
+        self.write_memory(address, self.x)
         return address, 3
 
     def stx_zero_page_y(self):
@@ -989,9 +1051,7 @@ class CPU:
         Store X Register - Zero Page, Y
         """
         address = self.zero_page_y()
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] = self.x
-        self.IO_out(address_mirror)
+        self.write_memory(address, self.x)
         return address, 4
 
     def sty_absolute(self):
@@ -999,9 +1059,7 @@ class CPU:
         Store Y Register - Absolute
         """
         address = self.absolute_address()
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] = self.y
-        self.IO_out(address_mirror)
+        self.write_memory(address, self.y)
         return address, 4
 
     def sty_zero_page(self):
@@ -1009,9 +1067,7 @@ class CPU:
         Store Y Register - Zero Page
         """
         address = self.zero_page()
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] = self.y
-        self.IO_out(address_mirror)
+        self.write_memory(address, self.y)
         return address, 3
 
     def sty_zero_page_x(self):
@@ -1019,9 +1075,7 @@ class CPU:
         Store Y Register - Zero Page, X
         """
         address = self.zero_page_x()
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] = self.y
-        self.IO_out(address_mirror)
+        self.write_memory(address, self.y)
         return address, 4
 
     def tax(self):
@@ -1109,44 +1163,44 @@ class CPU:
 
     def cmp_zero_page(self):
         address = self.zero_page()
-        address_mirror = self.verify_mirror(address) 
-        self.cmp_if(self.a, self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.cmp_if(self.a, value)
         return address, 3
 
     def cmp_zero_page_x(self):
         address = self.zero_page_x()
-        address_mirror = self.verify_mirror(address)
-        self.cmp_if(self.a, self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.cmp_if(self.a, value)
         return address, 4
 
     def cmp_absolute(self):
         address = self.absolute_address()
-        address_mirror = self.verify_mirror(address)
-        self.cmp_if(self.a, self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.cmp_if(self.a, value)
         return address, 4
 
     def cmp_absolute_x(self):
         address = self.absolute_address() + self.x
-        address_mirror = self.verify_mirror(address)
-        self.cmp_if(self.a, self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.cmp_if(self.a, value)
         return address, 4
 
     def cmp_absolute_y(self):
         address = self.absolute_address() + self.y
-        address_mirror = self.verify_mirror(address)
-        self.cmp_if(self.a, self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.cmp_if(self.a, value)
         return address, 4
 
     def cmp_indexed_indirect(self):
         address = self.indexed_indirect()
-        address_mirror = self.verify_mirror(address)
-        self.cmp_if(self.a, self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.cmp_if(self.a, value)
         return address, 6
 
     def cmp_indirect_indexed(self):
         address = self.indirect_indexed()
-        address_mirror = self.verify_mirror(address)
-        self.cmp_if(self.a, self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.cmp_if(self.a, value)
         return address, 5
 
     "Compare x"
@@ -1158,14 +1212,14 @@ class CPU:
 
     def cpx_zero_page(self):
         address = self.zero_page()
-        address_mirror = self.verify_mirror(address)
-        self.cmp_if(self.x, self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.cmp_if(self.x, value)
         return address, 3
 
     def cpx_absolute(self):
         address = self.absolute_address()
-        address_mirror = self.verify_mirror(address)
-        self.cmp_if(self.x, self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.cmp_if(self.x, value)
         return address, 4
 
     "Compare y"
@@ -1176,44 +1230,52 @@ class CPU:
 
     def cpy_zero_page(self):
         address = self.zero_page()
-        address_mirror = self.verify_mirror(address)
-        self.cmp_if(self.y, self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.cmp_if(self.y, value)
         return address, 3
 
     def cpy_absolute(self):
         address = self.absolute_address()
-        address_mirror = self.verify_mirror(address)
-        self.cmp_if(self.y, self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.cmp_if(self.y, value)
         return address, 4
 
     "Decrement 1 in value held at memory[adress]"
 
     def dec_zero_page(self):
         address = self.zero_page()
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] -= np.uint8(1)
-        self.set_zero_and_neg(self.mem[address_mirror])
+        value = np.uint8(0)
+        value = self.read_memory(address)
+        value -= 1
+        self.write_memory(address, value)
+        self.set_zero_and_neg(value)
         return address, 5
 
     def dec_zero_page_x(self):
         address = self.zero_page_x()
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] -= np.uint8(1)
-        self.set_zero_and_neg(self.mem[address_mirror])
+        value = np.uint8(0)
+        value = self.read_memory(address)
+        value -= 1
+        self.write_memory(address, value)
+        self.set_zero_and_neg(value)
         return address, 6
 
     def dec_absolute(self):
         address = self.absolute_address()
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] -= np.uint8(1)
-        self.set_zero_and_neg(self.mem[address_mirror])
+        value = np.uint8(0)
+        value = self.read_memory(address)
+        value -= 1
+        self.write_memory(address, value)
+        self.set_zero_and_neg(value)
         return address, 6
 
     def dec_absolute_x(self):
         address = self.absolute_address() + self.x
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] -= np.uint8(1)
-        self.set_zero_and_neg(self.mem[address_mirror])
+        value = np.uint8(0)
+        value = self.read_memory(address)
+        value -= 1
+        self.write_memory(address, value)
+        self.set_zero_and_neg(value)
         return address, 7
 
     def dex(self):
@@ -1236,30 +1298,34 @@ class CPU:
 
     def inc_zero_page(self):
         address = self.zero_page()
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] += np.uint8(1)
-        self.set_zero_and_neg(self.mem[address_mirror])
+        value = self.read_memory(address)
+        value += 1
+        self.write_memory(address, value)
+        self.set_zero_and_neg(value)
         return address, 5
 
     def inc_zero_page_x(self):
         address = self.zero_page_x()
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] += np.uint8(1)
-        self.set_zero_and_neg(self.mem[address_mirror])
+        value = self.read_memory(address)
+        value += 1
+        self.write_memory(address, value)
+        self.set_zero_and_neg(value)
         return address, 6
 
     def inc_absolute(self):
         address = self.absolute_address()
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] += np.uint8(1)
-        self.set_zero_and_neg(self.mem[address_mirror])
+        value = self.read_memory(address)
+        value += 1
+        self.write_memory(address, value)
+        self.set_zero_and_neg(value)
         return address, 6
 
     def inc_absolute_x(self):
         address = self.absolute_address() + self.x
-        address_mirror = self.verify_mirror(address)
-        self.mem[address_mirror] += np.uint8(1)
-        self.set_zero_and_neg(self.mem[address_mirror])
+        value = self.read_memory(address)
+        value += np.uint(1)
+        self.write_memory(address, value)
+        self.set_zero_and_neg(value)
         return address, 7
 
     def inx(self):
@@ -1293,44 +1359,44 @@ class CPU:
 
     def eor_zero_page(self):
         address = self.zero_page()
-        address_mirror = self.verify_mirror(address)
-        self.logical_eor(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.logical_eor(value)
         return address, 3
 
     def eor_zero_page_x(self):
         address = self.zero_page_x()
-        address_mirror = self.verify_mirror(address)
-        self.logical_eor(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.logical_eor(value)
         return address, 4
 
     def eor_absolute(self):
         address = self.absolute_address()
-        address_mirror = self.verify_mirror(address)
-        self.logical_eor(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.logical_eor(value)
         return address, 4
 
     def eor_absolute_x(self):
         address = self.absolute_address() + self.x
-        address_mirror = self.verify_mirror(address)
-        self.logical_eor(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.logical_eor(value)
         return address, 4
 
     def eor_absolute_y(self):
         address = self.absolute_address() + self.y
-        address_mirror = self.verify_mirror(address)
-        self.logical_eor(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.logical_eor(value)
         return address, 4
 
     def eor_indirect_x(self):
         address = self.indexed_indirect()
-        address_mirror = self.verify_mirror(address)
-        self.logical_eor(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.logical_eor(value)
         return address, 6
 
     def eor_indirect_y(self):
         address = self.indirect_indexed()
-        address_mirror = self.verify_mirror(address)
-        self.logical_eor(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.logical_eor(value)
         return address, 5
 
     def ora(self, value):
@@ -1344,58 +1410,57 @@ class CPU:
 
     def ora_zero_page(self):
         address = self.zero_page()
-        address_mirror = self.verify_mirror(address)
-        self.ora(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.ora(value)
         return address, 3
-    
+
     def ora_zero_page_x(self):
         address = self.zero_page_x()
-        address_mirror = self.verify_mirror(address)
-        self.ora(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.ora(value)
         return address, 4
-    
+
     def ora_absolute(self):
         address = self.absolute_address()
-        address_mirror = self.verify_mirror(address)
-        self.ora(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.ora(value)
         return address, 4
 
     def ora_absolute_x(self):
         address = self.absolute_address() + self.x
-        address_mirror = self.verify_mirror(address)
-        self.ora(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.ora(value)
         return address, 4
-    
+
     def ora_absolute_y(self):
         address = self.absolute_address() + self.y
-        address_mirror = self.verify_mirror(address)
-        self.ora(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.ora(value)
         return address, 4
-    
+
     def ora_indexed_indirect(self):
         address = self.indexed_indirect()
-        address_mirror = self.verify_mirror(address)
-        self.ora(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.ora(value)
         return address, 6
 
     def ora_indirect_indexed(self):
         address = self.indirect_indexed()
-        address_mirror = self.verify_mirror(address)
-        self.ora(self.mem[address_mirror])
+        value = self.read_memory(address)
+        self.ora(value)
         return address, 5
 
     def jmp_absolute(self):
         address = self.absolute_address()
-        
         self.pc = np.uint16(address - 1)
         return None, 3
 
     def jmp_indirect(self):
         address = self.indirect()
-        address_mirror = self.verify_mirror(address)
-        self.pc = np.uint16(self.mem[address_mirror] + (self.mem[np.uint16(address_mirror + 1)] << 8))-1
+        value_memory1 = self.read_memory(address)
+        value_memory2 = self.read_memory(address + 1)
+        self.pc = np.uint16(value_memory1 + (value_memory2 << 8)) - 1
         return None, 5
-
     def trigger_interruption(self, read_address):
         """
         Triggers Interruption by pushing PC and P to the stack and
@@ -1452,7 +1517,7 @@ class CPU:
                self.bin_format(self.get_p())))
 
     def print_state_ls(self, address):
-        address_mirror = self.verify_mirror(address)
+        value = self.read_memory(address)
         print("| pc = %s | a = %s | x = %s | y = %s | sp = %s | p[NV-BDIZC] = %s | MEM[%s] = %s |" % \
               (self.hex_format(self.pc, 4),
                self.hex_format(self.a, 2),
@@ -1461,7 +1526,7 @@ class CPU:
                self.hex_format(self.sp, 4),
                self.bin_format(self.get_p()),
                self.hex_format(address, 4),
-               self.hex_format(self.mem[address_mirror], 2)))
+               self.hex_format(value, 2)))
 
     def run(self):
         sleep_time = 0
@@ -1476,14 +1541,22 @@ class CPU:
             elif self.trigger_nmi:
                 self.trigger_interruption(self.NMI_HANDLER_ADDRESS)
                 self.trigger_nmi = False
+
             mem_byte = self.mem[self.pc]
             cycles = cycles + self.execute(opcode=mem_byte)
             run_count = run_count + 1
 
+
+            pygame.event.poll()
+            self.keys = pygame.key.get_pressed()
+            if self.keys[pygame.K_RETURN]:
+                pygame.display.quit()
+                exit()
             # every some instructions calculate sleep fraction
             if (run_count == 20):
                 end = time.time()
                 sleep_time += 0.0000559*cycles - (end - start)
+
                 start = time.time()
                 run_count = 0
                 cycles = 0
@@ -1492,9 +1565,10 @@ class CPU:
             # if total sleep so far is grater than the minimum required by the system sleep this time
             if sleep_time > 0.001:
                 self.ppu_ref.update()
-                self.trigger_nmi = True;
-                # time.sleep(sleep_time)
+                self.trigger_nmi = True
+
                 sleep_time = 0
+
 
     def execute(self, opcode):
         # Being used in order to ignore invalid opcodes
@@ -1505,10 +1579,10 @@ class CPU:
         address, cycle = instruction()
         if opcode != 0x40:  # do not add 1 to pc when running an RTI
             self.pc += np.uint16(1)
-        if address is None and opcode != 0:
-            self.print_state()
-        elif opcode != 0:
-            self.print_state_ls(address)
+        #if address is None and opcode != 0:
+        #    self.print_state()
+        #elif opcode != 0:
+        #    self.print_state_ls(address)
         return cycle
 
 
