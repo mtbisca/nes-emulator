@@ -22,8 +22,8 @@ class PPU:
         # TODO: check if there's a default configuration of these flags
         self.nametable_address = None
         self.increment_address = None
-        self.sprite_pattern_table_1 = None
-        self.background_pattern_table_1 = None
+        self.sprite_pattern_table = None
+        self.background_pattern_table = None
         self.sprite_size = None
         self.master_slave = None
         self.nmi_at_vblank = None
@@ -94,16 +94,10 @@ class PPU:
             self.increment_address = 1
 
         remaining_value >>= 1
-        if remaining_value & 1:
-            self.sprite_pattern_table_1 = True
-        else:
-            self.sprite_pattern_table_1 = False
+        self.sprite_pattern_table = remaining_value & 1
 
         remaining_value >>= 1
-        if remaining_value & 1:
-            self.background_pattern_table_1 = True
-        else:
-            self.background_pattern_table_1 = False
+        self.background_pattern_table = remaining_value & 1
 
         remaining_value >>= 1
         if remaining_value & 1:
