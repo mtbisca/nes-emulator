@@ -5,17 +5,15 @@ import pygame
 
 class SpritesGroup():
 
-    def __init__(self, sprite_size_type):
-        self.sprite_size_type = sprite_size_type
+    def __init__(self, sprite_size):
         self.sprites = {}
 
+        self.sprite_size = sprite_size
 
-        if (sprite_size_type == 0):
-            self.sprite_size = [8, 8]
-            self.update_sprites = self.update_sprites_square
-        else:
-            self.sprite_size = [8, 16]
+        if self.sprite_size == (8, 16):
             self.update_sprites = self.update_sprites_rect
+        else:
+            self.update_sprites = self.update_sprites_square
 
         for key in range(64):
             self.sprites[key] = NESSprite(width=self.sprite_size[0],

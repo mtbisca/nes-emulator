@@ -22,9 +22,9 @@ class PPU:
         # TODO: check if there's a default configuration of these flags
         self.nametable_address = None
         self.increment_address = None
-        self.sprite_pattern_table_address = None
-        self.background_pattern_table_address = None
-        self.sprite_size_type = 0
+        self.sprite_pattern_table_1 = None
+        self.background_pattern_table_1 = None
+        self.sprite_size = None
         self.master_slave = None
         self.nmi_at_vblank = None
 
@@ -40,6 +40,8 @@ class PPU:
         self.green_emphasis = None
         self.blue_emphasis = None
 
+        self.first_write = True
+
         # add this address for every write in ppu
         self.address_mirror = 0x400 << mirror
         self.width = 256
@@ -47,7 +49,7 @@ class PPU:
         self.color = (1,1,1)
 
         pygame.init()
-        self.all_sprites = SpritesGroup(self.sprite_size_type)
+        self.all_sprites = SpritesGroup(self.sprite_size)
         # self.all_sprites.set_all_positions(((0,0),(50,0), (0,50), (50,50), (25,25)))
         self.screen = pygame.display.set_mode((self.scale_size*self.width, self.scale_size*self.height))
         self.pic = pygame.surface.Surface((self.width, self.width))
@@ -93,21 +95,21 @@ class PPU:
 
         remaining_value >>= 1
         if remaining_value & 1:
-            self.sprite_pattern_table_address = 0x1000
+            self.sprite_pattern_table_1 = True
         else:
-            self.sprite_pattern_table_address = 0x0000
+            self.sprite_pattern_table_1 = False
 
         remaining_value >>= 1
         if remaining_value & 1:
-            self.background_pattern_table_address = 0x1000
+            self.background_pattern_table_1 = True
         else:
-            self.background_pattern_table_address = 0x0000
+            self.background_pattern_table_1 = False
 
         remaining_value >>= 1
         if remaining_value & 1:
-            self.sprite_size_type = 1
+            self.sprite_size = (8, 8)
         else:
-            self.sprite_size_type = 0
+            self.sprite_size = (8, 16)
 
         remaining_value >>= 1
         if remaining_value & 1:
@@ -221,11 +223,20 @@ class PPU:
     def write_oamaddr(self):
         pass
 
-    def write_scroll(self):
+    def write_scroll(self, value):
+        if self.first_write:
+            self.ppu_scroll_x = value
+            self.first_write = False
+        else:
+            self.ppu_scroll_y = value
+            self.first_write = True
+
+    def write_address(self, value):
         pass
 
-    def write_address(self):
-        pass
+    def load_palettes(self):
+        self.bg_palettes = np.array_split(self.VRAM[0X3F00:0x3F10], 4)
+        self.sprite_palettes = np.array_split(self.VRAM[0X3F10:0x3F20], 4)
     
     def load_attribute_table(self):
         pass
@@ -240,7 +251,8 @@ class PPU:
         self.pic = pygame.surface.Surface((self.width, self.width))
         # Update parts of PPU
         pattern_table_map = np.split(self.VRAM[0x0:0x2000], 2)
-        self.update_sprites(pattern_table_map)
+        if self.show_sprites:
+            self.update_sprites(pattern_table_map)
 
         # Rescale screen and update
         self.screen.blit(pygame.transform.scale(self.pic, (self.scale_size * self.width, self.scale_size * self.height)), (0, 0))
