@@ -10,7 +10,6 @@ class PPU:
 
     def __init__(self, pattern_tables, mirror, scale_size):
         # initializing ppu memory
-        print(pattern_tables)
         self.VRAM = np.zeros(0x10000, dtype=np.uint8)
         self.VRAM[:0x2000] = pattern_tables
         self.SPR_RAM = np.zeros(0x0100, dtype=np.uint8)

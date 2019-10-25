@@ -36,13 +36,13 @@ MIRRORING = %0001 ;%0000 = horizontal, %0001 = vertical, %1000 = four-screen
 
 Reset:
   LDA #$3D
-  STA $3200
+  STA $500
 Loop:
-  LDA $3200
+  LDA $500
   ADC #$01
-  STA $3200
+  STA $500
   LDA #$C5
-  BIT $3200
+  BIT $500
   BVC Loop
   BRK
 
