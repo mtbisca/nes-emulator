@@ -42,18 +42,25 @@ class SpritesGroup():
         sprite = self.sprites[key]
         sprite.image = surface
 
-    def update_sprites_square(self, sprite_tiles, sprite_palettes, sprite_data, color_handler):
-        tile_map = np.reshape(sprite_tiles[:0x1000], (64, 8, 8))
+    def get_tile(self, bytes):
+        bits = np.unpackbits(bytes, axis=0)
+        bits_grids = bits.reshape((2, 8, 8))
+        tile = (bits_grids[1] << 1) | bits_grids[0]
+        return np.transpose(tile)
 
+
+    def update_sprites_square(self, sprite_tiles, sprite_data, color_handler):
         for key in range(64):
             data = sprite_data[key]
-            tile = tile_map[data[1]]
+            tile = self.get_tile(sprite_tiles[data[1]*16:(data[1]+1)*16])
             palette_index = data[2] & 0b11
             self.set_position(key, (data[3], data[0]))
-            surface = color_handler.set_color_to_sprite(tile, palette_index)
+            boolx = (data[2] & 0b10000000) == 1
+            booly = (data[2] & 0b01000000) == 1
+            surface = pygame.transform.flip(color_handler.set_color_to_sprite(tile, palette_index), boolx, booly)
             self.set_surface(key, surface)
 
-    def update_sprites_rect(self, sprite_tiles, sprite_palettes, sprite_data, color_handler):
+    def update_sprites_rect(self, sprite_tiles, sprite_data, color_handler):
         tile_map = np.reshape(sprite_tiles, (2, 64, 8, 16))
 
         for key in range(64):

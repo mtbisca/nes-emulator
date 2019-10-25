@@ -6,9 +6,10 @@ class ColorHandler:
         self.ppu_VRAM = ppu_VRAM
         self.bg_palettes = np.array_split(self.ppu_VRAM[0x3F00:0x3F11], 4)
         self.sprite_palettes = np.array_split(self.ppu_VRAM[0x3F11:0X3F20], 4)
+        # self.sprite_palettes = [[0x15,0x0B,0x30,0x0A],[0x00,0x04,0x14,0x0F],[0x00,0x17,0x27,0x0F],[0x15,0x0B,0x30,0x0A]]
 
     def set_color_to_sprite(self, sprite_array, palette_index):
-        index_to_sys_palette = np.vectorize(lambda pix: self.sprite_palettes[palette_index][pix] if pix < 4 else 0)
+        index_to_sys_palette = np.vectorize(lambda pix: self.sprite_palettes[palette_index][pix])
         sys_palette_to_rgb = np.vectorize(lambda pix: self.sys_palette_to_rgb(pix))
         colored_sprite = np.dstack(sys_palette_to_rgb(index_to_sys_palette(sprite_array)))
         return pygame.surfarray.make_surface(colored_sprite)

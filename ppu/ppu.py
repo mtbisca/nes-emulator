@@ -249,9 +249,8 @@ class PPU:
 
     def update_sprites(self):
         sprites_data = np.reshape(self.SPR_RAM, (64, 4))
-        self.all_sprites.update_sprites(self.VRAM[0x0:0x2000], self.VRAM[0x3f10:0x3f20], sprites_data, self.color_handler)
+        self.all_sprites.update_sprites(self.VRAM[0x0:0x2000], sprites_data, self.color_handler)
         self.all_sprites.draw(self.pic)
 
     def write_spr_ram_dma(self, ram):
-        print(ram)
         self.SPR_RAM[:] = ram

@@ -892,9 +892,7 @@ class CPU:
     def IO_out(self, address):
         if address == 0x4014:
             value = self.mem[address]
-            print(value)
             dma_address = np.uint16((value << 8) + self.mem[0x2003])
-            print(dma_address)
             self.spr_ram_dma(dma_address)
 
     def sta_absolute(self):
@@ -1478,8 +1476,6 @@ class CPU:
             elif self.trigger_nmi:
                 self.trigger_interruption(self.NMI_HANDLER_ADDRESS)
                 self.trigger_nmi = False
-                print(self.pc)
-                print(self.mem[self.pc])
             mem_byte = self.mem[self.pc]
             cycles = cycles + self.execute(opcode=mem_byte)
             run_count = run_count + 1
@@ -1488,8 +1484,6 @@ class CPU:
             if (run_count == 20):
                 end = time.time()
                 sleep_time += 0.0000559*cycles - (end - start)
-                print("teste!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-                print(sleep_time)
                 start = time.time()
                 run_count = 0
                 cycles = 0
@@ -1497,12 +1491,9 @@ class CPU:
 
             # if total sleep so far is grater than the minimum required by the system sleep this time
             if sleep_time > 0.001:
-                print("vai")
                 self.ppu_ref.update()
-                print("foi")
                 self.trigger_nmi = True;
                 # time.sleep(sleep_time)
-                print("sera?")
                 sleep_time = 0
 
     def execute(self, opcode):
