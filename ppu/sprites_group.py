@@ -12,8 +12,10 @@ class SpritesGroup():
 
         if self.sprite_size == (8, 16):
             self.update_sprites = self.update_sprites_rect
+            self.sprite_size = [8, 16]
         else:
             self.update_sprites = self.update_sprites_square
+            self.sprite_size = [8,8]
 
         for key in range(64):
             self.sprites[key] = NESSprite(width=self.sprite_size[0],

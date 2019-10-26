@@ -22,9 +22,9 @@ class PPU:
         # TODO: check if there's a default configuration of these flags
         self.nametable_address = None
         self.increment_address = None
-        self.sprite_pattern_table = None
+        self.sprite_pattern_table = 0
         self.background_pattern_table = None
-        self.sprite_size = None
+        self.sprite_size = [8,8]
         self.master_slave = None
         self.nmi_at_vblank = None
 
@@ -35,7 +35,7 @@ class PPU:
         self.clipping_background_on_left = None
         self.clipping_sprites_on_left = None
         self.show_background = None
-        self.show_sprites = None
+        self.show_sprites = True
         self.red_emphasis = None
         self.green_emphasis = None
         self.blue_emphasis = None
@@ -246,7 +246,7 @@ class PPU:
         # Update parts of PPU
         pattern_table_map = np.split(self.VRAM[0x0:0x2000], 2)
         if self.show_sprites:
-            self.update_sprites(pattern_table_map, self.sprite_pattern_table_1)
+            self.update_sprites(pattern_table_map)
 
         # Rescale screen and update
         self.screen.blit(pygame.transform.scale(self.pic, (self.scale_size * self.width, self.scale_size * self.height)), (0, 0))
@@ -255,7 +255,7 @@ class PPU:
 
     def update_sprites(self, pattern_table_map):
         sprites_data = np.reshape(self.SPR_RAM, (64, 4))
-        self.all_sprites.update_sprites(pattern_table_map, sprites_data, self.color_handler)
+        self.all_sprites.update_sprites(pattern_table_map, sprites_data, self.color_handler, self.sprite_pattern_table)
         self.all_sprites.draw(self.pic)
 
     def write_spr_ram_dma(self, ram):
