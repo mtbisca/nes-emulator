@@ -26,7 +26,7 @@ class PPU:
         self.background_pattern_table = None
         self.sprite_size = [8,8]
         self.master_slave = None
-        self.nmi_at_vblank = None
+        self.nmi_at_vblank = 1
 
         # Flags controlling the rendering of sprites and background, as well as
         # color effects
@@ -35,12 +35,16 @@ class PPU:
         self.clipping_background_on_left = None
         self.clipping_sprites_on_left = None
         self.show_background = None
-        self.show_sprites = True
+        self.show_sprites = False
         self.red_emphasis = None
         self.green_emphasis = None
         self.blue_emphasis = None
 
         self.first_write = True
+
+        self.sprite_overflow = 0
+        self.sprite_0_hit = 0
+        self.vblank = 1
 
         # add this address for every write in ppu
         self.address_mirror = 0x400 << mirror
@@ -203,14 +207,13 @@ class PPU:
                    pre-render line.
         """
         value = 0
-        value |= self.sprite_overflow
+        value |= self.vblank
         value <<= 1
         value |= self.sprite_0_hit
         value <<= 1
-        value |= self.vblank
-        value <<= 4
-
-        self.vblank = 0
+        value |= self.sprite_overflow
+        value <<= 5
+        self.vblank = 1
 
         return value
 
