@@ -2,6 +2,7 @@ import pygame
 import numpy as np
 from ppu.sprites_group import SpritesGroup
 from ppu.color_handler import ColorHandler
+from ppu.background import Background
 
 chrsize = 0
 
@@ -276,16 +277,28 @@ class PPU:
         #     pygame.display.quit()
         #     return False
         self.color_handler = ColorHandler(self.VRAM)
+        self.background = Background()
         self.pic = pygame.surface.Surface((self.width, self.width))
         # Update parts of PPU
         pattern_table_map = np.split(self.VRAM[0x0:0x2000], 2)
+
         if self.show_sprites:
             self.update_sprites(pattern_table_map)
+
+        if self.show_background:
+            self.update_background(pattern_table_map)
 
         # Rescale screen and update
         self.screen.blit(pygame.transform.scale(self.pic, (self.scale_size * self.width, self.scale_size * self.height)), (0, 0))
         pygame.display.update()
         return
+
+    def update_background(self, pattern_table_map):
+        attribute_table_address = self.nametable_address + 0x3C0
+        self.background.update_background(
+            pattern_table_map[self.background_pattern_table],
+            self.VRAM[self.nametable_address:attribute_table_address],
+            self.VRAM[attribute_table_address:attribute_table_address + 0x40])
 
     def update_sprites(self, pattern_table_map):
         sprites_data = np.reshape(self.SPR_RAM, (64, 4))
