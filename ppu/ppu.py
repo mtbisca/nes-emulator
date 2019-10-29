@@ -46,6 +46,8 @@ class PPU:
         self.sprite_0_hit = 0
         self.vblank = 1
 
+        self.address_2006 = np.uint16(0)
+
         # add this address for every write in ppu
         self.address_mirror = 0x400 << mirror
         self.width = 256
@@ -207,11 +209,13 @@ class PPU:
 
     #register 0x2006
     def write_address(self, value):
-        pass
+        self.address_2006 = np.uint16(self.address_2006 << 8)
+        self.address_2006 |= np.uint16(value)
 
     #register 0x2007
     def write_data(self,value):
-        pass
+        self.VRAM[self.address_2006] = value
+        self.address_2006 += np.uint16(1)
     
 #######################   READ FUNCTIONS   #######################
     #register 0x2002

@@ -322,7 +322,7 @@ class CPU:
             if address == 0x2002:
                 value = self.ppu_ref.read_ppustatus()
             elif address == 0x2004:
-                value = self.ppu_red.read_oamdata()
+                value = self.ppu_ref.read_oamdata()
             elif address == 0x2007:
                 value = self.ppu_ref.read_data()
             else:
