@@ -62,6 +62,9 @@ class PPU:
 
         self.update()
 
+#######################   WRITE FUNCTIONS   #######################
+
+    #register 0x2000
     def write_ppuctrl(self, value):
         """
         7  bit  0
@@ -120,7 +123,7 @@ class PPU:
             self.nmi_at_vblank = True
         else:
             self.nmi_at_vblank = False
-
+    #register 0x2001
     def write_ppumask(self, value):
         """
         7  bit  0
@@ -183,6 +186,35 @@ class PPU:
         else:
             self.blue_emphasis = False
 
+
+
+    
+    #register 0x2003
+    def write_oamaddr(self, value):
+        pass
+    #register 0x2004
+    def write_oamdata(self, value):
+        pass
+
+    #register 0x2005
+    def write_scroll(self, value):
+        if self.first_write:
+            self.ppu_scroll_x = value
+            self.first_write = False
+        else:
+            self.ppu_scroll_y = value
+            self.first_write = True
+
+    #register 0x2006
+    def write_address(self, value):
+        pass
+
+    #register 0x2007
+    def write_data(self,value):
+        pass
+    
+#######################   READ FUNCTIONS   #######################
+    #register 0x2002
     def read_ppustatus(self):
         """
         7  bit  0
@@ -215,21 +247,16 @@ class PPU:
         value <<= 5
         self.vblank = 1
 
+
         return value
-
-    def write_oamaddr(self):
+    #register 0x2004
+    def read_oamdata(self):
         pass
 
-    def write_scroll(self, value):
-        if self.first_write:
-            self.ppu_scroll_x = value
-            self.first_write = False
-        else:
-            self.ppu_scroll_y = value
-            self.first_write = True
-
-    def write_address(self, value):
+    #register 0x2007
+    def read_data(self):
         pass
+    
 
     def load_palettes(self):
         self.bg_palettes = np.array_split(self.VRAM[0X3F00:0x3F10], 4)
