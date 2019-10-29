@@ -22,11 +22,11 @@ class PPU:
         # TODO: check if there's a default configuration of these flags
         self.nametable_address = None
         self.increment_address = None
-        self.sprite_pattern_table = None
+        self.sprite_pattern_table = 0
         self.background_pattern_table = None
-        self.sprite_size = None
+        self.sprite_size = [8,8]
         self.master_slave = None
-        self.nmi_at_vblank = None
+        self.nmi_at_vblank = 1
 
         # Flags controlling the rendering of sprites and background, as well as
         # color effects
@@ -35,12 +35,18 @@ class PPU:
         self.clipping_background_on_left = None
         self.clipping_sprites_on_left = None
         self.show_background = None
-        self.show_sprites = None
+        self.show_sprites = False
         self.red_emphasis = None
         self.green_emphasis = None
         self.blue_emphasis = None
 
         self.first_write = True
+
+        self.sprite_overflow = 0
+        self.sprite_0_hit = 0
+        self.vblank = 1
+
+        self.address_2006 = np.uint16(0)
 
         # add this address for every write in ppu
         self.address_mirror = 0x400 << mirror
@@ -58,6 +64,9 @@ class PPU:
 
         self.update()
 
+#######################   WRITE FUNCTIONS   #######################
+
+    #register 0x2000
     def write_ppuctrl(self, value):
         """
         7  bit  0
@@ -116,7 +125,7 @@ class PPU:
             self.nmi_at_vblank = True
         else:
             self.nmi_at_vblank = False
-
+    #register 0x2001
     def write_ppumask(self, value):
         """
         7  bit  0
@@ -179,6 +188,37 @@ class PPU:
         else:
             self.blue_emphasis = False
 
+
+
+    
+    #register 0x2003
+    def write_oamaddr(self, value):
+        pass
+    #register 0x2004
+    def write_oamdata(self, value):
+        pass
+
+    #register 0x2005
+    def write_scroll(self, value):
+        if self.first_write:
+            self.ppu_scroll_x = value
+            self.first_write = False
+        else:
+            self.ppu_scroll_y = value
+            self.first_write = True
+
+    #register 0x2006
+    def write_address(self, value):
+        self.address_2006 = np.uint16(self.address_2006 << 8)
+        self.address_2006 |= np.uint16(value)
+
+    #register 0x2007
+    def write_data(self,value):
+        self.VRAM[self.address_2006] = value
+        self.address_2006 += np.uint16(1)
+    
+#######################   READ FUNCTIONS   #######################
+    #register 0x2002
     def read_ppustatus(self):
         """
         7  bit  0
@@ -203,30 +243,24 @@ class PPU:
                    pre-render line.
         """
         value = 0
-        value |= self.sprite_overflow
+        value |= self.vblank
         value <<= 1
         value |= self.sprite_0_hit
         value <<= 1
-        value |= self.vblank
-        value <<= 4
+        value |= self.sprite_overflow
+        value <<= 5
+        self.vblank = 1
 
-        self.vblank = 0
 
         return value
-
-    def write_oamaddr(self):
+    #register 0x2004
+    def read_oamdata(self):
         pass
 
-    def write_scroll(self, value):
-        if self.first_write:
-            self.ppu_scroll_x = value
-            self.first_write = False
-        else:
-            self.ppu_scroll_y = value
-            self.first_write = True
-
-    def write_address(self, value):
+    #register 0x2007
+    def read_data(self):
         pass
+    
 
     def load_palettes(self):
         self.bg_palettes = np.array_split(self.VRAM[0X3F00:0x3F10], 4)
@@ -255,7 +289,7 @@ class PPU:
 
     def update_sprites(self, pattern_table_map):
         sprites_data = np.reshape(self.SPR_RAM, (64, 4))
-        self.all_sprites.update_sprites(pattern_table_map, sprites_data, self.color_handler)
+        self.all_sprites.update_sprites(pattern_table_map, sprites_data, self.color_handler, self.sprite_pattern_table)
         self.all_sprites.draw(self.pic)
 
     def write_spr_ram_dma(self, ram):

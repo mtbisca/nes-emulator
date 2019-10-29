@@ -12,8 +12,10 @@ class SpritesGroup():
 
         if self.sprite_size == (8, 16):
             self.update_sprites = self.update_sprites_rect
+            self.sprite_size = [8, 16]
         else:
             self.update_sprites = self.update_sprites_square
+            self.sprite_size = [8,8]
 
         for key in range(64):
             self.sprites[key] = NESSprite(width=self.sprite_size[0],
@@ -53,8 +55,8 @@ class SpritesGroup():
             tile = self.get_tile(pattern_table_map[pattern_table_flag][data[1] * 16 : (data[1] + 1) * 16])
             palette_index = data[2] & 0b11
             self.set_position(key, (data[3], data[0]))
-            boolx = (data[2] & 0b10000000) == 1
-            booly = (data[2] & 0b01000000) == 1
+            booly = (data[2] & 0b10000000) > 0
+            boolx = (data[2] & 0b01000000) > 0
             surface = pygame.transform.flip(color_handler.set_color_to_sprite(tile, palette_index), boolx, booly)
             self.set_surface(key, surface)
 

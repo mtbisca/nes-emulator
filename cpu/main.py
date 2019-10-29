@@ -42,6 +42,9 @@ class CPU:
 
         self.running = True
 
+        self.nmi_activated = False
+        self.on_nmi = False
+
         # Interruption Trigger Flags
         self.trigger_irq = False
         self.trigger_nmi = False
@@ -269,20 +272,28 @@ class CPU:
         #Write memory in ppu flags
         elif address < 0x4000:
             address = address % 0x2008
-
+            self.mem[address] = value
             if address == 0x2000:
-                self.ppu.write_ppuctrl(value)
+                self.ppu_ref.write_ppuctrl(value)
+                self.nmi_activated = (value & 0b10000000) > 0
             elif address == 0x2001:
-                self.ppu.write_ppumask(value)
+                self.ppu_ref.write_ppumask(value)
             elif address == 0x2003:
+                self.ppu_ref.write_oamaddr(value)
 
-            #elif address == 0x2003:
-            #elif address == 0x2004:
-            #elif address == 0x2005:
-            #elif address == 0x2006:
-            #elif address == 0x2007:
+            elif address == 0x2004:
+                self.ppu_ref.write_oamdata(value)
 
-                self.mem[address] = value
+            elif address == 0x2005:
+                self.ppu_ref.write_scroll(value)
+
+            elif address == 0x2006:
+                self.ppu_ref.write_address(value)
+
+            elif address == 0x2007:
+                self.ppu_ref.write_data(value)
+
+                
 
         elif address == 0x4014:
             self.mem[address] = value
@@ -308,11 +319,15 @@ class CPU:
             value = self.mem[address]
         elif address < 0x4000:
             address = address % 0x2008
-
             if address == 0x2002:
-                value = self.ppu.read_ppustatus()
-            value = self.mem[address]
-        if address == 0x4016:
+                value = self.ppu_ref.read_ppustatus()
+            elif address == 0x2004:
+                value = self.ppu_ref.read_oamdata()
+            elif address == 0x2007:
+                value = self.ppu_ref.read_data()
+            else:
+                value = self.mem[address]
+        elif address == 0x4016:
             if self.readControls == 1:
                 if self.timeControl == 0:
                     value = self.keys[pygame.K_e]
@@ -363,6 +378,7 @@ class CPU:
         Bit Test
         """
         memory_value = self.read_memory(address)
+        
         if (self.a & memory_value) == np.uint8(0):
             self.zero = 1
         else:
@@ -732,9 +748,13 @@ class CPU:
     def push_to_stack(self, value):
         self.mem[self.sp] = value
         self.sp -= np.uint16(1)
+        if self.sp < 0x0100:
+            self.sp = 0x01ff - (0x0ff - self.sp)
 
     def pull_from_stack(self):
         self.sp += np.uint16(1)
+        if self.sp > 0x01ff:
+            self.sp = 0x0100 + (self.sp - 0x01ff)
         value = self.mem[self.sp]
         return value
 
@@ -888,6 +908,7 @@ class CPU:
         """
         self.plp() 
         self.pull_pc_from_stack()
+        self.on_nmi = False
         return None, 6
 
     def rts(self):
@@ -1549,13 +1570,13 @@ class CPU:
 
             pygame.event.poll()
             self.keys = pygame.key.get_pressed()
-            if self.keys[pygame.K_RETURN]:
+            if self.keys[pygame.K_0]:
                 pygame.display.quit()
                 exit()
             # every some instructions calculate sleep fraction
             if (run_count == 20):
                 end = time.time()
-                sleep_time += 0.0000559*cycles - (end - start)
+                sleep_time += 0.0559*cycles - (end - start)
 
                 start = time.time()
                 run_count = 0
@@ -1564,9 +1585,10 @@ class CPU:
 
             # if total sleep so far is grater than the minimum required by the system sleep this time
             if sleep_time > 0.001:
-                self.ppu_ref.update()
-                self.trigger_nmi = True
-
+                if self.nmi_activated and not(self.on_nmi):
+                    self.ppu_ref.update()
+                    self.trigger_nmi = True
+                    self.on_nmi = True
                 sleep_time = 0
 
 
@@ -1580,9 +1602,9 @@ class CPU:
         if opcode != 0x40:  # do not add 1 to pc when running an RTI
             self.pc += np.uint16(1)
         #if address is None and opcode != 0:
-        #    self.print_state()
+        #   self.print_state()
         #elif opcode != 0:
-        #    self.print_state_ls(address)
+        #   self.print_state_ls(address)
         return cycle
 
 
