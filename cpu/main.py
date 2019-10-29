@@ -274,13 +274,23 @@ class CPU:
                 self.ppu.write_ppuctrl(value)
             elif address == 0x2001:
                 self.ppu.write_ppumask(value)
+            #OAM address port
+            #Write the address of OAM you want to access here. Most games just write $00 here and then use OAMDMA.
+            # (DMA is implemented in the 2A03/7 chip and works by repeatedly writing to OAMDATA)
             elif address == 0x2003:
+                self.ppu_ref.write_oamaddr(value)
 
-            #elif address == 0x2003:
-            #elif address == 0x2004:
-            #elif address == 0x2005:
-            #elif address == 0x2006:
-            #elif address == 0x2007:
+            elif address == 0x2004:
+                self.ppu_ref.write_oamdata(value)
+
+            elif address == 0x2005:
+                self.ppu_ref.write_scroll(value)
+
+            elif address == 0x2006:
+                self.ppu_ref.write_address(value)
+
+            elif address == 0x2007:
+                self.ppu_ref.write_data(value)
 
                 self.mem[address] = value
 
@@ -308,10 +318,14 @@ class CPU:
             value = self.mem[address]
         elif address < 0x4000:
             address = address % 0x2008
-
             if address == 0x2002:
-                value = self.ppu.read_ppustatus()
-            value = self.mem[address]
+                value = self.ppu_ref.read_ppustatus()
+            elif address == 0x2004:
+                value = self.ppu_red.read_oamdata()
+            elif address == 0x2007:
+                value = self.ppu_ref.read_data()
+            else:
+                value = self.mem[address]
         if address == 0x4016:
             if self.readControls == 1:
                 if self.timeControl == 0:
