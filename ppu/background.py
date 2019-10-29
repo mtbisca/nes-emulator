@@ -20,13 +20,27 @@ class Background:
                 row += 1
             self.blocks[row][column] = np.array(block)
 
+    def _get_quad_number(self, column, row):
+        if column % 4 < 2:
+            if row % 4 < 2:
+                quad_number = 0
+            else:
+                quad_number = 2
+        else:
+            if row % 4 < 2:
+                quad_number = 1
+            else:
+                quad_number = 3
+
+        return quad_number
+
     def update_background(self, pattern_table, nametable, attribute_table):
         self._create_blocks(attribute_table)
         row = 0
         for idx, pattern_table_index in enumerate(nametable):
             low_bytes = pattern_table[pattern_table_index * 16:
-                                      (pattern_table_index + 1) * 8]
-            high_bytes = pattern_table[(pattern_table_index + 1) * 8:
+                                      (pattern_table_index * 16) + 8]
+            high_bytes = pattern_table[(pattern_table_index * 16) + 8:
                                        (pattern_table_index + 1) * 16]
 
             low_bytes = np.reshape(np.unpackbits(low_bytes, axis=0), (8, 8))
@@ -39,15 +53,6 @@ class Background:
             if column == 0 and row > 0:
                 row += 1
             block_coord = (row // 4, column // 4)
-            if column % 4 < 2:
-                if row % 4 < 2:
-                    quad_number = 0
-                else:
-                    quad_number = 2
-            else:
-                if row % 4 < 2:
-                    quad_number = 1
-                else:
-                    quad_number = 3
+            quad_number = self._get_quad_number(column, row)
 
             palette_index = self.blocks[block_coord[0]][block_coord[1]][quad_number]
