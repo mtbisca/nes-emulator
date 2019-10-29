@@ -272,7 +272,7 @@ class CPU:
         #Write memory in ppu flags
         elif address < 0x4000:
             address = address % 0x2008
-
+            self.mem[address] = value
             if address == 0x2000:
                 self.ppu_ref.write_ppuctrl(value)
                 self.nmi_activated = (value & 0b10000000) > 0
@@ -293,7 +293,7 @@ class CPU:
             elif address == 0x2007:
                 self.ppu_ref.write_data(value)
 
-                self.mem[address] = value
+                
 
         elif address == 0x4014:
             self.mem[address] = value
@@ -332,7 +332,6 @@ class CPU:
                 if self.timeControl == 0:
                     value = self.keys[pygame.K_e]
                 elif self.timeControl == 1:
-                    value = self.keys[pygame.K_r]
                     value = self.keys[pygame.K_r]
                 elif self.timeControl == 2:
                     value = self.keys[pygame.K_SPACE]
@@ -379,7 +378,7 @@ class CPU:
         Bit Test
         """
         memory_value = self.read_memory(address)
-        print(memory_value)
+        
         if (self.a & memory_value) == np.uint8(0):
             self.zero = 1
         else:
@@ -1571,7 +1570,7 @@ class CPU:
 
             pygame.event.poll()
             self.keys = pygame.key.get_pressed()
-            if self.keys[pygame.K_RETURN]:
+            if self.keys[pygame.K_0]:
                 pygame.display.quit()
                 exit()
             # every some instructions calculate sleep fraction
@@ -1602,10 +1601,10 @@ class CPU:
         address, cycle = instruction()
         if opcode != 0x40:  # do not add 1 to pc when running an RTI
             self.pc += np.uint16(1)
-        if address is None and opcode != 0:
-           self.print_state()
-        elif opcode != 0:
-           self.print_state_ls(address)
+        #if address is None and opcode != 0:
+        #   self.print_state()
+        #elif opcode != 0:
+        #   self.print_state_ls(address)
         return cycle
 
 
