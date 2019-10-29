@@ -279,12 +279,19 @@ class CPU:
             elif address == 0x2001:
                 self.ppu_ref.write_ppumask(value)
             elif address == 0x2003:
+                self.ppu_ref.write_oamaddr(value)
 
-            #elif address == 0x2003:
-            #elif address == 0x2004:
-            #elif address == 0x2005:
-            #elif address == 0x2006:
-            #elif address == 0x2007:
+            elif address == 0x2004:
+                self.ppu_ref.write_oamdata(value)
+
+            elif address == 0x2005:
+                self.ppu_ref.write_scroll(value)
+
+            elif address == 0x2006:
+                self.ppu_ref.write_address(value)
+
+            elif address == 0x2007:
+                self.ppu_ref.write_data(value)
 
                 self.mem[address] = value
 
@@ -311,14 +318,16 @@ class CPU:
             address = address % 0x800
             value = self.mem[address]
         elif address < 0x4000:
-            # address = address % 0x2008
-
+            address = address % 0x2008
             if address == 0x2002:
                 value = self.ppu_ref.read_ppustatus()
-                return value
+            elif address == 0x2004:
+                value = self.ppu_red.read_oamdata()
+            elif address == 0x2007:
+                value = self.ppu_ref.read_data()
             else:
                 value = self.mem[address]
-        if address == 0x4016:
+        elif address == 0x4016:
             if self.readControls == 1:
                 if self.timeControl == 0:
                     value = self.keys[pygame.K_e]
