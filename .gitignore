@@ -9,3 +9,7 @@ ext/asm6/asm6
 other/*
 cpu/__pycache__/
 ppu/__pycache__/
+
+game/gradroad.bin
+
+game/sprite_test.bin
