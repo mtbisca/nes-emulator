@@ -1574,10 +1574,13 @@ class CPU:
                 pygame.display.quit()
                 exit()
             # every some instructions calculate sleep fraction
-            if (run_count == 20):
+            if (run_count == 80):
                 end = time.time()
                 sleep_time += 0.0559*cycles - (end - start)
-
+                if self.nmi_activated and not(self.on_nmi):
+                    self.ppu_ref.update()
+                    self.trigger_nmi = True
+                    self.on_nmi = True
                 start = time.time()
                 run_count = 0
                 cycles = 0
@@ -1585,10 +1588,7 @@ class CPU:
 
             # if total sleep so far is grater than the minimum required by the system sleep this time
             if sleep_time > 0.001:
-                if self.nmi_activated and not(self.on_nmi):
-                    self.ppu_ref.update()
-                    self.trigger_nmi = True
-                    self.on_nmi = True
+
                 sleep_time = 0
 
 
