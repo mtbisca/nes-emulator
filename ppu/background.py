@@ -1,5 +1,5 @@
 import numpy as np
-
+import pygame
 
 class Background:
     def __init__(self):
@@ -34,9 +34,10 @@ class Background:
 
         return quad_number
 
-    def update_background(self, pattern_table, nametable, attribute_table):
+    def update_background(self, pattern_table, nametable, attribute_table, color_handler):
         self._create_blocks(attribute_table)
         row = 0
+        tiles_table = []
         for idx, pattern_table_index in enumerate(nametable):
             low_bytes = pattern_table[pattern_table_index * 16:
                                       (pattern_table_index * 16) + 8]
@@ -56,3 +57,11 @@ class Background:
             quad_number = self._get_quad_number(column, row)
 
             palette_index = self.blocks[block_coord[0]][block_coord[1]][quad_number]
+
+            tiles_table.append(color_handler.set_color_to_bg_block(tile.transpose(), palette_index))
+        self.tiles_table = np.array(tiles_table).reshape(30, 32).transpose()
+    
+    def draw(self, picture):
+        for x, row in enumerate(self.tiles_table):
+            for y, tile in enumerate(row):
+                picture.blit(tile, (x*8, y*8))

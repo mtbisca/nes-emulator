@@ -6,10 +6,12 @@ class ColorHandler:
         self.ppu_VRAM = ppu_VRAM
         self.bg_palettes = np.array_split(self.ppu_VRAM[0x3F00:0x3F10], 4)
         self.sprite_palettes = np.array_split(self.ppu_VRAM[0x3F10:0X3F20], 4)
-        # self.sprite_palettes = [[0x15,0x0B,0x30,0x0A],[0x00,0x04,0x14,0x0F],[0x00,0x17,0x27,0x0F],[0x15,0x0B,0x30,0x0A]]
 
     def set_color_to_sprite(self, sprite_array, palette_index):
-        return self.set_color_to_block(sprite_array, self.sprite_palettes[palette_index])
+        palette = self.sprite_palettes[palette_index]
+        sprite_surface = self.set_color_to_block(sprite_array, palette)
+        sprite_surface.set_colorkey(self.sys_palette_to_rgb(palette[0]))
+        return sprite_surface
 
     def set_color_to_bg_block(self, bg_block_array, palette_index):
         return self.set_color_to_block(bg_block_array, self.bg_palettes[palette_index])
@@ -19,29 +21,6 @@ class ColorHandler:
         sys_palette_to_rgb = np.vectorize(lambda pix: self.sys_palette_to_rgb(pix))
         colored_block = np.dstack(sys_palette_to_rgb(index_to_sys_palette(block_array)))
         return pygame.surfarray.make_surface(colored_block)
-
-    # OLD CODE: might need it (TODO: delete if unecessary)
-    # def set_color_to_bg_block(self, block, block_index, palette_index):
-    #     attr_table_base_addr = 0x23C0 + (0x0400 * nametable_index)
-    #     attr_byte = self.VRAM[nametable_index + block_index]
-
-    #     bottom_right_palette = attr_byte & 0b11000000
-    #     bottom_left_palette = attr_byte & 0b00110000
-    #     top_right_palette = attr_byte & 0b00001100
-    #     top_left_palette = attr_byte & 0b00000011
-
-    #     top_left_box = block[:8, :8]
-    #     top_right_box = block[:8, 8:16]
-    #     bottom_left_box = block[8:16, :8]
-    #     bottom_right_box = block[8:16, 8:16]
-
-    #     block[:8, :8] = self.set_rgb_colors(top_left_box, self.bg_palettes[top_left_palette])
-    #     block[:8, 8:16] = self.set_rgb_colors(top_right_box, self.bg_palettes[top_right_palette])
-    #     block[8:16, :8] = self.set_rgb_colors(bottom_left_box, self.bg_palettes[bottom_left_palette])
-    #     block[8:16, 8:16] = self.set_rgb_colors(bottom_right_box, self.bg_palettes[bottom_right_palette])
-        
-    #     print(block)
-    #     return pygame.pixelcopy.make_surface(block)
 
     def sys_palette_to_rgb(self, pixel):
         return system_palette[pixel]
@@ -91,7 +70,7 @@ system_palette = [(0x75, 0x75, 0x75),
                         (0x4F, 0xDF, 0x4B),
                         (0x58, 0xF8, 0x98),
                         (0x00, 0xEB, 0xDB),
-                        (0x00, 0x00, 0x00),
+                        (0x80, 0x80, 0x80),
                         (0x00, 0x00, 0x00),
                         (0x00, 0x00, 0x00),
                         (0xFF, 0xFF, 0xFF),
@@ -110,3 +89,4 @@ system_palette = [(0x75, 0x75, 0x75),
                         (0x00, 0x00, 0x00),
                         (0x00, 0x00, 0x00),
                         (0x00, 0x00, 0x00)]
+                        
