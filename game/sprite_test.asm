@@ -14,7 +14,7 @@ MIRRORING = %0001 ;%0000 = horizontal, %0001 = vertical, %1000 = four-screen
     carRight                .dsw 1
     carTop                  .dsw 1
     carBottom               .dsw 1
-
+    buttons                 .dsw 1  
     .ende
 
  ;----------------------------------------------------------------
@@ -35,18 +35,46 @@ MIRRORING = %0001 ;%0000 = horizontal, %0001 = vertical, %1000 = four-screen
 
 
 Reset:
-  LDA #$3D
-  STA $500
-Loop:
-  LDA $500
-  ADC #$01
-  STA $500
-  LDA #$C5
-  BIT $500
-  BVC Loop
-  BRK
+  Forever:
+  JMP Forever     ;jump back to Forever, infinite loop
+
+
 
 NMI:
+  LDA #$00
+  STA $2003  ; set the low byte (00) of the RAM address
+  LDA #$02
+  STA $4014  ; set the high byte (02) of the RAM address, start the transfer
+ReadController:
+  LDA #$01
+  STA $4016
+  LDA #$00
+  STA $4016        ; tell both the controllers to latch buttons
+  LDX #$08
+ReadControllerLoop:
+  LDA $4016
+  LSR A            ; bit0 -> Carry
+  ROL buttons      ; bit0 <- Carry
+  DEX
+  BNE ReadControllerLoop
+  LDA buttons
+  AND #%00000001
+  BEQ goleft
+  LDA $0203
+  ADC #$01
+  STA $0203
+goleft:
+  LDA buttons
+  AND #%00000010
+  BEQ done
+  LDA $0203
+  SBC #$01
+  STA $0203
+
+done:
+
+  RTI
+
 
    ;NOTE: NMI code goes here
 
@@ -64,3 +92,12 @@ IRQ:
 .dw NMI
 .dw Reset
 .dw IRQ
+
+
+.base $0000
+.incbin "dino.chr"
+.incbin "cars.chr"
+.incbin "mortarboard.chr"
+.pad $1000, #$00
+.incbin "bg.chr"
+.pad $6000, $FF
