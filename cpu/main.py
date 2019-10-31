@@ -1,7 +1,6 @@
 import numpy as np
 import sys
 import time
-from cpu.controls import CONTROL
 import pygame
 
 
@@ -330,13 +329,14 @@ class CPU:
         elif address == 0x4016:
             if self.readControls == 1:
                 if self.timeControl == 0:
-                    value = self.keys[pygame.K_e]
+                    value = self.keys[pygame.K_v]
                 elif self.timeControl == 1:
-                    value = self.keys[pygame.K_r]
+                    value = self.keys[pygame.K_b]
                 elif self.timeControl == 2:
                     value = self.keys[pygame.K_SPACE]
                 elif self.timeControl == 3:
                     value = self.keys[pygame.K_RETURN]
+                    print(self.keys[pygame.K_RETURN])
                 elif self.timeControl == 4:
                     value = self.keys[pygame.K_w]
                 elif self.timeControl == 5:
@@ -378,7 +378,6 @@ class CPU:
         Bit Test
         """
         memory_value = self.read_memory(address)
-        
         if (self.a & memory_value) == np.uint8(0):
             self.zero = 1
         else:
@@ -423,6 +422,7 @@ class CPU:
         Branch if Equal
         """
         offset = self.relative_address()
+
         if self.zero == 1:
             self.pc += offset
             return None, 3
@@ -691,6 +691,7 @@ class CPU:
 
     def lda_absolute(self):
         address = self.absolute_address()
+        if address == 0x2002:
         self.a = self.read_memory(address)
         self.set_zero_and_neg(self.a)
         return address, 4
@@ -1135,7 +1136,7 @@ class CPU:
         """
         Transfer X to Stack Pointer
         """
-        self.sp = 0x0100 + self.x 
+        self.sp = 0x0100 + self.x
         return None, 2
 
     def tya(self):
