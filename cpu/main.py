@@ -1570,7 +1570,7 @@ class CPU:
 
             pygame.event.poll()
             self.keys = pygame.key.get_pressed()
-            if self.keys[pygame.K_0]:
+            if self.keys[pygame.K_ESCAPE]:
                 pygame.display.quit()
                 exit()
             # every some instructions calculate sleep fraction
