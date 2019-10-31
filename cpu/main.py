@@ -336,7 +336,7 @@ class CPU:
                     value = self.keys[pygame.K_SPACE]
                 elif self.timeControl == 3:
                     value = self.keys[pygame.K_RETURN]
-                    print(self.keys[pygame.K_RETURN])
+
                 elif self.timeControl == 4:
                     value = self.keys[pygame.K_w]
                 elif self.timeControl == 5:
@@ -691,7 +691,6 @@ class CPU:
 
     def lda_absolute(self):
         address = self.absolute_address()
-        if address == 0x2002:
         self.a = self.read_memory(address)
         self.set_zero_and_neg(self.a)
         return address, 4
