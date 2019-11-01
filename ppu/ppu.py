@@ -13,6 +13,7 @@ class PPU:
         # initializing ppu memory
         self.VRAM = np.zeros(0x10000, dtype=np.uint8)
         self.VRAM[:0x2000] = pattern_tables
+        self.tiles_map = self.make_tile_map(pattern_tables)
         self.SPR_RAM = np.zeros(0x0100, dtype=np.uint8)
         self.scale_size = scale_size
 
@@ -64,6 +65,22 @@ class PPU:
         self.screen.blit(pygame.transform.scale(self.pic, (self.scale_size * self.width, self.scale_size * self.height)), (0, 0))
 
         self.update()
+
+    def make_tile_map(self, full_pattern_table):
+        tiles_map = []
+        for index in range(0x200):
+            low_bytes = full_pattern_table[index * 16:
+                                      (index * 16) + 8]
+            high_bytes = full_pattern_table[(index * 16) + 8:
+                                       (index + 1) * 16]
+
+            low_bytes = np.reshape(np.unpackbits(low_bytes, axis=0), (8, 8))
+            high_bytes = np.reshape(np.unpackbits(high_bytes, axis=0), (8, 8))
+
+            # Contains indexes to the frame palette
+            tile = (high_bytes << 1) | low_bytes
+            tiles_map.append(tile.transpose())
+        return np.array(tiles_map)
 
 #######################   WRITE FUNCTIONS   #######################
 
@@ -280,7 +297,8 @@ class PPU:
         self.background = Background()
         self.pic = pygame.surface.Surface((self.width, self.width))
         # Update parts of PPU
-        pattern_table_map = np.split(self.VRAM[0x0:0x2000], 2)
+        # pattern_table_map = np.split(self.VRAM[0x0:0x2000], 2)
+        pattern_table_map = np.split(self.tiles_map, 2)
 
         if self.show_background:
             self.update_background(pattern_table_map)

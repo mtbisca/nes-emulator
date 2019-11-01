@@ -52,7 +52,8 @@ class SpritesGroup():
     def update_sprites_square(self, pattern_table_map, sprite_data, color_handler, pattern_table_flag):
         for key in range(64):
             data = sprite_data[key]
-            tile = self.get_tile(pattern_table_map[pattern_table_flag][data[1] * 16 : (data[1] + 1) * 16])
+            # tile = self.get_tile(pattern_table_map[pattern_table_flag][data[1] * 16 : (data[1] + 1) * 16])
+            tile = pattern_table_map[pattern_table_flag][data[1]]
             palette_index = data[2] & 0b11
             self.set_position(key, (data[3], data[0]))
             booly = (data[2] & 0b10000000) > 0
