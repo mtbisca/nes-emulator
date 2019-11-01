@@ -3,41 +3,22 @@ import pygame
 
 class Background:
     def __init__(self):
-        self.blocks = np.empty((8, 8), dtype=object)
+        self.background_table = np.empty((256, 240, 3), dtype=int)
 
-    def _create_blocks(self, attribute_table):
-        len_attribute_table = attribute_table.shape[0]
-        attribute_table = np.reshape(np.unpackbits(attribute_table),
-                                     (len_attribute_table, 8))
-        row = 0
-        for idx, byte in enumerate(attribute_table):
-            block = list()
-            for bit_number in range(0, 8, 2):
-                palette_idx = (byte[bit_number] << 1) | byte[bit_number + 1]
-                block.append(palette_idx)
-            column = idx % 8
-            if column == 0 and row > 0:
-                row += 1
-            self.blocks[row][column] = np.array(block)
+    def get_palette_index(self, nametable_row, nametable_col, attribute_table):
+        block_row = nametable_row // 4
+        block_col = nametable_col // 4
 
-    def _get_quad_number(self, column, row):
-        if column % 4 < 2:
-            if row % 4 < 2:
-                quad_number = 0
-            else:
-                quad_number = 2
-        else:
-            if row % 4 < 2:
-                quad_number = 1
-            else:
-                quad_number = 3
+        attr_index = np.ravel_multi_index((block_row, block_col), (8, 8))
 
-        return quad_number
+        shift_value = 0
+        shift_value += 4 if nametable_row % 4 >= 2 else 0   # 0 = top, 1 = bottom
+        shift_value += 2 if nametable_col % 4 >= 2 else 0   # 0 = left, 1 = right 
 
-    def update_background(self, pattern_table, nametable, attribute_table, color_handler):
-        self._create_blocks(attribute_table)
-        row = 0
-        tiles_table = []
+        palette_index = (attribute_table[attr_index] & (3 << shift_value)) >> shift_value
+        return palette_index
+
+    def update_background(self, pattern_table, nametable, attribute_table, color_handler, pic):
         for idx, pattern_table_index in enumerate(nametable):
             low_bytes = pattern_table[pattern_table_index * 16:
                                       (pattern_table_index * 16) + 8]
@@ -50,18 +31,12 @@ class Background:
             # Contains indexes to the frame palette
             tile = (high_bytes << 1) | low_bytes
 
-            column = idx % 32
-            if column == 0 and row > 0:
-                row += 1
-            block_coord = (row // 4, column // 4)
-            quad_number = self._get_quad_number(column, row)
+            nametable_row = idx // 32
+            nametable_col = idx % 32
+            palette_index = self.get_palette_index(nametable_row, nametable_col, attribute_table)
+            
+            x_coord = nametable_col * 8
+            y_coord = nametable_row * 8
+            self.background_table[x_coord:x_coord + 8, y_coord:y_coord + 8] = color_handler.set_color_to_bg_block(tile.transpose(), palette_index)
+        pic.blit(pygame.surfarray.make_surface(self.background_table), (0, 0))
 
-            palette_index = self.blocks[block_coord[0]][block_coord[1]][quad_number]
-
-            tiles_table.append(color_handler.set_color_to_bg_block(tile.transpose(), palette_index))
-        self.tiles_table = np.array(tiles_table).reshape(30, 32).transpose()
-    
-    def draw(self, picture):
-        for x, row in enumerate(self.tiles_table):
-            for y, tile in enumerate(row):
-                picture.blit(tile, (x*8, y*8))

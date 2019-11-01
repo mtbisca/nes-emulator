@@ -299,8 +299,8 @@ class PPU:
             pattern_table_map[self.background_pattern_table],
             self.VRAM[self.nametable_address:attribute_table_address],
             self.VRAM[attribute_table_address:attribute_table_address + 0x40],
-            self.color_handler)
-        self.background.draw(self.pic)
+            self.color_handler,
+            self.pic)
 
     def update_sprites(self, pattern_table_map):
         sprites_data = np.reshape(self.SPR_RAM, (64, 4))

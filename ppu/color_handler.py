@@ -9,7 +9,7 @@ class ColorHandler:
 
     def set_color_to_sprite(self, sprite_array, palette_index):
         palette = self.sprite_palettes[palette_index]
-        sprite_surface = self.set_color_to_block(sprite_array, palette)
+        sprite_surface = pygame.surfarray.make_surface(self.set_color_to_block(sprite_array, palette))
         sprite_surface.set_colorkey(self.sys_palette_to_rgb(palette[0]))
         return sprite_surface
 
@@ -17,10 +17,9 @@ class ColorHandler:
         return self.set_color_to_block(bg_block_array, self.bg_palettes[palette_index])
 
     def set_color_to_block(self, block_array, palette):
-        index_to_sys_palette = np.vectorize(lambda pix: palette[pix] if pix < 4 else 0)
-        sys_palette_to_rgb = np.vectorize(lambda pix: self.sys_palette_to_rgb(pix))
-        colored_block = np.dstack(sys_palette_to_rgb(index_to_sys_palette(block_array)))
-        return pygame.surfarray.make_surface(colored_block)
+        color_translator = np.vectorize(lambda pix: self.sys_palette_to_rgb(palette[pix]) if pix < 4 else self.sys_palette_to_rgb(0))
+        colored_block = np.dstack(color_translator(block_array))
+        return colored_block
 
     def sys_palette_to_rgb(self, pixel):
         return system_palette[pixel]
