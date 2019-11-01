@@ -43,6 +43,7 @@ class PPU:
         self.blue_emphasis = None
 
         self.first_write = True
+        self.oam_addr = 0
 
         self.sprite_overflow = 0
         self.sprite_0_hit = 0
@@ -55,6 +56,7 @@ class PPU:
         self.width = 256
         self.height = 224
         self.color = (1,1,1)
+        
 
         pygame.init()
         self.all_sprites = SpritesGroup(self.sprite_size)
@@ -211,10 +213,12 @@ class PPU:
     
     #register 0x2003
     def write_oamaddr(self, value):
-        pass
+        self.oam_addr = value
+
     #register 0x2004
     def write_oamdata(self, value):
-        pass
+        self.SPR_RAM[self.oam_addr] = value
+        self.oam_addr = (self.oam_addr+ 1) & 0xFF
 
     #register 0x2005
     def write_scroll(self, value):
@@ -232,6 +236,7 @@ class PPU:
 
     #register 0x2007
     def write_data(self,value):
+
         self.VRAM[self.address_2006] = value
         self.address_2006 += np.uint16(1)
     
