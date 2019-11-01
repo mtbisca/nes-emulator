@@ -1574,7 +1574,7 @@ class CPU:
                 pygame.display.quit()
                 exit()
             # every some instructions calculate sleep fraction
-            if (run_count == 20):
+            if (run_count == 30):
                 end = time.time()
                 sleep_time += 0.0559*cycles - (end - start)
                 if self.nmi_activated and not(self.on_nmi):
