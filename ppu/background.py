@@ -23,16 +23,6 @@ class Background:
     def update_background(self, pattern_table, nametable, attribute_table,
                           color_handler, pic):
         for idx in range(0, len(nametable), 2):
-            # low_bytes = pattern_table[pattern_table_index * 16:
-            #                           (pattern_table_index * 16) + 8]
-            # high_bytes = pattern_table[(pattern_table_index * 16) + 8:
-            #                            (pattern_table_index + 1) * 16]
-            #
-            # low_bytes = np.reshape(np.unpackbits(low_bytes, axis=0), (8, 8))
-            # high_bytes = np.reshape(np.unpackbits(high_bytes, axis=0), (8, 8))
-            #
-            # # Contains indexes to the frame palette
-            # tile = (high_bytes << 1) | low_bytes
             nametable_row = idx // 32
 
             if nametable_row % 2 > 0:
@@ -41,10 +31,10 @@ class Background:
             nametable_col = idx % 32
 
             superior_tiles = np.concatenate((pattern_table[nametable[idx]],
-                                             pattern_table[nametable[idx + 31]]),
+                                             pattern_table[nametable[idx + 32]]),
                                             axis=1)
             inferior_tiles = np.concatenate((pattern_table[nametable[idx + 1]],
-                                             pattern_table[nametable[idx + 32]]),
+                                             pattern_table[nametable[idx + 33]]),
                                             axis=1)
             tiles = np.concatenate((superior_tiles, inferior_tiles), axis=0)
 
