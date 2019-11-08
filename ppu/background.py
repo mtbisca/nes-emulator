@@ -1,4 +1,5 @@
 import numpy as np
+import threading
 import pygame
 
 
@@ -20,9 +21,19 @@ class Background:
                     3 << shift_value)) >> shift_value
         return palette_index
 
-    def update_background(self, pattern_table, nametable, attribute_table,
-                          color_handler, pic):
-        for idx in range(0, len(nametable), 2):
+    def thread_part_make_bg(self,pattern_table, nametable, attribute_table,
+                          color_handler, range):
+        for idx in range:
+            # low_bytes = pattern_table[pattern_table_index * 16:
+            #                           (pattern_table_index * 16) + 8]
+            # high_bytes = pattern_table[(pattern_table_index * 16) + 8:
+            #                            (pattern_table_index + 1) * 16]
+            #
+            # low_bytes = np.reshape(np.unpackbits(low_bytes, axis=0), (8, 8))
+            # high_bytes = np.reshape(np.unpackbits(high_bytes, axis=0), (8, 8))
+            #
+            # # Contains indexes to the frame palette
+            # tile = (high_bytes << 1) | low_bytes
             nametable_row = idx // 32
 
             if nametable_row % 2 > 0:
@@ -47,4 +58,17 @@ class Background:
             self.background_table[x_coord:x_coord + 16,
             y_coord:y_coord + 16] = color_handler.set_color_to_bg_block(tiles,
                                                                         palette_index)
+
+    def update_background(self, pattern_table, nametable, attribute_table,
+                          color_handler, pic):
+        all_range = np.arange(0, len(nametable), 2)
+        sub_ranges = np.split(all_range, 16)
+        all_threads = []
+        for range in sub_ranges:
+            thread = threading.Thread(target=self.thread_part_make_bg, args=(pattern_table, nametable, attribute_table,
+                          color_handler, range,))
+            thread.start()
+            all_threads.append(thread)
+        for t in all_threads:
+            t.join()
         pic.blit(pygame.surfarray.make_surface(self.background_table), (0, 0))

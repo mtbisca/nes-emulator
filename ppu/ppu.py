@@ -17,6 +17,8 @@ class PPU:
         self.SPR_RAM = np.zeros(0x0100, dtype=np.uint8)
         self.scale_size = scale_size
 
+        self.Buffer = 0
+
         self.sprite_palettes = []
         self.bg_palettes = []
 
@@ -50,6 +52,7 @@ class PPU:
         self.vblank = 1
 
         self.address_2006 = np.uint16(0)
+        self.write_flag = True
 
         # add this address for every write in ppu
         self.address_mirror = 0x400 << mirror
@@ -233,14 +236,36 @@ class PPU:
 
     #register 0x2006
     def write_address(self, value):
-        self.address_2006 = np.uint16(self.address_2006 << 8)
-        self.address_2006 |= np.uint16(value)
+        if self.write_flag == True:
+            self.address_2006 = np.uint16((value & 0xFF) << 8)
+            self.write_flag = False
+        else:
+            self.address_2006 += np.uint16(value & 0xFF)
+            self.write_flag = True
 
     #register 0x2007
     def write_data(self,value):
 
-        self.VRAM[self.address_2006] = value
-        self.address_2006 += np.uint16(1)
+        #ppu name table mirroring
+        if self.address_2006 >= 0x2000 and self.address_2006 < 0x3000:
+            self.VRAM[self.address_2006 + self.address_mirror] = value
+            self.VRAM[self.address_2006] = value
+
+        #ppu memory mirroring
+        elif self.address_2006 < 0x3F00: 
+            self.address_2006 = self.address_2006 % 0x3000
+            self.VRAM[self.address_2006 + self.address_mirror] = value
+            self.VRAM[self.address_2006] = value
+
+
+        #ppu memory mirroring 0x3F20 - 0x3FFF
+        elif self.address_2006 >= 0x3F20 and self.address_2006 < 0x4000:
+            self.VRAM[self.address_2006 % 0x3F20] = value
+        
+        #ppu memory mirroring 0x4000 - 0x10000
+        else:
+            self.VRAM[self.address_2006 % 0x3FFF] = value
+        self.address_2006 += self.increment_address
     
 #######################   READ FUNCTIONS   #######################
     #register 0x2002
@@ -278,13 +303,22 @@ class PPU:
 
 
         return value
-    #register 0x2004
-    def read_oamdata(self):
-        pass
 
     #register 0x2007
     def read_data(self):
-        pass
+        value = 0
+        address = np.uint16(self.address_2006)
+        if address < 0x3F00:
+            value = self.Buffer
+            self.Buffer = self.VRAM[address]
+        elif address < 0x3F20:
+            self.Buffer = self.VRAM[address]
+            value = self.VRAM[address]
+        elif address < 0x4000:
+            address = address % 0x3F20
+            self.Buffer = self.VRAM[address]
+            value = self.VRAM[address]
+        return value
     
 
     def load_palettes(self):
