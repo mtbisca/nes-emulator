@@ -56,6 +56,8 @@ class PPU:
         self.width = 256
         self.height = 224
         self.color = (1,1,1)
+
+        self.shouldUpdate = True
         
 
         pygame.init()
@@ -298,6 +300,11 @@ class PPU:
         # if event.type == pygame.QUIT:
         #     pygame.display.quit()
         #     return False
+        if not self.shouldUpdate:
+            self.shouldUpdate = True
+            return
+        else:
+            self.shouldUpdate = False
         self.color_handler = ColorHandler(self.VRAM)
         self.background = Background()
         self.pic = pygame.surface.Surface((self.width, self.width))
