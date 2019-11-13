@@ -16,7 +16,7 @@ class APU:
         self.stream_DMC = 0
 
 
-        #
+        
         self.volume = 0
         self.frequency = 44100
         self.length = 1
