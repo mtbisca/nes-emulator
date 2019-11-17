@@ -313,11 +313,19 @@ class CPU:
             
     def read_memory(self ,address):
         value = 0x00
+
+        # System memory at $0000-$07FF is mirrored at
+        # $0800-$0FFF, $1000-$17FF, and $1800-$1FFF
+        # $0173 is the same as accessing memory at $0973, $1173, or $1973
         if address < 0x2000:
             address = address % 0x800
             value = self.mem[address]
+
+        # PPU I/O registers at $2000-$2007 are mirrored at
+        # $2008-$200F, $2010-$2017, $2018-$201F, and so forth,
+        # all the way up to $3FF8-$3FFF
         elif address < 0x4000:
-            address = address % 0x2008
+            address = 0x2000 + (address % 0x8)
             if address == 0x2002:
                 value = self.ppu_ref.read_ppustatus()
             elif address == 0x2004:
