@@ -263,14 +263,18 @@ class CPU:
         #write value in mem[address]
     def write_memory(self, address, value):
 
-        #Write memory in zero page
+        # System memory at $0000-$07FF is mirrored at
+        # $0800-$0FFF, $1000-$17FF, and $1800-$1FFF
+        # $0173 is the same as accessing memory at $0973, $1173, or $1973
         if address < 0x2000:
             address = address % 0x800
             self.mem[address] = value
 
-        #Write memory in ppu flags
+        # PPU I/O registers at $2000-$2007 are mirrored at
+        # $2008-$200F, $2010-$2017, $2018-$201F, and so forth,
+        # all the way up to $3FF8-$3FFF
         elif address < 0x4000:
-            address = address % 0x2008
+            address = 0x2000 + (address % 0x8)
             self.mem[address] = value
             if address == 0x2000:
                 self.ppu_ref.write_ppuctrl(value)
@@ -292,13 +296,12 @@ class CPU:
             elif address == 0x2007:
                 self.ppu_ref.write_data(value)
 
-                
-
         elif address == 0x4014:
             self.mem[address] = value
             dma_address = np.uint16((value << 8) + self.mem[0x2003])
             self.ppu_ref.write_spr_ram_dma(self.mem[dma_address : dma_address + 0x0100])
-        #Flag for ordering controls
+
+        # Flag for ordering controls
         elif address == 0x4016:
             if self.firstWrite == 0:
                 if value == 1:
