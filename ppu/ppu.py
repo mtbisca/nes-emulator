@@ -26,9 +26,9 @@ class PPU:
         # TODO: check if there's a default configuration of these flags
         self.nametable_address = None
         self.increment_address = None
-        self.sprite_pattern_table = 0
+        self.sprite_pattern_table = None
+        self.all_sprites = None
         self.background_pattern_table = None
-        self.sprite_size = [8,8]
         self.master_slave = None
         self.nmi_at_vblank = 1
 
@@ -60,18 +60,11 @@ class PPU:
         self.height = 224
         self.color = (1,1,1)
 
-        self.shouldUpdate = True
-        
+        self.should_update = True
 
         pygame.init()
-        self.all_sprites = SpritesGroup(self.sprite_size)
-        # self.all_sprites.set_all_positions(((0,0),(50,0), (0,50), (50,50), (25,25)))
         self.screen = pygame.display.set_mode((self.scale_size*self.width, self.scale_size*self.height))
-        self.pic = pygame.surface.Surface((self.width, self.width))
-        self.all_sprites.draw(self.pic)
-        self.screen.blit(pygame.transform.scale(self.pic, (self.scale_size * self.width, self.scale_size * self.height)), (0, 0))
-
-        self.update()
+        self.background = Background()
 
     def make_tile_map(self, full_pattern_table):
         tiles_map = []
@@ -135,9 +128,9 @@ class PPU:
 
         remaining_value >>= 1
         if remaining_value & 1:
-            self.sprite_size = (8, 8)
+            self.all_sprites = SpritesGroup(sprite_size=(8, 16))
         else:
-            self.sprite_size = (8, 16)
+            self.all_sprites = SpritesGroup(sprite_size=(8, 8))
 
         remaining_value >>= 1
         if remaining_value & 1:
@@ -334,13 +327,12 @@ class PPU:
         # if event.type == pygame.QUIT:
         #     pygame.display.quit()
         #     return False
-        if not self.shouldUpdate:
-            self.shouldUpdate = True
+        if not self.should_update:
+            self.should_update = True
             return
         else:
-            self.shouldUpdate = False
+            self.should_update = False
         self.color_handler = ColorHandler(self.VRAM)
-        self.background = Background()
         self.pic = pygame.surface.Surface((self.width, self.width))
         # Update parts of PPU
         # pattern_table_map = np.split(self.VRAM[0x0:0x2000], 2)
