@@ -6,10 +6,10 @@ from ppu.background import Background
 
 chrsize = 0
 
-        
+
 class PPU:
 
-    def __init__(self, pattern_tables, mirror, scale_size):
+    def __init__(self, pattern_tables, mirroring_type, scale_size):
         # initializing ppu memory
         self.VRAM = np.zeros(0x10000, dtype=np.uint8)
         self.VRAM[:0x2000] = pattern_tables
@@ -23,7 +23,6 @@ class PPU:
         self.bg_palettes = []
 
         # Flags controlling PPU operation
-        # TODO: check if there's a default configuration of these flags
         self.nametable_address = None
         self.increment_address = None
         self.sprite_pattern_table = None
@@ -34,7 +33,6 @@ class PPU:
 
         # Flags controlling the rendering of sprites and background, as well as
         # color effects
-        # TODO: check if there's a default configuration of these flags
         self.greyscale = None
         self.clipping_background_on_left = None
         self.clipping_sprites_on_left = None
@@ -44,6 +42,10 @@ class PPU:
         self.green_emphasis = None
         self.blue_emphasis = None
 
+        # $2005 and $2006 share a common write toggle, so that the first write
+        # has one behaviour, and the second write has another.
+        # After the second write, the toggle is reset to the first write
+        # behaviour. This toggle may be manually reset by reading $2002
         self.first_write = True
         self.oam_addr = 0
 
@@ -51,28 +53,31 @@ class PPU:
         self.sprite_0_hit = 0
         self.vblank = 1
 
-        self.address_2006 = np.uint16(0)
-        self.write_flag = True
+        # PPU internal registers
+        self.curr_vram_address = 0
+        self.tmp_vram_address = 0  # address of the top left onscreen tile
+        self.fine_x_scroll = 0
 
         # add this address for every write in ppu
-        self.address_mirror = 0x400 << mirror
+        self.address_mirror = 0x400 << mirroring_type
         self.width = 256
         self.height = 224
-        self.color = (1,1,1)
+        self.color = (1, 1, 1)
 
         self.should_update = True
 
         pygame.init()
-        self.screen = pygame.display.set_mode((self.scale_size*self.width, self.scale_size*self.height))
+        self.screen = pygame.display.set_mode(
+            (self.scale_size * self.width, self.scale_size * self.height))
         self.background = Background()
 
     def make_tile_map(self, full_pattern_table):
         tiles_map = []
         for index in range(0x200):
             low_bytes = full_pattern_table[index * 16:
-                                      (index * 16) + 8]
+                                           (index * 16) + 8]
             high_bytes = full_pattern_table[(index * 16) + 8:
-                                       (index + 1) * 16]
+                                            (index + 1) * 16]
 
             low_bytes = np.reshape(np.unpackbits(low_bytes, axis=0), (8, 8))
             high_bytes = np.reshape(np.unpackbits(high_bytes, axis=0), (8, 8))
@@ -82,9 +87,9 @@ class PPU:
             tiles_map.append(tile.transpose())
         return np.array(tiles_map)
 
-#######################   WRITE FUNCTIONS   #######################
+    #######################   WRITE FUNCTIONS   #######################
 
-    #register 0x2000
+    # Register 0x2000
     def write_ppuctrl(self, value):
         """
         7  bit  0
@@ -103,6 +108,13 @@ class PPU:
         |          (0: read backdrop from EXT pins; 1: output color on EXT pins)
         +--------- Generate an NMI at the start of the
                    vertical blanking interval (0: off; 1: on)
+
+        7  bit  0
+        ---- ----
+        .... ..YX
+               ||
+               |+- 1: Add 256 to the X scroll position
+               +-- 1: Add 240 to the Y scroll position
         """
         index = value & 3
         if index == 0:
@@ -133,17 +145,17 @@ class PPU:
             self.all_sprites = SpritesGroup(sprite_size=(8, 8))
 
         remaining_value >>= 1
-        if remaining_value & 1:
-            self.master_slave = 1
-        else:
-            self.master_slave = 0
+        self.master_slave = remaining_value & 1
 
         remaining_value >>= 1
-        if remaining_value & 1:
-            self.nmi_at_vblank = True
-        else:
-            self.nmi_at_vblank = False
-    #register 0x2001
+        self.nmi_at_vblank = bool(remaining_value & 1)
+
+        # Insert the two least significant bits into bits 10-11
+        # http://wiki.nesdev.com/w/index.php/PPU_scrolling#Register_controls
+        self.tmp_vram_address &= 0b111001111111111
+        self.tmp_vram_address |= (index << 10)
+
+    # Register 0x2001
     def write_ppumask(self, value):
         """
         7  bit  0
@@ -206,62 +218,71 @@ class PPU:
         else:
             self.blue_emphasis = False
 
-
-
-    
-    #register 0x2003
+    # Register 0x2003
     def write_oamaddr(self, value):
         self.oam_addr = value
 
-    #register 0x2004
+    # Register 0x2004
     def write_oamdata(self, value):
         self.SPR_RAM[self.oam_addr] = value
-        self.oam_addr = (self.oam_addr+ 1) & 0xFF
+        self.oam_addr = (self.oam_addr + 1) & 0xFF
 
-    #register 0x2005
+    # Register 0x2005
     def write_scroll(self, value):
-        if self.first_write:
-            self.ppu_scroll_x = value
-            self.first_write = False
+        if self.first_write is True:
+            # tmp_vram_address: ....... ...HGFED = d: HGFED...
+            # fine_x_scroll:                 CBA = d: .....CBA
+            self.tmp_vram_address &= 0b111111111100000
+            self.tmp_vram_address |= value >> 3
+            self.fine_x_scroll = value & 0b111
         else:
-            self.ppu_scroll_y = value
-            self.first_write = True
+            # tmp_vram_address: CBA..HG FED..... = d: HGFEDCBA
+            self.tmp_vram_address &= 0b000110000011111
+            self.tmp_vram_address |= (value & 0b111) << 12
+            self.tmp_vram_address |= (value & 0b11111000) << 2
+        self.first_write = not self.first_write
 
-    #register 0x2006
+    # Register 0x2006
     def write_address(self, value):
-        if self.write_flag == True:
-            self.address_2006 = np.uint16((value & 0xFF) << 8)
-            self.write_flag = False
+        if self.first_write is True:
+            # tmp_vram_address: .FEDCBA ........ = d: ..FEDCBA
+            # tmp_vram_address: X...... ........ = 0
+            self.tmp_vram_address &= 0b000000011111111
+            self.tmp_vram_address |= (value & 0b111111) << 8
+            self.curr_vram_address = np.uint16((value & 0xFF) << 8)
         else:
-            self.address_2006 += np.uint16(value & 0xFF)
-            self.write_flag = True
+            # tmp_vram_address: ....... HGFEDCBA = d: HGFEDCBA
+            self.tmp_vram_address &= 0b111111100000000
+            self.tmp_vram_address |= value
+            self.curr_vram_address = self.tmp_vram_address
+        self.first_write = not self.first_write
 
-    #register 0x2007
-    def write_data(self,value):
+    # Register 0x2007
+    def write_data(self, value):
 
-        #ppu name table mirroring
-        if self.address_2006 >= 0x2000 and self.address_2006 < 0x3000:
-            self.VRAM[self.address_2006 + self.address_mirror] = value
-            self.VRAM[self.address_2006] = value
+        # ppu name table mirroring
+        if self.curr_vram_address >= 0x2000 and self.curr_vram_address < 0x3000:
+            self.VRAM[self.curr_vram_address + self.address_mirror] = value
+            self.VRAM[self.curr_vram_address] = value
 
-        #ppu memory mirroring
-        elif self.address_2006 < 0x3F00: 
-            self.address_2006 = self.address_2006 % 0x3000
-            self.VRAM[self.address_2006 + self.address_mirror] = value
-            self.VRAM[self.address_2006] = value
+        # ppu memory mirroring
+        elif self.curr_vram_address < 0x3F00:
+            self.curr_vram_address = self.curr_vram_address % 0x3000
+            self.VRAM[self.curr_vram_address + self.address_mirror] = value
+            self.VRAM[self.curr_vram_address] = value
 
 
-        #ppu memory mirroring 0x3F20 - 0x3FFF
-        elif self.address_2006 >= 0x3F20 and self.address_2006 < 0x4000:
-            self.VRAM[self.address_2006 % 0x3F20] = value
-        
-        #ppu memory mirroring 0x4000 - 0x10000
+        # ppu memory mirroring 0x3F20 - 0x3FFF
+        elif self.curr_vram_address >= 0x3F20 and self.curr_vram_address < 0x4000:
+            self.VRAM[self.curr_vram_address % 0x3F20] = value
+
+        # ppu memory mirroring 0x4000 - 0x10000
         else:
-            self.VRAM[self.address_2006 % 0x3FFF] = value
-        self.address_2006 += self.increment_address
-    
-#######################   READ FUNCTIONS   #######################
-    #register 0x2002
+            self.VRAM[self.curr_vram_address % 0x3FFF] = value
+        self.curr_vram_address += self.increment_address
+
+    #######################   READ FUNCTIONS   #######################
+    # Register 0x2002
     def read_ppustatus(self):
         """
         7  bit  0
@@ -293,14 +314,14 @@ class PPU:
         value |= self.sprite_overflow
         value <<= 5
         self.vblank = 1
-
+        self.first_write = True
 
         return value
 
-    #register 0x2007
+    # Register 0x2007
     def read_data(self):
         value = 0
-        address = np.uint16(self.address_2006)
+        address = np.uint16(self.curr_vram_address)
         if address < 0x3F00:
             value = self.Buffer
             self.Buffer = self.VRAM[address]
@@ -312,12 +333,11 @@ class PPU:
             self.Buffer = self.VRAM[address]
             value = self.VRAM[address]
         return value
-    
 
     def load_palettes(self):
         self.bg_palettes = np.array_split(self.VRAM[0X3F00:0x3F10], 4)
         self.sprite_palettes = np.array_split(self.VRAM[0X3F10:0x3F20], 4)
-    
+
     def load_attribute_table(self):
         pass
 
@@ -345,7 +365,8 @@ class PPU:
             self.update_sprites(pattern_table_map)
 
         # Rescale screen and update
-        self.screen.blit(pygame.transform.scale(self.pic, (self.scale_size * self.width, self.scale_size * self.height)), (0, 0))
+        self.screen.blit(pygame.transform.scale(self.pic, (
+        self.scale_size * self.width, self.scale_size * self.height)), (0, 0))
         pygame.display.update()
         return
 
@@ -360,7 +381,9 @@ class PPU:
 
     def update_sprites(self, pattern_table_map):
         sprites_data = np.reshape(self.SPR_RAM, (64, 4))
-        self.all_sprites.update_sprites(pattern_table_map, sprites_data, self.color_handler, self.sprite_pattern_table)
+        self.all_sprites.update_sprites(pattern_table_map, sprites_data,
+                                        self.color_handler,
+                                        self.sprite_pattern_table)
         self.all_sprites.draw(self.pic)
 
     def write_spr_ram_dma(self, ram):
