@@ -1,5 +1,6 @@
 import numpy as np
 import pygame
+from numba import jit
 
 class ColorHandler:
     def __init__(self, ppu_VRAM):
@@ -17,12 +18,37 @@ class ColorHandler:
         return self.set_color_to_block(bg_block_array, self.bg_palettes[palette_index])
 
     def set_color_to_block(self, block_array, palette):
-        color_translator = np.vectorize(lambda pix: self.sys_palette_to_rgb(palette[pix]) if pix < 4 else self.sys_palette_to_rgb(0))
-        colored_block = np.dstack(color_translator(block_array))
-        return colored_block
+        color_translator = [self.sys_palette_to_rgb(color) for color in palette]
+        colored_block = np.copy(block_array)
+        # color_translator = np.vectorize(lambda pix: self.sys_palette_to_rgb(palette[pix]) if pix < 4 else self.sys_palette_to_rgb(0))
+
+        # # colored_block = np.dstack(color_translator(block_array))
+        return fast_color(color_translator, block_array)
+
 
     def sys_palette_to_rgb(self, pixel):
         return system_palette[pixel]
+
+@jit(nopython=True)
+def fast_color(color_translator, block_array):
+    colored_block = np.zeros((block_array.shape[0], block_array.shape[1], 3))
+    for i in range(block_array.shape[0]):
+        for j in range(block_array.shape[1]):
+            pixel = block_array[i][j]
+            if pixel > 3:
+                pixel = 0 
+            colored_block[i][j][:] = color_translator[pixel]
+    return colored_block # dstack
+
+
+c_code = """ 
+    for(int i = 0; i < block_rows; i++) {
+        for(int j = 0; j < block_cols; j++) {
+            int pixel = block_array[i][j];
+            colored_block[i][j] = pixel < 4 ? color_translator[pixel] : color_translator[0]; 
+        }
+    }
+"""
     
 system_palette = [(0x75, 0x75, 0x75),
                         (0x27, 0x1B, 0x8F),
