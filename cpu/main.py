@@ -223,7 +223,7 @@ class CPU:
         self.set_negative_to_bit_7(register)
 
     def set_negative_to_bit_7(self, value):
-        self.negative = value >> 7
+        self.negative = int(value) >> 7
 
     # Addressing Modes
     def immediate(self):
