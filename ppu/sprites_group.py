@@ -64,14 +64,12 @@ class SpritesGroup():
             data = sprite_data[key]
             table = data[1] & 1
             index = data[1] & 0b11111110
-            tile1 = pattern_table_map[table][index]
-            tile2 = pattern_table_map[table][index+1]
+            tile1 = self.get_tile(pattern_table_map[table][index * 16 : (index + 1) * 16])
+            tile2 = self.get_tile(pattern_table_map[table][(index + 1) * 16 : (index + 2) * 16])
             tile = np.concatenate((tile1, tile2), axis=1)
             palette_index = data[2] & 0b11
             self.set_position(key, (data[3], data[0]))
-            booly = (data[2] & 0b10000000) > 0
-            boolx = (data[2] & 0b01000000) > 0
-            surface = pygame.transform.flip(color_handler.set_color_to_sprite(tile, palette_index), boolx, booly)
+            surface = color_handler.set_color_to_sprite(tile, palette_index)
             self.set_surface(key, surface)
 
 
