@@ -3,8 +3,11 @@ import numpy as np
 from ppu.sprites_group import SpritesGroup
 from ppu.color_handler import ColorHandler
 from ppu.background import Background
+from enum import Enum
 
-chrsize = 0
+class Mirroring(Enum):
+    HORIZONTAL = 0
+    VERTICAL = 1
 
 
 class PPU:
@@ -17,7 +20,7 @@ class PPU:
         self.SPR_RAM = np.zeros(0x0100, dtype=np.uint8)
         self.scale_size = scale_size
 
-        self.Buffer = 0
+        self.buffer = 0
 
         self.sprite_palettes = []
         self.bg_palettes = []
@@ -58,8 +61,7 @@ class PPU:
         self.tmp_vram_address = 0  # address of the top left onscreen tile
         self.fine_x_scroll = 0
 
-        # add this address for every write in ppu
-        self.address_mirror = 0x400 << mirroring_type
+        self.mirroring_type = Mirroring(mirroring_type)
         self.width = 256
         self.height = 224
         self.color = (1, 1, 1)
@@ -260,25 +262,46 @@ class PPU:
     # Register 0x2007
     def write_data(self, value):
 
-        # ppu name table mirroring
-        if self.curr_vram_address >= 0x2000 and self.curr_vram_address < 0x3000:
-            self.VRAM[self.curr_vram_address + self.address_mirror] = value
-            self.VRAM[self.curr_vram_address] = value
+        address = self.curr_vram_address & 0b11111111111111
 
-        # ppu memory mirroring
-        elif self.curr_vram_address < 0x3F00:
-            self.curr_vram_address = self.curr_vram_address % 0x3000
-            self.VRAM[self.curr_vram_address + self.address_mirror] = value
-            self.VRAM[self.curr_vram_address] = value
+        # Write in the pattern table
+        if address < 0x2000:
+            self.VRAM[address] = value
 
+        # Write in the nametable with mirroring
+        elif address < 0x3000:
+            if self.mirroring_type == Mirroring.VERTICAL:
+                if address > 0x2800:
+                    self.VRAM[address - 0x800] = value
+                else:
+                    self.VRAM[address] = value
+            elif self.mirroring_type == Mirroring.HORIZONTAL:
+                if address < 0x2400 or (0x2800 <= address < 0x2C00):
+                    self.VRAM[address] = value
+                else:
+                    self.VRAM[address - 0x400] = value
 
-        # ppu memory mirroring 0x3F20 - 0x3FFF
-        elif self.curr_vram_address >= 0x3F20 and self.curr_vram_address < 0x4000:
-            self.VRAM[self.curr_vram_address % 0x3F20] = value
+        # Write in the memory with mirroring
+        # 0x3000-0x3EFF mirrors 0x2000-0x2EFF
+        elif address < 0x3F00:
+            self.VRAM[address & 0x2EFF] = value
+        # TODO: check if necessary
+        elif address == 0x3F10:
+            self.VRAM[0x3F00] = value
+        elif address == 0x3F14:
+            self.VRAM[0x3F04] = value
+        elif address == 0x3F18:
+            self.VRAM[0x3F08] = value
+        elif address == 0x3F1C:
+            self.VRAM[0x3F0C] = value
+        # 0x3F20-0x3FFF mirrors 0x3F00-0x3F1F
+        elif 0x3F20 <= address < 0x4000:
+            self.VRAM[address & 0x3F1F] = value
 
-        # ppu memory mirroring 0x4000 - 0x10000
+        # 0x4000-0x10000 mirrors 0x0000-0x3FFF
         else:
-            self.VRAM[self.curr_vram_address % 0x3FFF] = value
+            self.VRAM[address & 0x3FFF] = value
+
         self.curr_vram_address += self.increment_address
 
     #######################   READ FUNCTIONS   #######################
@@ -321,17 +344,39 @@ class PPU:
     # Register 0x2007
     def read_data(self):
         value = 0
-        address = np.uint16(self.curr_vram_address)
-        if address < 0x3F00:
-            value = self.Buffer
-            self.Buffer = self.VRAM[address]
+        address = self.curr_vram_address & 0b11111111111111
+
+        # Read from pattern table
+        if address < 0x2000:
+            value = self.buffer
+            self.buffer = self.VRAM[address % 0x800]
+
+        # Read from nametable
+        elif address < 0x3000:
+            value = self.buffer
+            if self.mirroring_type == Mirroring.VERTICAL:
+                if address > 0x2800:
+                    self.buffer = self.VRAM[address - 0x800]
+                else:
+                    self.buffer = self.VRAM[address]
+            elif self.mirroring_type == Mirroring.HORIZONTAL:
+                if address < 0x2400 or (0x2800 <= address < 0x2C00):
+                    self.buffer = self.VRAM[address]
+                else:
+                    self.buffer = self.VRAM[address - 0x400]
+
+        # Read from the memory
+        # 0x3000-0x3EFF mirrors 0x2000-0x2EFF
+        elif address < 0x3F00:
+            value = self.buffer
+            self.buffer = self.VRAM[address & 0x2EFF]
         elif address < 0x3F20:
-            self.Buffer = self.VRAM[address]
-            value = self.VRAM[address]
+            value = self.buffer
+            self.buffer = self.VRAM[address]
+        # 0x3F20-0x3FFF mirrors 0x3F00-0x3F1F
         elif address < 0x4000:
-            address = address % 0x3F20
-            self.Buffer = self.VRAM[address]
             value = self.VRAM[address]
+            self.buffer = self.VRAM[address & 0x3F1F]
         return value
 
     def load_palettes(self):
